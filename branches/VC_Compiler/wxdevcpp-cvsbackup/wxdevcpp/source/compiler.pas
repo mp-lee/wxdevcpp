@@ -62,7 +62,6 @@ type
     fOriginalSet: integer;
     procedure DoLogEntry(const msg: string);
     procedure DoOutput(const s, s2, s3: string);
-    procedure DoResOutput(const s, s2, s3: string);
     function GetMakeFile: string;
     function GetCompiling: Boolean;
     procedure RunTerminate(Sender: TObject);
@@ -144,13 +143,6 @@ begin
   if assigned(fOnOutput) then
     fOnOutput(s, s2, s3);
 end;
-
-procedure TCompiler.DoResOutput(const s, s2, s3: string);
-begin
-  if assigned(fOnResOutput) then
-    fOnResOutput(s, s2, s3);
-end;
-
 
 function TCompiler.GetMakeFile: string;
 begin
