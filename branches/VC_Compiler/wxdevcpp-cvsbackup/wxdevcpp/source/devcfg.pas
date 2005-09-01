@@ -85,6 +85,7 @@ type
     fCppDir: string;
     fLibDir: string;
     fOptions: string;
+    fVC: boolean;
    //RNC
    fCompAdd: boolean;          // add fcmdopts to compiler command line
    fLinkAdd: boolean;          // add flinkopts to linker command line
@@ -110,6 +111,7 @@ type
     function SetName(Index: integer): string;
     property Sets: TStrings read fSets write fSets;
   published
+    property IsVC: boolean read fVC write fVC;
     property gccName: string read fgccName write fgccName;
     property gppName: string read fgppName write fgppName;
     property gdbName: string read fgdbName write fgdbName;
@@ -147,7 +149,7 @@ type
     fdllwrapName: string;
     fgprofName: string;
     fCompilerSet: integer;
-
+    fVC: boolean;
     //Compiler options
     fOptions: TList;
 
@@ -155,13 +157,13 @@ type
     fFastDep: Boolean;
 
     //Debugger
-    fModified: boolean; // has options been changed since last compile
+    fModified: boolean;// has options been changed since last compile
 
-    fcmdOpts: string; // command-line adds for compiler
+    fcmdOpts: string;  // command-line adds for compiler
     flinkopts: string; // command-line adds for linker
 
     fSaveLog: boolean; // Save Compiler Output
-    fDelay: integer; // delay in milliseconds -- for compiling
+    fDelay: integer;   // delay in milliseconds -- for compiling
     procedure SetCompilerSet(const Value: integer);
     function GetOptions(Index: integer): TCompilerOption;
     procedure SetOptions(Index: integer; const Value: TCompilerOption);
@@ -186,7 +188,7 @@ type
     function FindOption(Setting: string; var opt: TCompilerOption; var Index: integer): boolean; // returns the option with setting=<Setting>
     procedure ChangeOptionsLang;
     function ConvertCharToValue(c: char): integer;
-  published
+ published
    property FastDep: Boolean read fFastDep write fFastDep;
 
 //   property AddtoComp: boolean read fCompAdd write fCompAdd;
@@ -194,10 +196,10 @@ type
 //RNC
 //   property CmdOpts: string read fCmdOpts write fCmdOpts;
 //   property LinkOpts: string read fLinkopts write fLinkOpts;
-
+    property IsVC: boolean read fVC write fVC;
     property RunParams: string read fRunParams write fRunParams;
     property OutputDir: string read fOutputDir write fOutputDir; // ** unused
-   property Intermediate: string read fIntermediate write fIntermediate; // ** unused
+    property Intermediate: string read fIntermediate write fIntermediate; // ** unused
     property UseExecParams: boolean read fUseParams write fUseParams;
     property SaveLog: boolean read fSaveLog write fSaveLog;
     property Delay: integer read fDelay write fDelay;
@@ -1260,7 +1262,7 @@ begin
      //fLinkAdd:= LoadBoolSetting(key, 'LinkAdd');
     fcmdOpts := LoadSetting(key, 'cmdline');
     flinkopts := LoadSetting(key, 'LinkLine');
-
+    fVC := LoadBoolSetting(key, 'IsVC');
     fSaveLog := LoadBoolSetting(key, 'Log');
     s := LoadSetting(key, 'Delay');
      if s <> '' then fDelay:= strtoint(s);
@@ -1315,6 +1317,7 @@ begin
     SaveSetting(key, DLLWRAP_PROGRAM, fdllwrapName);
     SaveSetting(key, GPROF_PROGRAM, fgprofName);
     SaveSetting(key, 'CompilerSet', IntToStr(fCompilerSet));
+    SaveBoolSetting(key, 'IsVC', fVC);
 
     S := '';
     for I := 0 to fOptions.Count - 1 do
@@ -2052,7 +2055,7 @@ begin
     fLinkOptions:=LoadSetting(key, 'LinkLine');
     fCompAdd:= LoadBoolSetting(key, 'CompAdd');
     fLinkAdd:= LoadBoolSetting(key, 'LinkAdd');
-
+    fVC:= LoadBoolSetting(key, 'IsVC');
   end;
 end;
 
@@ -2104,6 +2107,7 @@ begin
      SaveSetting(key, 'LinkLine', fLinkOptions);
      SaveBoolSetting(key, 'CompAdd', fCompAdd);
      SaveBoolSetting(key, 'LinkAdd', fLinkAdd);
+     SaveBoolSetting(key, 'IsVC', fVC);
   end;
 end;
 
