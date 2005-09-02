@@ -85,7 +85,9 @@ type
     fCppDir: string;
     fLibDir: string;
     fOptions: string;
+{$IfDef WX_BUILD}
     fVC: boolean;
+{$EndIf}
    //RNC
    fCompAdd: boolean;          // add fcmdopts to compiler command line
    fLinkAdd: boolean;          // add flinkopts to linker command line
@@ -111,7 +113,9 @@ type
     function SetName(Index: integer): string;
     property Sets: TStrings read fSets write fSets;
   published
+{$IfDef WX_BUILD}
     property IsVC: boolean read fVC write fVC;
+{$EndIf}
     property gccName: string read fgccName write fgccName;
     property gppName: string read fgppName write fgppName;
     property gdbName: string read fgdbName write fgdbName;
@@ -149,7 +153,9 @@ type
     fdllwrapName: string;
     fgprofName: string;
     fCompilerSet: integer;
+{$IfDef WX_BUILD}
     fVC: boolean;
+{$EndIf}
     //Compiler options
     fOptions: TList;
 
@@ -196,7 +202,9 @@ type
 //RNC
 //   property CmdOpts: string read fCmdOpts write fCmdOpts;
 //   property LinkOpts: string read fLinkopts write fLinkOpts;
+{$IfDef WX_BUILD}
     property IsVC: boolean read fVC write fVC;
+{$EndIf}
     property RunParams: string read fRunParams write fRunParams;
     property OutputDir: string read fOutputDir write fOutputDir; // ** unused
     property Intermediate: string read fIntermediate write fIntermediate; // ** unused
@@ -1262,7 +1270,9 @@ begin
      //fLinkAdd:= LoadBoolSetting(key, 'LinkAdd');
     fcmdOpts := LoadSetting(key, 'cmdline');
     flinkopts := LoadSetting(key, 'LinkLine');
+{$IfDef WX_BUILD}
     fVC := LoadBoolSetting(key, 'IsVC');
+{$EndIf}
     fSaveLog := LoadBoolSetting(key, 'Log');
     s := LoadSetting(key, 'Delay');
      if s <> '' then fDelay:= strtoint(s);
@@ -1317,7 +1327,9 @@ begin
     SaveSetting(key, DLLWRAP_PROGRAM, fdllwrapName);
     SaveSetting(key, GPROF_PROGRAM, fgprofName);
     SaveSetting(key, 'CompilerSet', IntToStr(fCompilerSet));
+{$IfDef WX_BUILD}
     SaveBoolSetting(key, 'IsVC', fVC);
+{$EndIf}
 
     S := '';
     for I := 0 to fOptions.Count - 1 do
@@ -2055,7 +2067,9 @@ begin
     fLinkOptions:=LoadSetting(key, 'LinkLine');
     fCompAdd:= LoadBoolSetting(key, 'CompAdd');
     fLinkAdd:= LoadBoolSetting(key, 'LinkAdd');
+{$IfDef WX_BUILD}
     fVC:= LoadBoolSetting(key, 'IsVC');
+{$EndIf}
   end;
 end;
 
@@ -2107,7 +2121,9 @@ begin
      SaveSetting(key, 'LinkLine', fLinkOptions);
      SaveBoolSetting(key, 'CompAdd', fCompAdd);
      SaveBoolSetting(key, 'LinkAdd', fLinkAdd);
+{$IfDef WX_BUILD}
      SaveBoolSetting(key, 'IsVC', fVC);
+{$EndIf}
   end;
 end;
 
