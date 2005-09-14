@@ -146,7 +146,7 @@ object CompForm: TCompForm
         Left = 6
         Top = 6
         Width = 420
-        Height = 49
+        Height = 69
         Caption = 'Compiler set to configure'
         TabOrder = 1
         object btnAddCompilerSet: TSpeedButton
@@ -269,27 +269,36 @@ object CompForm: TCompForm
             'gcc 2.95'
             'gcc 3.2')
         end
+        object is_vc: TCheckBox
+          Left = 8
+          Top = 46
+          Width = 401
+          Height = 17
+          Caption = 'Is this compiler a Visual C++ Compiler?'
+          TabOrder = 1
+          OnClick = is_vcClick
+        end
       end
       object cmdline: TGroupBox
         Left = 6
-        Top = 62
+        Top = 80
         Width = 420
-        Height = 238
+        Height = 220
         Caption = 'Compiler Command Line'
         TabOrder = 2
         DesignSize = (
           420
-          238)
+          220)
         object lblDelay: TLabel
           Left = 6
-          Top = 207
+          Top = 194
           Width = 70
           Height = 13
           Caption = 'Compile Delay:'
         end
         object lblDelayMsg: TLabel
           Left = 158
-          Top = 199
+          Top = 186
           Width = 247
           Height = 28
           AutoSize = False
@@ -313,15 +322,15 @@ object CompForm: TCompForm
           Left = 23
           Top = 37
           Width = 388
-          Height = 65
+          Height = 58
           Anchors = [akLeft, akTop, akRight]
           ScrollBars = ssVertical
           TabOrder = 1
           WantReturns = False
         end
         object cbLinkerAdd: TCheckBox
-          Left = 8
-          Top = 107
+          Left = 6
+          Top = 100
           Width = 373
           Height = 17
           Anchors = [akLeft, akTop, akRight]
@@ -330,16 +339,16 @@ object CompForm: TCompForm
         end
         object Linker: TMemo
           Left = 23
-          Top = 128
+          Top = 122
           Width = 388
-          Height = 65
+          Height = 58
           ScrollBars = ssVertical
           TabOrder = 3
           WantReturns = False
         end
         object seCompDelay: TSpinEdit
           Left = 83
-          Top = 203
+          Top = 190
           Width = 60
           Height = 22
           MaxValue = 0

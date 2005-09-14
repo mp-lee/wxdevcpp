@@ -86,6 +86,7 @@ type
     btnBrowse6: TSpeedButton;
     btnBrowse7: TSpeedButton;
     btnBrowse8: TSpeedButton;
+    is_vc: TCheckBox;
     cmdline: TGroupBox;
     cbCompAdd: TCheckBox;
     Commands: TMemo;
@@ -124,6 +125,7 @@ type
     procedure WindresEditChange(Sender: TObject);
     procedure DllwrapEditChange(Sender: TObject);
     procedure GprofEditChange(Sender: TObject);
+    procedure is_vcClick(Sender: TObject);
   private
     fBins: string;
     fLibs: string;
@@ -179,6 +181,9 @@ begin
   end;
 
    //RNC
+{$IfDef WX_BUILD}
+   devCompilerSet.IsVC := is_vc.Checked;
+{$EndIf}
    devCompilerSet.CmdOpts:= Commands.Lines.Text;
    devCompilerSet.AddtoLink:= cbLinkerAdd.Checked;
    devCompilerSet.AddtoComp:= cbCompAdd.Checked;
@@ -201,6 +206,9 @@ begin
     windresName := devCompilerSet.windresName;
     dllwrapName := devCompilerSet.dllwrapName;
     gprofName := devCompilerSet.gprofName;
+{$IfDef WX_BUILD}
+    IsVC := devCompilerSet.IsVC;
+{$EndIf}
   end;
 
   with devDirs do
@@ -235,6 +243,9 @@ begin
      Commands.Lines.Text:= devCompilerSet.CmdOpts;
      cbCompAdd.Checked:= devCompilerSet.AddtoComp;
     // cbCompAdd.Checked:= AddToComp;
+{$IfDef WX_BUILD}
+     is_vc.Checked := devCompilerSet.IsVC;
+{$EndIf}
      //Linker.Lines.Text:= LinkOpts;
      Linker.Lines.Text:= devCompilerSet.LinkOpts;
      cbLinkerAdd.Checked:= devCompilerSet.AddtoLink;
@@ -479,6 +490,9 @@ begin
 
   devCompilerSet.AddtoLink:=cbLinkerAdd.Checked;
   devCompilerSet.AddtoComp:=cbCompAdd.Checked;
+{$IfDef WX_BUILD}
+  devCompilerSet.IsVC := is_vc.Checked;
+{$EndIf}
   devCompilerSet.SaveSet(currentSet);
 
   devCompilerSet.LoadSet(cmbCompilerSetComp.ItemIndex);
@@ -507,7 +521,21 @@ begin
 
     devCompiler.OptionStr := OptionsStr;
     CompOptionsFrame1.FillOptions(nil);
-end;
+{$IfDef WX_BUILD}
+    if isVC then
+    begin
+      is_vc.Checked := true;
+      lbldllwrap.Caption := 'link : ';
+      lblwindres.Caption := 'rc : ';
+    end
+    else
+    begin
+      is_vc.Checked := false;
+      lbldllwrap.Caption := 'dllwrap : ';
+      lblwindres.Caption := 'windres : '
+    end;
+  end;
+{$EndIf}
 end;
 
 procedure TCompForm.btnBrws1Click(Sender: TObject);
@@ -627,6 +655,32 @@ end;
 procedure TCompForm.GprofEditChange(Sender: TObject);
 begin
   devCompilerSet.gprofName := GprofEdit.Text;
+end;
+
+procedure TCompForm.is_vcClick(Sender: TObject);
+begin
+{$IfDef WX_BUILD}
+  if is_vc.Checked then
+  begin
+    lbldllwrap.Caption := 'link : ';
+    lblgprof.Enabled := false;
+    GProfEdit.Enabled := false;
+    btnBrowse8.Enabled := false;
+    lblgdb.Enabled := false;
+    GdbEdit.Enabled := false;
+    BtnBrowse5.Enabled := false;
+  end
+  else
+  begin
+    lbldllwrap.Caption := 'dllwrap : ';
+    lblgprof.Enabled := true;
+    GProfEdit.Enabled := true;
+    btnBrowse8.Enabled := true;
+    lblgdb.Enabled := true;
+    GdbEdit.Enabled := true;
+    BtnBrowse5.Enabled := true;
+  end;
+{$EndIf}
 end;
 
 end.
