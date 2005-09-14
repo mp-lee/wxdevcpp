@@ -1062,14 +1062,16 @@ begin
   fOptions.Clear;
 
   sl := TStringList.Create;
-  sl.Add('No optimization=d');
-  sl.Add('Minimize space=1');
-  sl.Add('Maximize speed=2');
-  sl.Add('Minimize space=1');
-  sl.Add('Favour code speed=t');
-  sl.Add('Favour code space=s');
-  sl.Add('Global Optimization  =g');
-  AddOption('Optimization level', False, True, True, False, 0, '/O', 'Code Optimization', [], sl);
+  sl.Add('Neither  =');
+  sl.Add('Speed=Ot');
+  sl.Add('Space=Os');
+  AddOption('Favour', False, True, True, False, 0, '/', 'Code Optimization', [], sl);
+  sl := TStringList.Create;
+  sl.Add('Neither  =');
+  sl.Add('Speed=O2');
+  sl.Add('Space=O1');
+  AddOption('Optimize for', False, True, True, False, 0, '/', 'Code Optimization', [], sl);
+  AddOption('Enable Global Optimization', False, True, True, False, 0, '/Og', 'Code Optimization', [], nil);
   AddOption('Assume aliasing', False, True, True, False, 0, '/Oa', 'Code Optimization', [], nil);
   AddOption('Enable intrinsic functions', False, True, True, False, 0, '/Oi', 'Code Optimization', [], nil);
   AddOption('Assume cross-function aliasing', False, True, True, False, 0, '/Ow', 'Code Optimization', [], nil);
