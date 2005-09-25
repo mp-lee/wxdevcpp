@@ -562,8 +562,8 @@ begin
   txtOverrideBuildCmd.Text:='';
   chkSupportXP.Enabled:=fOptions.typ=dptGUI;
   devCompilerSet.LoadSet(cmbCompiler.ItemIndex);
-  devCompiler.OptionStr:=fOptions.CompilerOptions;
   CompOptionsFrame1.FillOptions(fProject);
+  devCompiler.OptionStr:=fOptions.CompilerOptions;
   SubTabsChange(Self);
   UpdateMakButtons();
 end;
@@ -868,7 +868,6 @@ begin
     CanClose := False;
   end;
   if CanClose then begin
-    fOptions.CompilerOptions := devCompiler.OptionStr;
     devCompilerSet.LoadSet(devCompiler.CompilerSet);
     devCompilerSet.AssignToCompiler;
   end;
@@ -1046,7 +1045,6 @@ procedure TfrmProjectOptions.cmbCompilerChange(Sender: TObject);
 begin
   devCompilerSet.LoadSet(cmbCompiler.ItemIndex);
   devCompilerSet.AssignToCompiler;
-  devCompiler.OptionStr:=fOptions.CompilerOptions;
   CompOptionsFrame1.FillOptions(fProject);
 end;
 
