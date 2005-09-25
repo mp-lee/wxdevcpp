@@ -233,6 +233,8 @@ begin
 end;
 
 procedure TCompForm.SetOptions;
+var
+finalcompilerset: integer;
 begin
   with devCompiler do
   begin
@@ -256,13 +258,13 @@ begin
     cmbCompilerSetComp.Items.Assign(devCompilerSet.Sets);
 
     if CompilerSet < cmbCompilerSetComp.Items.Count then
-      cmbCompilerSetComp.ItemIndex := CompilerSet
-    else if cmbCompilerSetComp.Items.Count > 0 then
-      cmbCompilerSetComp.ItemIndex := 0;
+      finalcompilerset := CompilerSet
+    else
+      finalcompilerset := 0;
 
-    currentSet := cmbCompilerSetComp.ItemIndex;
-    devCompilerSet.LoadSet(CompilerSet);
-    cmbCompilerSetCompChange(nil);
+    currentSet := finalcompilerset;
+    devCompilerSet.LoadSet(finalcompilerset);
+    cmbCompilerSetComp.ItemIndex := finalcompilerset;
   end;
 end;
 
@@ -495,9 +497,9 @@ begin
 {$EndIf}
   devCompilerSet.SaveSet(currentSet);
 
-  devCompilerSet.LoadSet(cmbCompilerSetComp.ItemIndex);
   currentSet := cmbCompilerSetComp.ItemIndex;
-
+  devCompilerSet.LoadSet(currentSet);
+  devCompilerSet.AssignToCompiler;
   with devCompilerSet do begin
     fBins := BinDir;
     fC := CDir;
