@@ -500,6 +500,9 @@ begin
   currentSet := cmbCompilerSetComp.ItemIndex;
   devCompilerSet.LoadSet(currentSet);
   devCompilerSet.AssignToCompiler;
+  devCompiler.AddDefaultOptions;
+  CompOptionsFrame1.FillOptions(nil);
+
   with devCompilerSet do begin
     fBins := BinDir;
     fC := CDir;
@@ -682,7 +685,7 @@ begin
     GdbEdit.Enabled := true;
     BtnBrowse5.Enabled := true;
   end;
-  devCompilerSet.IsVC := is_vc.Checked;
+  devCompiler.IsVC := is_vc.Checked;
   devCompiler.AddDefaultOptions;
   CompOptionsFrame1.FillOptions(nil);
 {$EndIf}
