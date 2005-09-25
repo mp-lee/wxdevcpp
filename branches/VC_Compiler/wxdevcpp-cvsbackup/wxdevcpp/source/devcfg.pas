@@ -1062,7 +1062,7 @@ begin
   fOptions.Clear;
   
   //Generate settings for VC and MingW compilers seperately
-  if DevCompilerSet.IsVC then
+  if self.IsVC then
   begin
     sl := TStringList.Create;
     sl.Add('Neither  =');
@@ -1876,14 +1876,14 @@ begin
   //RNC
   devCompiler.fcmdOpts:=devCompilerSet.fCmdOptions;
   devCompiler.flinkopts:=devCompilerSet.fLinkOptions;
-
+  devCompiler.IsVC := devCompilerSet.IsVC;
   // we have to set the devDirs too
   devDirs.Bins := devCompilerSet.BinDir;
   devDirs.C := devCompilerSet.CDir;
   devDirs.Cpp := devCompilerSet.CppDir;
   devDirs.Lib := devCompilerSet.LibDir;
 
-  devCompiler.OptionStr := fOptions;
+  devCompiler.OptionStr := devCompilerSet.OptionsStr;
 end;
 
 constructor TdevCompilerSet.Create;
@@ -1901,9 +1901,16 @@ begin
 end;
 
 procedure TdevCompilerSet.LoadSet(Index: integer);
+var
+key: string;
 begin
   LoadSetProgs(Index);
   LoadSetDirs(Index);
+
+  //Then load the configuration information for this compiler set
+  key := OPT_COMPILERSETS + '_' + IntToStr(Index);
+  self.OptionsStr := devdata.LoadSetting(key, 'CompilerStr');
+  ShowMessage(self.OptionsStr);
 end;
 
 procedure TdevCompilerSet.LoadSetDirs(Index: integer);
@@ -2148,9 +2155,15 @@ begin
 end;
 
 procedure TdevCompilerSet.SaveSet(Index: integer);
+var
+key: string;
 begin
   SaveSetProgs(Index);
   SaveSetDirs(Index);
+
+  //Then save the configuration information for this compiler set
+  key := OPT_COMPILERSETS + '_' + IntToStr(Index);
+  devdata.SaveSetting(key, 'CompilerStr', self.OptionsStr);
 end;
 
 procedure TdevCompilerSet.SaveSetDirs(Index: integer);
@@ -2186,12 +2199,12 @@ begin
     SaveSetting(key, DLLWRAP_PROGRAM, fdllwrapName);
     SaveSetting(key, GPROF_PROGRAM, fgprofName);
     SaveSetting(key, 'Options', fOptions);
-     SaveSetting(key, 'cmdline', fCmdOptions);
-     SaveSetting(key, 'LinkLine', fLinkOptions);
-     SaveBoolSetting(key, 'CompAdd', fCompAdd);
-     SaveBoolSetting(key, 'LinkAdd', fLinkAdd);
+    SaveSetting(key, 'cmdline', fCmdOptions);
+    SaveSetting(key, 'LinkLine', fLinkOptions);
+    SaveBoolSetting(key, 'CompAdd', fCompAdd);
+    SaveBoolSetting(key, 'LinkAdd', fLinkAdd);
 {$IfDef WX_BUILD}
-     SaveBoolSetting(key, 'IsVC', fVC);
+    SaveBoolSetting(key, 'IsVC', fVC);
 {$EndIf}
   end;
 end;
