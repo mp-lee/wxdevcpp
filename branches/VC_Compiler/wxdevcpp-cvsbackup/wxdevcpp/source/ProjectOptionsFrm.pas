@@ -561,6 +561,7 @@ begin
   txtOverrideBuildCmd.Enabled:=False;
   txtOverrideBuildCmd.Text:='';
   chkSupportXP.Enabled:=fOptions.typ=dptGUI;
+  devCompilerSet.LoadSet(cmbCompiler.ItemIndex);
   devCompiler.OptionStr:=fOptions.CompilerOptions;
   CompOptionsFrame1.FillOptions(fProject);
   SubTabsChange(Self);
@@ -1045,6 +1046,7 @@ procedure TfrmProjectOptions.cmbCompilerChange(Sender: TObject);
 begin
   devCompilerSet.LoadSet(cmbCompiler.ItemIndex);
   devCompilerSet.AssignToCompiler;
+  devCompiler.OptionStr:=fOptions.CompilerOptions;
   CompOptionsFrame1.FillOptions(fProject);
 end;
 
