@@ -680,6 +680,9 @@ begin
     GdbEdit.Enabled := true;
     BtnBrowse5.Enabled := true;
   end;
+  devCompilerSet.IsVC := is_vc.Checked;
+  devCompiler.AddDefaultOptions;
+  CompOptionsFrame1.FillOptions(nil);
 {$EndIf}
 end;
 
