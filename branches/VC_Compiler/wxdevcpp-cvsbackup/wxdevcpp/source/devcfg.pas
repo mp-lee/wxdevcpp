@@ -1079,7 +1079,7 @@ begin
 {$IFDEF VC_BUILD}
 
   XMLcompilerOpts := TJvSimpleXML.Create(Nil);
-  XMLcompilerOpts.LoadFromFile('devcpp_compiler_options.xml');
+  XMLcompilerOpts.LoadFromFile('c:\wxdevcpp_vc\devcpp_compiler_options.xml');
 
   compilerindex := 0;
   
@@ -1151,7 +1151,11 @@ begin
                    strReplace(strTokenAt(switchoptions, ',', k), #10, ''), #13, '')));
           end;
 
-          AddOption(switchlabel, false, ctype, cpptype, linkertype, Items.Item[i].Items.Item[j].Items.ItemNamed['selection'].IntValue, '', switchcategory, [], sl);
+          if (Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'] <> nil) then
+                AddOption(switchlabel, Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'].BoolValue, ctype, cpptype, linkertype, Items.Item[i].Items.Item[j].Items.ItemNamed['selection'].IntValue, '', switchcategory, [], sl)
+          else
+                AddOption(switchlabel, false, ctype, cpptype, linkertype, Items.Item[i].Items.Item[j].Items.ItemNamed['selection'].IntValue, '', switchcategory, [], sl);
+
         end;
 
         if (AnsiUpperCase(fieldtype) = 'BOOLEAN') then
@@ -1165,7 +1169,11 @@ begin
           else
              switchdefaultindex := 0;
 
-          AddOption(switchlabel, false, ctype, cpptype, linkertype, switchdefaultindex, '', switchcategory, [], sl);
+          if (Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'] <> nil) then
+              AddOption(switchlabel, Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'].BoolValue, ctype, cpptype, linkertype, switchdefaultindex, '', switchcategory, [], sl)
+          else
+              AddOption(switchlabel, false, ctype, cpptype, linkertype, switchdefaultindex, '', switchcategory, [], sl);
+
         end
 
      end;

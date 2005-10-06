@@ -125,7 +125,7 @@ type
     procedure WindresEditChange(Sender: TObject);
     procedure DllwrapEditChange(Sender: TObject);
     procedure GprofEditChange(Sender: TObject);
-    procedure is_vcClick(Sender: TObject);
+{$IFDEF VC_BUILD}procedure is_vcClick(Sender: TObject);  {$ENDIF}
   private
     fBins: string;
     fLibs: string;
@@ -235,6 +235,7 @@ end;
 
 procedure TCompForm.FormActivate(Sender: TObject);
 begin
+
   SetOptions;
   DirTabsChange(Self);
 
@@ -251,6 +252,7 @@ procedure TCompForm.SetOptions;
 var
 finalcompilerset: integer;
 begin
+
   with devCompiler do
   begin
     seCompDelay.Value := Delay;
@@ -455,6 +457,7 @@ end;
 
 procedure TCompForm.LoadText;
 begin
+
   if devData.XPTheme then
     XPMenu.Active := true
   else
@@ -515,6 +518,7 @@ begin
   devCompilerSet.SaveSet(currentSet);
 
   currentSet := cmbCompilerSetComp.ItemIndex;
+
   devCompilerSet.LoadSet(currentSet);
   devCompilerSet.AssignToCompiler;
   devCompiler.AddDefaultOptions;
@@ -544,6 +548,7 @@ begin
     devCompiler.OptionStr := OptionsStr;
     CompOptionsFrame1.FillOptions(nil);
 {$IfDef WX_BUILD}
+{$IFDEF VC_BUILD}
     if isVC then
     begin
       is_vc.Checked := true;
@@ -554,9 +559,13 @@ begin
     begin
       is_vc.Checked := false;
       lbldllwrap.Caption := 'dllwrap : ';
-      lblwindres.Caption := 'windres : '
-    end;
+      lblwindres.Caption := 'windres : ' ;
+      end;
   end;
+{$ELSE}
+    lbldllwrap.Caption := 'dllwrap : ';
+    lblwindres.Caption := 'windres : ';
+{$ENDIF}
 {$EndIf}
 end;
 
@@ -679,9 +688,9 @@ begin
   devCompilerSet.gprofName := GprofEdit.Text;
 end;
 
+{$IFDEF VC_BUILD}
 procedure TCompForm.is_vcClick(Sender: TObject);
 begin
-{$IfDef WX_BUILD}
   if is_vc.Checked then
   begin
     lbldllwrap.Caption := 'link : ';
@@ -705,7 +714,8 @@ begin
   devCompiler.IsVC := is_vc.Checked;
   devCompiler.AddDefaultOptions;
   CompOptionsFrame1.FillOptions(nil);
-{$EndIf}
+
 end;
+{$EndIf}
 
 end.

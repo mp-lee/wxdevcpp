@@ -542,14 +542,76 @@
 
 <compiler name="Mingw gcc">
 <default>false</default>
-<category name="Optimization">
+<category name="C Compiler">
 
   <switch name="-ansi">
-    <enabled>true</enabled>
+    <enabled>false</enabled>
     <fieldtype>boolean</fieldtype>
     <switchtype>c,c++</switchtype>
     <excludefrom></excludefrom>
-    <label>ANSI (-ansi)</label>
+    <label>Support all ANSI standard C programs (-ansi)</label>
+  </switch>
+
+ <switch name="-traditional-cpp">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Attempt to support some aspects of traditional C preprocessors (-traditional-cpp)</label>
+  </switch>
+
+  <switch name="-w">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Inhibit all warning messages (-w)</label>
+  </switch>
+
+</category>
+<category name="C++ Compiler">
+
+  <switch name="-fno-access-control">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Turn off all access checking (-fno-access-control)</label>
+  </switch>
+
+  <switch name="-fdollar-in-identifiers">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Accept $ in identifiers (-fdollar-in-identifiers)</label>
+  </switch>
+
+</category>
+<category name="Code Generation">
+
+  <switch name="-fexceptions">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Enable exception handling (-fexceptions)</label>
+  </switch>
+
+  <switch name="-fshort-double">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Use same size for double and float (-fshort-double)</label>
+  </switch>
+
+  <switch name="-fverbose-asm">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Put extra commentary information in the generated assembly code (-fverbose-asm)</label>
   </switch>
 
   <switch name="-march">
@@ -557,17 +619,126 @@
      <fieldtype>enumerated</fieldtype>
      <switchtype>c,c++,linker</switchtype>
      <excludefrom></excludefrom>
-     <label>-march</label>
-     <options>None=,i386=i386, i486=i486, i586=i586, i686=i686, Pentium=pentium, Pentium MMX=pentium-mmx,
+     <label>Generate instructions for the following machine (-march)</label>
+     <options>None=,i386=-march=i386, i486=-march=i486, i586=-march=i586, 
+              i686=-march=i686, Pentium=-march=pentium, Pentium MMX=-march=pentium-mmx,
               Pentium Pro=pentiumpro, Pentium 2=pentium2, Pentium 3=pentium3, Pentium 4=pentium4,
-              K6=k6, K6-2=k6-2, K6-3=k6-3, Athlon=athlon, Athlon Tbird=athlon-tbird,
-              Athlon 4=athlon-4, Athlon XP=athlon-xp, Winchip C6=winchip-c6,
-              Winchip 2=winchip2, K8=k8, C3=c3, C3-2=c3-2</options>
+              K6=-march=k6, K6-2=-march=k6-2, K6-3=-march=k6-3, Athlon=-march=athlon, 
+              Athlon Tbird=-march=athlon-tbird,
+              Athlon 4=-march=athlon-4, Athlon XP=-march=athlon-xp, Winchip C6=-march=winchip-c6,
+              Winchip 2=-march=winchip2, K8=-march=k8, C3=-march=c3, C3-2=-march=c3-2</options>
      <selection>0</selection>
      <default>0</default>
   </switch>
 
+<switch name="-m">
+     <enabled>true</enabled>
+     <fieldtype>enumerated</fieldtype>
+     <switchtype>c,c++,linker</switchtype>
+     <excludefrom></excludefrom>
+     <label>Enable use of processor specific built-in functions (-m)</label>
+     <options>None=,MMX=-mmmx,SSE=-msse,SSE 2=-msse2,PNI=-mpni,3D Now=-m3dnow</options>
+     <selection>0</selection>
+     <default>0</default>
+  </switch>
 
+</category>
+<category name="Optimization">
+
+ <switch name="-fexpensive-optimizations">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Perform a number of minor optimizations (-fexpensive-optimizations)</label>
+  </switch>
+
+</category>
+
+<category name="Optimization/Further Optimization">
+
+  <switch name="-O1">
+    <enabled>false</enabled>
+    <isgroup>true</isgroup>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Optimize (-O1)</label>
+  </switch>
+
+  <switch name="-O2">
+    <enabled>false</enabled>
+    <isgroup>true</isgroup>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Optimize more (-O2)</label>
+  </switch>
+
+  <switch name="-O3">
+    <enabled>false</enabled>
+    <isgroup>true</isgroup>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Optimize best (-O3)</label>
+  </switch>
+
+</category>
+
+<category name="Code profiling">
+
+ <switch name="-pg">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Generate profiling info for analysis (-pg)</label>
+  </switch>
+
+</category>
+
+<category name="Linker">
+
+ <switch name="-lobjc">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>linker</switchtype>
+    <excludefrom></excludefrom>
+    <label>Link an Objective C program (-lobjc)</label>
+  </switch>
+
+  <switch name="-g3">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++,linker</switchtype>
+    <excludefrom></excludefrom>
+    <label>Generate debugging information (-g3)</label>
+  </switch>
+
+  <switch name="-nostdlib">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++,linker</switchtype>
+    <excludefrom></excludefrom>
+    <label>Do not use standard system startup files or libraries (-nostdlib)</label>
+  </switch>
+
+  <switch name="-mwindows">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++,linker</switchtype>
+    <excludefrom></excludefrom>
+    <label>Do not create a console window (-mwindows)</label>
+  </switch>
+
+ <switch name="-s">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++,linker</switchtype>
+    <excludefrom></excludefrom>
+    <label>Strip executable (-s)</label>
+  </switch>
 
 </category>
 </compiler>
