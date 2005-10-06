@@ -376,6 +376,8 @@ object CompForm: TCompForm
         inherited vle: TValueListEditor
           Width = 307
           Height = 350
+          Strings.Strings = (
+            '=')
         end
       end
     end

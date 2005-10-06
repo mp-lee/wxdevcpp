@@ -40,6 +40,9 @@ unit devcfg;
 interface
 
 uses
+{$IFDEF VC_BUILD}
+JvSimpleXml, xprocs, StdActns,
+{$ENDIF}
 {$IFDEF WIN32}
 Dialogs, Windows, Classes, Graphics, SynEdit, CFGData, CFGTypes, IniFiles, prjtypes;
 {$ENDIF}
@@ -153,8 +156,9 @@ type
     fdllwrapName: string;
     fgprofName: string;
     fCompilerSet: integer;
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
     fVC: boolean;
+    fOriginalSet:integer;
 {$EndIf}
     //Compiler options
     fOptions: TList;
@@ -202,8 +206,9 @@ type
 //RNC
 //   property CmdOpts: string read fCmdOpts write fCmdOpts;
 //   property LinkOpts: string read fLinkopts write fLinkOpts;
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
     property IsVC: boolean read fVC write fVC;
+    property OriginalSet : integer read fOriginalSet write fOriginalSet;
 {$EndIf}
     property RunParams: string read fRunParams write fRunParams;
     property OutputDir: string read fOutputDir write fOutputDir; // ** unused
@@ -1046,6 +1051,16 @@ end;
 procedure TdevCompiler.AddDefaultOptions;
 var i : integer;
   sl: TStringList;
+
+{$IFDEF VC_BUILD}
+  j, k : integer;
+  XMLcompilerOpts : TJvSimpleXML;
+  switchdefaultindex, compilerindex : integer;
+  switchoptions, switchname, switchlabel, fieldtype, switchtype, switchcategory : string;
+  linkertype, cpptype, ctype : boolean;
+  excludefromtype : string;
+{$ENDIF}
+
 begin
   // WARNING: do *not* re-arrange the options. Their values are written to the ini file
   // with the same order. If you change the order here, the next time the configuration
@@ -1060,7 +1075,107 @@ begin
     Dispose(fOptions.Items[i]);
   end;
   fOptions.Clear;
+
+{$IFDEF VC_BUILD}
+
+  XMLcompilerOpts := TJvSimpleXML.Create(Nil);
+  XMLcompilerOpts.LoadFromFile('devcpp_compiler_options.xml');
+
+  compilerindex := 0;
   
+  // Figure out which compiler we want to use
+  if (devCompiler <> nil) then
+  begin
+
+  // Show what compiler is currently set
+  showmessage('Current compiler = ' + devCompilerSet.SetName(devCompiler.CompilerSet));
+
+     // Atempt to find the specified compiler name
+     compilerindex := -1;
+     for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
+        if (XMLCompilerOpts.Root.Items.Item[i].Properties <> nil) then
+           if XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') = devCompilerSet.SetName(devCompiler.CompilerSet) then
+              compilerindex := i;
+
+  //   if (compilerindex <> -1) then
+  //   showMessage(XMLCompilerOpts.Root.Items.Item[compilerindex].Properties.Value('name'));
+
+     if (compilerindex = -1) then
+      // if we want the default compiler, then find it.
+      for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
+             if (XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default'] <> nil) then
+                if XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default'].BoolValue then
+                   compilerindex := i;
+  end;
+
+  with XMLCompilerOpts.Root.Items.Item[compilerindex] do
+
+  for i := 0 to Items.Count-1 do
+  begin
+     switchcategory := Items[i].Properties.Value('name');
+
+      for j := 0 to Items[i].Items.Count-1 do
+      begin
+        switchlabel := Items.Item[i].Items.Item[j].Items.ItemNamed['label'].Value;
+        switchname := Items.Item[i].Items.Item[j].Properties.Value('name');
+        fieldtype := Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Value;
+        switchtype := Items.Item[i].Items.Item[j].Items.ItemNamed['switchtype'].Value;
+
+        if Items.Item[i].Items.Item[j].Items.ItemNamed['testint'] <> nil  then
+        ShowMessage(Format('%d', [Items.Item[i].Items.Item[j].Items.ItemNamed['testint'].IntValue]));
+
+
+        // Tony 4 Oct 2005 - Not quite sure how to use the exclude type option. It's a set of bytes. Doesn't seem to ever get used
+        excludefromtype := Items.Item[i].Items.Item[j].Items.ItemNamed['excludefrom'].Value;
+
+        linkertype := false; cpptype := false; ctype := false;
+        for k := 0 to strTokenCount(switchtype, ',')-1 do
+           if AnsiUpperCase(strTokenAt(switchtype, ',', k)) = 'LINKER' then
+              linkertype := true
+           else if AnsiUpperCase(strTokenAt(switchtype, ',', k)) = 'C++' then
+              cpptype := true
+           else if AnsiUpperCase(strTokenAt(switchtype, ',', k)) = 'C' then
+              ctype := true;
+
+        if (AnsiUpperCase(fieldtype) = 'ENUMERATED') then
+        begin
+
+          switchoptions := Items.Item[i].Items.Item[j].Items.ItemNamed['options'].Value;
+
+          sl := TStringList.Create;
+
+          for k := 0 to strTokenCount(switchoptions, ',')-1 do
+          begin
+             // Trim spaces and remove return or enter characters #13 #10
+             sl.Add(strtrim(strReplace(
+                   strReplace(strTokenAt(switchoptions, ',', k), #10, ''), #13, '')));
+          end;
+
+          AddOption(switchlabel, false, ctype, cpptype, linkertype, Items.Item[i].Items.Item[j].Items.ItemNamed['selection'].IntValue, '', switchcategory, [], sl);
+        end;
+
+        if (AnsiUpperCase(fieldtype) = 'BOOLEAN') then
+        begin
+          sl := TStringList.Create;
+          sl.Add('No=');
+          sl.Add('Yes=' + switchname);
+
+          if (Items.Item[i].Items.Item[j].Items.ItemNamed['enabled'].BoolValue) then
+             switchdefaultindex := 1
+          else
+             switchdefaultindex := 0;
+
+          AddOption(switchlabel, false, ctype, cpptype, linkertype, switchdefaultindex, '', switchcategory, [], sl);
+        end
+
+     end;
+
+  end;
+
+  XMLcompilerOpts.Free;
+
+{$ELSE}
+
   //Generate settings for VC and MingW compilers seperately
   if self.IsVC then
   begin
@@ -1228,6 +1343,7 @@ begin
 
     AddOption(Lang[ID_COPT_BUILTINPROC], False, True, True, True, 0, '-m', Lang[ID_COPT_GRP_CODEGEN], [], sl);
   end;
+{$ENDIF}
 end;
 
 procedure TdevCompiler.AddOption(_Name: string; _IsGroup, _IsC, _IsCpp, IsLinker: boolean; _Value: integer;
@@ -1910,7 +2026,7 @@ begin
   //Then load the configuration information for this compiler set
   key := OPT_COMPILERSETS + '_' + IntToStr(Index);
   self.OptionsStr := devdata.LoadSetting(key, 'CompilerStr');
-  ShowMessage(self.OptionsStr);
+ // ShowMessage(self.OptionsStr);     // Debug: Joel's VC Code
 end;
 
 procedure TdevCompilerSet.LoadSetDirs(Index: integer);
@@ -2258,8 +2374,11 @@ begin
   sl := TStringList.Create;
   try
     Ini.ReadSectionValues(OPT_COMPILERSETS, sl);
+
     for I := 0 to sl.Count - 1 do
       fSets.Add(sl.Values[sl.Names[I]]);
+
+    fSets.Add('tony testing');
   finally
     sl.Free;
     Ini.Free;

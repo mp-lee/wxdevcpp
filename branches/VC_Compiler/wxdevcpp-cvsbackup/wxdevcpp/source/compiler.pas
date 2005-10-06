@@ -253,6 +253,8 @@ begin
   else
     Comp_Prog := GCC_PROGRAM;
 
+{$IFDEF VC_BUILD}
+
   if devCompilerSet.IsVC then
   begin
     GetVCCompileParams;
@@ -265,6 +267,11 @@ begin
     GetLibrariesParams;
     GetIncludesParams;
   end;
+{$ELSE}
+      GetCompileParams;
+    GetLibrariesParams;
+    GetIncludesParams;
+{$ENDIF}
 
   fMakefile := fProject.Directory + DEV_MAKE_FILE;
   DoLogEntry('Building Makefile: "' + fMakefile + '"');
@@ -408,6 +415,8 @@ begin
       if DoCheckSyntax then
       begin
         writeln(F, GenMakePath2(ofile) + ':' + GenMakePath2(tfile));
+
+{$IFDEF VC_BUILD}
         if devCompilerSet.IsVC then
 	  if fProject.Units[i].CompileCpp then
 	    writeln(F, #9 + '$(CPP) /nologo /c ' + GenMakePath(tfile) + ' /OUT:nul $(CXXFLAGS)')
@@ -418,6 +427,12 @@ begin
           writeln(F, #9 + '$(CPP) -S ' + GenMakePath(tfile) + ' -o nul $(CXXFLAGS)')
         else
           writeln(F, #9 + '$(CC) -S ' + GenMakePath(tfile) + ' -o nul $(CFLAGS)');
+{$ELSE}
+        if fProject.Units[i].CompileCpp then
+          writeln(F, #9 + '$(CPP) -S ' + GenMakePath(tfile) + ' -o nul $(CXXFLAGS)')
+        else
+          writeln(F, #9 + '$(CC) -S ' + GenMakePath(tfile) + ' -o nul $(CFLAGS)');
+{$ENDIF}
       end
       else
       begin
@@ -433,6 +448,8 @@ begin
         end
         else
         begin
+
+{$IFDEF VC_BUILD}
           if devCompilerSet.IsVC then
 	    if fProject.Units[i].CompileCpp then
 	      writeln(F, #9 + '$(CPP) /nologo /c ' + GenMakePath(tfile) + ' /Fo' + ofile + ' $(CXXFLAGS)')
@@ -445,6 +462,13 @@ begin
               writeln(F, #9 + '$(CC) -c ' + GenMakePath(tfile) + ' -o ' + ofile + ' $(CFLAGS)');
         end;
       end;
+{$ELSE}
+      if fProject.Units[i].CompileCpp then
+              writeln(F, #9 + '$(CPP) -c ' + GenMakePath(tfile) + ' -o ' + ofile + ' $(CXXFLAGS)')
+            else
+              writeln(F, #9 + '$(CC) -c ' + GenMakePath(tfile) + ' -o ' + ofile + ' $(CFLAGS)');
+        end;
+{$ENDIF}
     end;
   end;
 
@@ -510,6 +534,7 @@ begin
   writeln(F, '$(BIN): $(OBJ)');// CL: changed from $(LINKOBJ) to $(OBJ), in order to call overrided buid commands not included in linking
 
   if not DoCheckSyntax then
+{$IFDEF VC_BUILD}
     if devCompilerSet.IsVC then
       writeln(F, #9 + '$(LINK) /nologo $(LINKOBJ) /OUT:"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
     else
@@ -517,6 +542,14 @@ begin
         writeln(F, #9 + '$(CPP) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
       else
         writeln(F, #9 + '$(CC) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
+
+{$ELSE}
+     if fProject.Options.useGPP then
+        writeln(F, #9 + '$(CPP) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
+      else
+        writeln(F, #9 + '$(CC) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
+
+{$ENDIF}
 
   WriteMakeObjFilesRules(F);
   Flush(F);
@@ -532,6 +565,7 @@ begin
   writeln(F, '$(BIN): $(LINKOBJ)');
   if not DoCheckSyntax then
   begin
+{$IFDEF VC_BUILD}
     if devCompilerSet.IsVC then
       writeln(F, #9 + '$(LINK) /LIB /nologo /OUT:$(BIN) $(LINKOBJ) $(LIBS)')
     else
@@ -539,6 +573,10 @@ begin
       writeln(F, #9 + 'ar r $(BIN) $(LINKOBJ)');
       writeln(F, #9 + 'ranlib $(BIN)');
     end;
+{$ELSE}
+     writeln(F, #9 + 'ar r $(BIN) $(LINKOBJ)');
+      writeln(F, #9 + 'ranlib $(BIN)');
+{$ENDIF}
   end;
   WriteMakeObjFilesRules(F);
   Flush(F);
@@ -564,6 +602,7 @@ begin
 
   if not DoCheckSyntax then
   begin
+{$IFDEF VC_BUILD}
     if devCompilerSet.IsVC then
       writeln(F, #9 + '$(LINK) /nologo /dll /implib:$(STATICLIB) $(LINKOBJ) $(LIBS) /OUT:$(BIN)')
     else
@@ -571,6 +610,12 @@ begin
         writeln(F, #9 + '$(DLLWRAP) --output-def $(DEFFILE) ' + '--driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)')
       else
         writeln(F, #9 + '$(DLLWRAP) --output-def $(DEFFILE) ' + '--implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)');
+{$ELSE}
+   if fProject.Options.useGPP then
+        writeln(F, #9 + '$(DLLWRAP) --output-def $(DEFFILE) ' + '--driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)')
+      else
+        writeln(F, #9 + '$(DLLWRAP) --output-def $(DEFFILE) ' + '--implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)');
+{$ENDIF}
   end;
 
   WriteMakeObjFilesRules(F);

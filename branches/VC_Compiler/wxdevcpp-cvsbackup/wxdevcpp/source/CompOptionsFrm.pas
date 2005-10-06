@@ -161,7 +161,13 @@ const
 
 procedure TCompForm.btnCancelClick(Sender: TObject);
 begin
-     devCompiler.CompilerSet:=cmbCompilerSetComp.ItemIndex;
+{$IFDEF VC_BUILD}
+// On cancel, reset to the original compiler set index (the one it had when dialog was opened)
+devCompiler.CompilerSet := devCompiler.OriginalSet;
+//cmbCompilerSetComp.ItemIndex := devCompiler.OriginalSet;
+{$ELSE}
+devCompiler.CompilerSet:=cmbCompilerSetComp.ItemIndex;
+{$ENDIF}
   Close;
 end;
 
@@ -181,8 +187,9 @@ begin
   end;
 
    //RNC
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
    devCompilerSet.IsVC := is_vc.Checked;
+   devCompiler.OriginalSet := devCompiler.CompilerSet;
 {$EndIf}
    devCompilerSet.CmdOpts:= Commands.Lines.Text;
    devCompilerSet.AddtoLink:= cbLinkerAdd.Checked;
@@ -206,7 +213,7 @@ begin
     windresName := devCompilerSet.windresName;
     dllwrapName := devCompilerSet.dllwrapName;
     gprofName := devCompilerSet.gprofName;
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
     IsVC := devCompilerSet.IsVC;
 {$EndIf}
   end;
@@ -230,6 +237,14 @@ procedure TCompForm.FormActivate(Sender: TObject);
 begin
   SetOptions;
   DirTabsChange(Self);
+
+{$IFDEF VC_BUILD}
+ // When form is activated, get the original compiler set
+ // This way if the user presses cancel, we set the compiler back to the set
+ //  that was selected when the dialog opened
+ devCompiler.OriginalSet := devCompiler.CompilerSet;
+{$ENDIF}
+
 end;
 
 procedure TCompForm.SetOptions;
@@ -245,7 +260,7 @@ begin
      Commands.Lines.Text:= devCompilerSet.CmdOpts;
      cbCompAdd.Checked:= devCompilerSet.AddtoComp;
     // cbCompAdd.Checked:= AddToComp;
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
      is_vc.Checked := devCompilerSet.IsVC;
 {$EndIf}
      //Linker.Lines.Text:= LinkOpts;
@@ -486,13 +501,15 @@ end;
 
 procedure TCompForm.cmbCompilerSetCompChange(Sender: TObject);
 begin
+
   devCompilerSet.OptionsStr := devCompiler.OptionStr;
   devCompilerSet.CmdOpts:=Commands.Lines.Text;
   devCompilerSet.LinkOpts:=Linker.Lines.Text;
 
   devCompilerSet.AddtoLink:=cbLinkerAdd.Checked;
   devCompilerSet.AddtoComp:=cbCompAdd.Checked;
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
+  devCompiler.CompilerSet := cmbCompilerSetComp.ItemIndex;
   devCompilerSet.IsVC := is_vc.Checked;
 {$EndIf}
   devCompilerSet.SaveSet(currentSet);
