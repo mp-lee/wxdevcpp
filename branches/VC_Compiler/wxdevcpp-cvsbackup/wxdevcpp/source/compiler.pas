@@ -117,9 +117,6 @@ type
     procedure GetCompileParams; virtual;
     procedure GetLibrariesParams; virtual;
     procedure GetIncludesParams; virtual;
-    procedure GetVCCompileParams; virtual;
-    procedure GetVCLibrariesParams; virtual;
-    procedure GetVCIncludesParams; virtual;
     procedure LaunchThread(s, dir: string); virtual;
     procedure ThreadCheckAbort(var AbortThread: boolean); virtual;
     procedure OnCompilationTerminated(Sender: TObject); virtual;
@@ -253,25 +250,9 @@ begin
   else
     Comp_Prog := GCC_PROGRAM;
 
-{$IFDEF VC_BUILD}
-
-  if devCompilerSet.IsVC then
-  begin
-    GetVCCompileParams;
-    GetVCLibrariesParams;
-    GetVCIncludesParams;
-  end
-  else
-  begin
     GetCompileParams;
     GetLibrariesParams;
     GetIncludesParams;
-  end;
-{$ELSE}
-      GetCompileParams;
-    GetLibrariesParams;
-    GetIncludesParams;
-{$ENDIF}
 
   fMakefile := fProject.Directory + DEV_MAKE_FILE;
   DoLogEntry('Building Makefile: "' + fMakefile + '"');
@@ -416,23 +397,13 @@ begin
       begin
         writeln(F, GenMakePath2(ofile) + ':' + GenMakePath2(tfile));
 
-{$IFDEF VC_BUILD}
-        if devCompilerSet.IsVC then
-	  if fProject.Units[i].CompileCpp then
-	    writeln(F, #9 + '$(CPP) /nologo /c ' + GenMakePath(tfile) + ' /OUT:nul $(CXXFLAGS)')
-          else
-            writeln(F, #9 + '$(CC) /nologo /c ' + GenMakePath(tfile) + ' /OUT:nul $(CFLAGS)')
-        else
-          if fProject.Units[i].CompileCpp then
-          writeln(F, #9 + '$(CPP) -S ' + GenMakePath(tfile) + ' -o nul $(CXXFLAGS)')
-        else
-          writeln(F, #9 + '$(CC) -S ' + GenMakePath(tfile) + ' -o nul $(CFLAGS)');
-{$ELSE}
         if fProject.Units[i].CompileCpp then
-          writeln(F, #9 + '$(CPP) -S ' + GenMakePath(tfile) + ' -o nul $(CXXFLAGS)')
+          writeln(F, #9 + '$(CPP) ' + devCompiler.Checksyntaxoutputlabel + ' ' +
+                GenMakePath(tfile) + devCompiler.Checksyntaxoutputlabel + ' $(CXXFLAGS)')
         else
-          writeln(F, #9 + '$(CC) -S ' + GenMakePath(tfile) + ' -o nul $(CFLAGS)');
-{$ENDIF}
+          writeln(F, #9 + '$(CC) ' + devCompiler.Checksyntaxoutputlabel + ' '
+              + devCompiler.Checksyntaxoutputlabel + GenMakePath(tfile) + ' $(CFLAGS)');
+     
       end
       else
       begin
@@ -449,26 +420,15 @@ begin
         else
         begin
 
-{$IFDEF VC_BUILD}
-          if devCompilerSet.IsVC then
-	    if fProject.Units[i].CompileCpp then
-	      writeln(F, #9 + '$(CPP) /nologo /c ' + GenMakePath(tfile) + ' /Fo' + ofile + ' $(CXXFLAGS)')
-	    else
-	      writeln(F, #9 + '$(CC)/nologo /c ' + GenMakePath(tfile) + ' /Fo' + ofile + ' $(CFLAGS)')
-          else
-            if fProject.Units[i].CompileCpp then
-              writeln(F, #9 + '$(CPP) -c ' + GenMakePath(tfile) + ' -o ' + ofile + ' $(CXXFLAGS)')
-            else
-              writeln(F, #9 + '$(CC) -c ' + GenMakePath(tfile) + ' -o ' + ofile + ' $(CFLAGS)');
-        end;
-      end;
-{$ELSE}
       if fProject.Units[i].CompileCpp then
-              writeln(F, #9 + '$(CPP) -c ' + GenMakePath(tfile) + ' -o ' + ofile + ' $(CXXFLAGS)')
+              writeln(F, #9 + '$(CPP) ' + devCompiler.Compilerlabel + ' ' +
+                   GenMakePath(tfile) + ' ' + devCompiler.Compileroutputlabel + ofile + ' $(CXXFLAGS)')
             else
-              writeln(F, #9 + '$(CC) -c ' + GenMakePath(tfile) + ' -o ' + ofile + ' $(CFLAGS)');
+              writeln(F, #9 + '$(CC) ' + devCompiler.Compilerlabel + ' ' +
+                   GenMakePath(tfile) + ' ' + devCompiler.Compileroutputlabel + ofile + ' $(CFLAGS)');
         end;
-{$ENDIF}
+
+end;
     end;
   end;
 
@@ -699,12 +659,34 @@ begin
 end;
 
 procedure TCompiler.GetLibrariesParams;
+{$IFNDEF VC_BUILD}
 resourcestring
   cAppendStr = '%s -L"%s"';
+{$ENDIF}
 var
   i, val: integer;
+{$IFDEF VC_BUILD}cAppendStr : string;{$ENDIF}
 begin
   fLibrariesParams := '';
+
+{$IFDEF VC_BUILD}
+
+cAppendStr := '%s ' + devCompiler.LibparamsLabel + '"%s" ';
+ fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
+//RNC
+  if (devCompilerSet.LinkOpts <> '') and devCompilerSet.AddtoLink then
+    fLibrariesParams := fLibrariesParams + ' ' + devCompilerSet.LinkOpts;
+  if (fTarget = ctProject) and assigned(fProject) then begin
+    for i := 0 to pred(fProject.Options.Libs.Count) do
+      fLibrariesParams := format(cAppendStr, [fLibrariesParams, fProject.Options.Libs[i]]);
+    // got sick of "symbol 'blah blah' is deprecated"
+ //   if fProject.Options.typ = dptGUI then
+ //     fLibrariesParams := fLibrariesParams + ' -mwindows';
+    fLibrariesParams := fLibrariesParams + ' ' + StringReplace(fProject.Options.cmdLines.Linker, '_@@_', ' ', [rfReplaceAll]);
+  end;
+
+{$ELSE}
+
   fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
 //RNC
   if (devCompilerSet.LinkOpts <> '') and devCompilerSet.AddtoLink then
@@ -717,6 +699,9 @@ begin
       fLibrariesParams := fLibrariesParams + ' -mwindows';
     fLibrariesParams := fLibrariesParams + ' ' + StringReplace(fProject.Options.cmdLines.Linker, '_@@_', ' ', [rfReplaceAll]);
   end;
+
+{$ENDIF}
+
   if (pos(' -pg', fCompileParams) <> 0) and (pos('-lgmon', fLibrariesParams) = 0) then
     fLibrariesParams := fLibrariesParams + ' -lgmon -pg ';
 
@@ -748,13 +733,31 @@ begin
 end;
 
 procedure TCompiler.GetIncludesParams;
+{$IFNDEF VC_BUILD}
 resourcestring
   cAppendStr = '%s -I"%s" ';
+{$ENDIF}
 var
   i: integer;
+{$IFDEF VC_BUILD}cAppendStr : string;{$ENDIF}
 begin
   fIncludesParams := '';
   fCppIncludesParams := '';
+
+{$IFDEF VC_BUILD}
+ cAppendStr := '%s ' + devCompiler.IncludeparamsLabel + '"%s" ';
+
+ fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
+  fCppIncludesParams := CommaStrToStr(devDirs.Cpp, cAppendStr);
+
+  if (fTarget = ctProject) and assigned(fProject) then
+    for i := 0 to pred(fProject.Options.Includes.Count) do
+      if directoryExists(fProject.Options.Includes[i]) then  begin
+        fIncludesParams := format(cAppendStr, [fIncludesParams, fProject.Options.Includes[i]]);
+        fCppIncludesParams := format(cAppendStr, [fCppIncludesParams, fProject.Options.Includes[i]]);
+      end;
+
+{$ELSE}
 
   fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
   fCppIncludesParams := CommaStrToStr(devDirs.Cpp, cAppendStr);
@@ -765,145 +768,8 @@ begin
         fIncludesParams := format(cAppendStr, [fIncludesParams, fProject.Options.Includes[i]]);
         fCppIncludesParams := format(cAppendStr, [fCppIncludesParams, fProject.Options.Includes[i]]);
       end;
-end;
+{$ENDIF}
 
-procedure TCompiler.GetVCCompileParams;
-  procedure AppendStr(var s: string; value: string);
-  begin
-    s := s + ' ' + value;
-  end;
-var
-  I, val: integer;
-begin
-  { Check user's compiler options }
-  with devCompiler do
-  begin
-    fCompileParams := '';
-    fCppCompileParams := '';
-    fUserParams := '';
-
-    {     if Assigned(fProject) and fProject.Options.useGPP then
-           fUserParams := fProject.Options.cmdlines.CppCompiler
-         else if Assigned(fProject) then
-           fUserParams := fProject.Options.cmdlines.Compiler; }
-    if Assigned(fProject) then begin
-      fCppCompileParams := StringReplace(fProject.Options.cmdlines.CppCompiler, '_@@_', ' ', [rfReplaceAll]);
-      fCompileParams := StringReplace(fProject.Options.cmdlines.Compiler, '_@@_',' ', [rfReplaceAll]);
-    end;
-
-     //RNC
-     //if (CmdOpts <> '') and AddtoComp then
-     if (devCompilerSet.CmdOpts <> '') and devCompilerSet.AddtoComp then
-      AppendStr(fUserParams, devCompilerSet.CmdOpts);
-      //AppendStr(fUserParams, cmdOpts);
-
-    AppendStr(fCompileParams, fUserParams);
-    AppendStr(fCppCompileParams, fUserParams);
-
-
-
-    for I := 0 to devCompiler.OptionsCount - 1 do
-      // consider project specific options for the compiler
-      if (
-        Assigned(fProject) and
-        (I < Length(fProject.Options.CompilerOptions)) and
-        not (fProject.Options.typ in devCompiler.Options[I].optExcludeFromTypes)
-        ) or
-        // else global compiler options
-      (not Assigned(fProject) and (devCompiler.Options[I].optValue > 0)) then begin
-        if devCompiler.Options[I].optIsC then begin
-          if Assigned(devCompiler.Options[I].optChoices) then begin
-            if Assigned(fProject) then
-              val := devCompiler.ConvertCharToValue(fProject.Options.CompilerOptions[I+ 1])
-            else
-              val := devCompiler.Options[I].optValue;
-            if (val > 0) and (val < devCompiler.Options[I].optChoices.Count) then
-              AppendStr(fCompileParams, devCompiler.Options[I].optSetting + devCompiler.Options[I].optChoices.Values[devCompiler.Options[I].optChoices.Names[val]]);
-          end
-          else if (Assigned(fProject) and (StrToIntDef(fProject.Options.CompilerOptions[I + 1], 0) = 1)) or (not Assigned(fProject)) then
-            AppendStr(fCompileParams, devCompiler.Options[I].optSetting);
-        end;
-        if devCompiler.Options[I].optIsCpp then begin
-          if Assigned(devCompiler.Options[I].optChoices) then begin
-            if Assigned(fProject) then
-              val := devCompiler.ConvertCharToValue(fProject.Options.CompilerOptions[I+ 1])
-            else
-              val := devCompiler.Options[I].optValue;
-            if (val > 0) and (val < devCompiler.Options[I].optChoices.Count) then
-              AppendStr(fCppCompileParams, devCompiler.Options[I].optSetting + devCompiler.Options[I].optChoices.Values[devCompiler.Options[I].optChoices.Names[val]]);
-          end
-          else if (Assigned(fProject) and (StrToIntDef(fProject.Options.CompilerOptions[I + 1], 0) = 1)) or (not Assigned(fProject)) then
-            AppendStr(fCppCompileParams, devCompiler.Options[I].optSetting);
-        end;
-      end;
-
-    fCompileParams := ParseMacros(fCompileParams);
-    fCppCompileParams := ParseMacros(fCppCompileParams);
-  end;
-end;
-
-procedure TCompiler.GetVCIncludesParams;
-resourcestring
-  cAppendStr = '%s /I"%s" ';
-var
-  i: integer;
-begin
-  fIncludesParams := '';
-  fCppIncludesParams := '';
-
-  fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
-  fCppIncludesParams := CommaStrToStr(devDirs.Cpp, cAppendStr);
-
-  if (fTarget = ctProject) and assigned(fProject) then
-    for i := 0 to pred(fProject.Options.Includes.Count) do
-      if directoryExists(fProject.Options.Includes[i]) then  begin
-        fIncludesParams := format(cAppendStr, [fIncludesParams, fProject.Options.Includes[i]]);
-        fCppIncludesParams := format(cAppendStr, [fCppIncludesParams, fProject.Options.Includes[i]]);
-      end;
-end;
-
-procedure TCompiler.GetVCLibrariesParams;
-resourcestring
-  cAppendStr = '%s /LIBPATH:"%s"';
-var
-  i, val: integer;
-begin
-  fLibrariesParams := '';
-  fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
-//RNC
-  if (devCompilerSet.LinkOpts <> '') and devCompilerSet.AddtoLink then
-    fLibrariesParams := fLibrariesParams + ' ' + devCompilerSet.LinkOpts;
-  if (fTarget = ctProject) and assigned(fProject) then begin
-    for i := 0 to pred(fProject.Options.Libs.Count) do
-      fLibrariesParams := format(cAppendStr, [fLibrariesParams, fProject.Options.Libs[i]]);
-    // got sick of "symbol 'blah blah' is deprecated"
-    fLibrariesParams := fLibrariesParams + ' ' + StringReplace(fProject.Options.cmdLines.Linker, '_@@_', ' ', [rfReplaceAll]);
-  end;
-
-  fLibrariesParams := fLibrariesParams + ' ';
-  for I := 0 to devCompiler.OptionsCount - 1 do
-    // consider project specific options for the compiler
-    if (
-      Assigned(fProject) and
-      (I < Length(fProject.Options.CompilerOptions)) and
-      not (fProject.Options.typ in devCompiler.Options[I].optExcludeFromTypes)
-      ) or
-      // else global compiler options
-    (not Assigned(fProject) and (devCompiler.Options[I].optValue > 0)) then begin
-      if devCompiler.Options[I].optIsLinker then
-        if Assigned(devCompiler.Options[I].optChoices) then begin
-          if Assigned(fProject) then
-            val :=devCompiler.ConvertCharToValue(fProject.Options.CompilerOptions[I +1])
-          else
-            val := devCompiler.Options[I].optValue;
-          if (val > 0) and (val < devCompiler.Options[I].optChoices.Count) then
-              fLibrariesParams := fLibrariesParams
-                + devCompiler.Options[I].optSetting + devCompiler.Options[I].optChoices.Values[devCompiler.Options[I].optChoices.Names[val]] + ' ';
-        end
-        else if (Assigned(fProject) and (StrToIntDef(fProject.Options.CompilerOptions[I + 1], 0) = 1)) or (not Assigned(fProject)) then
-            fLibrariesParams := fLibrariesParams
-              + devCompiler.Options[I].optSetting + ' ';
-    end;
 end;
 
 procedure TCompiler.ShowResults;

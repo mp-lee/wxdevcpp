@@ -88,8 +88,14 @@ type
     fCppDir: string;
     fLibDir: string;
     fOptions: string;
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
     fVC: boolean;
+    fLibparamsLabel : string;
+    fIncludeparamsLabel : string;
+    fCompilerLabel : string;
+    fCompileroutputLabel : string;
+    fChecksyntaxcompilerLabel : string;
+    fChecksyntaxoutputLabel : string;
 {$EndIf}
    //RNC
    fCompAdd: boolean;          // add fcmdopts to compiler command line
@@ -116,8 +122,14 @@ type
     function SetName(Index: integer): string;
     property Sets: TStrings read fSets write fSets;
   published
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
     property IsVC: boolean read fVC write fVC;
+    property LibparamsLabel : string read fLibparamsLabel write fLibparamsLabel;
+    property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
+    property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
+    property CompileroutputLabel : string read fCompileroutputLabel write fCompileroutputLabel;
+    property ChecksyntaxcompilerLabel : string read fChecksyntaxcompilerLabel write fChecksyntaxcompilerLabel;
+    property ChecksyntaxoutputLabel : string read fChecksyntaxoutputLabel write fChecksyntaxoutputLabel;
 {$EndIf}
     property gccName: string read fgccName write fgccName;
     property gppName: string read fgppName write fgppName;
@@ -159,6 +171,12 @@ type
 {$IfDef VC_BUILD}
     fVC: boolean;
     fOriginalSet:integer;
+    fLibparamsLabel : string;
+    fIncludeparamsLabel : string;
+    fCompilerLabel : string;
+    fCompileroutputLabel : string;
+    fChecksyntaxcompilerLabel : string;
+    fChecksyntaxoutputLabel : string;
 {$EndIf}
     //Compiler options
     fOptions: TList;
@@ -209,6 +227,12 @@ type
 {$IfDef VC_BUILD}
     property IsVC: boolean read fVC write fVC;
     property OriginalSet : integer read fOriginalSet write fOriginalSet;
+    property LibparamsLabel : string read fLibparamsLabel write fLibparamsLabel;
+    property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
+    property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
+    property CompileroutputLabel : string read fCompileroutputLabel write fCompileroutputLabel;
+    property ChecksyntaxcompilerLabel : string read fChecksyntaxcompilerLabel write fChecksyntaxcompilerLabel;
+    property ChecksyntaxoutputLabel : string read fChecksyntaxoutputLabel write fChecksyntaxoutputLabel;
 {$EndIf}
     property RunParams: string read fRunParams write fRunParams;
     property OutputDir: string read fOutputDir write fOutputDir; // ** unused
@@ -1088,17 +1112,18 @@ begin
   begin
 
   // Show what compiler is currently set
-  showmessage('Current compiler = ' + devCompilerSet.SetName(devCompiler.CompilerSet));
+  //showmessage('Current compiler = ' + devCompilerSet.SetName(devCompiler.CompilerSet));
 
-     // Atempt to find the specified compiler name
+     // Attempt to find the specified compiler name
      compilerindex := -1;
      for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
-        if (XMLCompilerOpts.Root.Items.Item[i].Properties <> nil) then
+        if (XMLCompilerOpts.Root.Items.Item[i].Properties <> nil) then begin
            if XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') = devCompilerSet.SetName(devCompiler.CompilerSet) then
               compilerindex := i;
 
   //   if (compilerindex <> -1) then
-  //   showMessage(XMLCompilerOpts.Root.Items.Item[compilerindex].Properties.Value('name'));
+  //  showMessage(XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') + ' : ' + devCompilerSet.SetName(devCompiler.CompilerSet));
+           end;
 
      if (compilerindex = -1) then
       // if we want the default compiler, then find it.
@@ -1106,9 +1131,49 @@ begin
              if (XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default'] <> nil) then
                 if XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default'].BoolValue then
                    compilerindex := i;
+
+  //   showMessage('Chosen: ' + XMLCompilerOpts.Root.Items.Item[compilerindex].Properties.Value('name'));
+
   end;
 
   with XMLCompilerOpts.Root.Items.Item[compilerindex] do
+  begin
+
+  // Get the label to use to specify a library to link in the makefile
+  if (Items.ItemNamed['libparamslabel'] <> nil) then
+      fLibparamsLabel := Items.ItemNamed['libparamslabel'].Value
+  else
+      fLibparamsLabel := '-L';  // use the Mingw gcc default label
+
+  // Get the label to use to specify an include directory to add to the makefile
+  if (Items.ItemNamed['includeparamslabel'] <> nil) then
+      fIncludeparamsLabel := Items.ItemNamed['includeparamslabel'].Value
+  else
+      fIncludeparamsLabel := '-I';   // use the Mingw gcc default label
+
+  // Compiler global switch
+  if (Items.ItemNamed['compilerlabel'] <> nil) then
+     fCompilerLabel := Items.ItemNamed['compilerlabel'].Value
+  else
+     fCompilerLabel := '-c';
+
+  // Switch label to tell the compiler what the output file is named
+  if (Items.ItemNamed['compileroutputlabel'] <> nil) then
+        fCompileroutputLabel := Items.ItemNamed['compileroutputlabel'].Value
+  else
+        fCompileroutputLabel := '-o';
+
+  // Switch label if we just want the compiler to check syntax
+  if (Items.ItemNamed['checksyntaxcompilerlabel'] <> nil) then
+    fChecksyntaxcompilerLabel := Items.ItemNamed['checksyntaxcompilerlabel'].Value
+  else
+     fChecksyntaxcompilerLabel := '-c';
+
+  // Switch label if we just want the compiler to check syntax (i.e. no file output)
+  if (Items.ItemNamed['checksyntaxoutputlabel'] <> nil) then
+    fChecksyntaxoutputLabel := Items.ItemNamed['checksyntaxoutputlabel'].Value
+  else
+     fChecksyntaxoutputLabel := '-o nul';
 
   for i := 0 to Items.Count-1 do
   begin
@@ -1179,11 +1244,12 @@ begin
      end;
 
   end;
-
+  end;
   XMLcompilerOpts.Free;
 
 {$ELSE}
 
+{$IFDEF VC_BUILD}
   //Generate settings for VC and MingW compilers seperately
   if self.IsVC then
   begin
@@ -1351,6 +1417,70 @@ begin
 
     AddOption(Lang[ID_COPT_BUILTINPROC], False, True, True, True, 0, '-m', Lang[ID_COPT_GRP_CODEGEN], [], sl);
   end;
+  {$ELSE}
+ AddOption(Lang[ID_COPT_ANSIC], False, True, True, False, 0, '-ansi', Lang[ID_COPT_GRP_C], [], nil);
+    AddOption(Lang[ID_COPT_TRADITIONAL], False, True, True, False, 0, '-traditional-cpp', Lang[ID_COPT_GRP_C], [], nil);
+    AddOption(Lang[ID_COPT_WARNING], False, True, True, False, 0, '-w', Lang[ID_COPT_GRP_C], [], nil);
+    AddOption(Lang[ID_COPT_ACCESS], False, True, True, False, 0, '-fno-access-control', Lang[ID_COPT_GRP_CPP], [], nil);
+    AddOption(Lang[ID_COPT_DOLLAR], False, True, True, False, 0, '-fdollar-in-identifiers', Lang[ID_COPT_GRP_CPP], [], nil);
+    AddOption(Lang[ID_COPT_HEURISTICS], False, True, True, False, 0, '-fsave-memoized', Lang[ID_COPT_GRP_CPP], [], nil);
+    AddOption(Lang[ID_COPT_EXCEPT], False, True, True, False, 0, '-fexceptions', Lang[ID_COPT_GRP_CODEGEN], [], nil);
+    AddOption(Lang[ID_COPT_DBLFLOAT], False, True, True, False, 0, '-fshort-double', Lang[ID_COPT_GRP_CODEGEN], [], nil);
+    AddOption(Lang[ID_COPT_MEM], False, True, True, False, 0, '-fverbose-asm', Lang[ID_COPT_GRP_CODEGEN], [], nil);
+    AddOption(Lang[ID_COPT_OPTMINOR], False, True, True, False, 0, '-fexpensive-optimizations', Lang[ID_COPT_GRP_OPTIMIZE], [], nil);
+    AddOption(Lang[ID_COPT_OPT1], True, True, True, False, 0, '-O1', Lang[ID_COPT_GRP_OPTIMIZE]+'/'+Lang[ID_COPT_FURTHEROPTS], [], nil);
+    AddOption(Lang[ID_COPT_OPTMORE], True, True, True, False, 0, '-O2', Lang[ID_COPT_GRP_OPTIMIZE]+'/'+Lang[ID_COPT_FURTHEROPTS], [], nil);
+    AddOption(Lang[ID_COPT_OPTBEST], True, True, True, False, 0, '-O3', Lang[ID_COPT_GRP_OPTIMIZE]+'/'+Lang[ID_COPT_FURTHEROPTS], [], nil);
+    AddOption(Lang[ID_COPT_PROFILE], False, True, True, False, 0, '-pg', Lang[ID_COPT_PROFILING], [], nil);
+    AddOption(Lang[ID_COPT_OBJC], False, False, False, True, 0, '-lobjc', Lang[ID_COPT_LINKERTAB], [], nil);
+    AddOption(Lang[ID_COPT_DEBUG], False, True, True, True, 0, '-g3', Lang[ID_COPT_LINKERTAB], [], nil);
+    AddOption(Lang[ID_COPT_NOLIBS], False, True, True, True, 0, '-nostdlib', Lang[ID_COPT_LINKERTAB], [], nil);
+    AddOption(Lang[ID_COPT_WIN32], False, True, True, True, 0, '-mwindows', Lang[ID_COPT_LINKERTAB], [dptGUI], nil);
+    AddOption(Lang[ID_COPT_ERRORLINE], False, True, True, True, 0, '-fmessage-length=0', Lang[ID_COPT_GRP_C], [], nil);
+    AddOption(Lang[ID_COPT_STRIP], False, False, False, True, 0, '-s', Lang[ID_COPT_LINKERTAB], [], nil);
+
+    // Architecture params
+    sl := TStringList.Create;
+    sl.Add(''); // /!\ Must contain a starting empty value in order to do not have always to pass the parameter
+    sl.Add('i386=i386');
+    sl.Add('i486=i486');
+    sl.Add('i586=i586');
+    sl.Add('i686=i686');
+    sl.Add('Pentium=pentium');
+    sl.Add('Pentium MMX=pentium-mmx');
+    sl.Add('Pentium Pro=pentiumpro');
+    sl.Add('Pentium 2=pentium2');
+    sl.Add('Pentium 3=pentium3');
+    sl.Add('Pentium 4=pentium4');
+    sl.Add('K6=k6');
+    sl.Add('K6-2=k6-2');
+    sl.Add('K6-3=k6-3');
+    sl.Add('Athlon=athlon');
+    sl.Add('Athlon Tbird=athlon-tbird');
+    sl.Add('Athlon 4=athlon-4');
+    sl.Add('Athlon XP=athlon-xp');
+    sl.Add('Athlon MP=athlon-mp');
+    sl.Add('Winchip C6=winchip-c6');
+    sl.Add('Winchip 2=winchip2');
+    sl.Add('K8=k8');
+    sl.Add('C3=c3');
+    sl.Add('C3-2=c3-2');
+
+    AddOption(Lang[ID_COPT_ARCH], False, True, True, True, 0, '-march=', Lang[ID_COPT_GRP_CODEGEN], [], sl);
+
+    // Built-in processor functions
+    sl := TStringList.Create;
+    sl.Add(''); // /!\ Must contain a starting empty value in order to do not have always to pass the parameter
+    sl.Add('MMX=mmx');
+    sl.Add('SSE=sse');
+    sl.Add('SSE 2=sse2');
+    sl.Add('PNI=pni');
+    sl.Add('3D Now=3dnow');
+
+    AddOption(Lang[ID_COPT_BUILTINPROC], False, True, True, True, 0, '-m', Lang[ID_COPT_GRP_CODEGEN], [], sl);
+  
+
+  {$ENDIF}
 {$ENDIF}
 end;
 
@@ -1463,7 +1593,7 @@ begin
      //fLinkAdd:= LoadBoolSetting(key, 'LinkAdd');
     fcmdOpts := LoadSetting(key, 'cmdline');
     flinkopts := LoadSetting(key, 'LinkLine');
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
     fVC := LoadBoolSetting(key, 'IsVC');
 {$EndIf}
     fSaveLog := LoadBoolSetting(key, 'Log');
@@ -1520,7 +1650,7 @@ begin
     SaveSetting(key, DLLWRAP_PROGRAM, fdllwrapName);
     SaveSetting(key, GPROF_PROGRAM, fgprofName);
     SaveSetting(key, 'CompilerSet', IntToStr(fCompilerSet));
-{$IfDef WX_BUILD}
+{$IfDef VC_BUILD}
     SaveBoolSetting(key, 'IsVC', fVC);
 {$EndIf}
 
@@ -2000,7 +2130,9 @@ begin
   //RNC
   devCompiler.fcmdOpts:=devCompilerSet.fCmdOptions;
   devCompiler.flinkopts:=devCompilerSet.fLinkOptions;
+  {$IFDEF VC_BUILD}
   devCompiler.IsVC := devCompilerSet.IsVC;
+  {$ENDIF}
   // we have to set the devDirs too
   devDirs.Bins := devCompilerSet.BinDir;
   devDirs.C := devCompilerSet.CDir;

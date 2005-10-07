@@ -547,7 +547,6 @@ begin
 
     devCompiler.OptionStr := OptionsStr;
     CompOptionsFrame1.FillOptions(nil);
-{$IfDef WX_BUILD}
 {$IFDEF VC_BUILD}
     if isVC then
     begin
@@ -561,12 +560,14 @@ begin
       lbldllwrap.Caption := 'dllwrap : ';
       lblwindres.Caption := 'windres : ' ;
       end;
-  end;
+
 {$ELSE}
     lbldllwrap.Caption := 'dllwrap : ';
     lblwindres.Caption := 'windres : ';
 {$ENDIF}
-{$EndIf}
+
+  end;
+
 end;
 
 procedure TCompForm.btnBrws1Click(Sender: TObject);

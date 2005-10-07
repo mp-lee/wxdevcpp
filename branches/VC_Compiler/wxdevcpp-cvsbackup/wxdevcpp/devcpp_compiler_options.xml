@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?> 
-<!-- Compiler options -->
+<!-- Compiler Options Default Template -->
+<!-- Created: 5 October 2005 by Tony Reina -->
+<!-- Licensed under the Gnu Public License for wx-devcpp -->
+<!-- $Id -->
 <options name="compiler">
+
+<!--  **************  Microsoft VC++ Compiler **************   -->
 <compiler name="ms-vc++">
-<default>true</default>
+<default>false</default>
+<libparamslabel>/LIBPATH:</libparamslabel>
+<includeparamslabel>/I</includeparamslabel>
+<compilerlabel>/nologo /c</compilerlabel>
+<compileroutputlabel>/Fo</compileroutputlabel>
+<checksyntaxcompilerlabel>/nologo /c</checksyntaxcompilerlabel>
+<checksyntaxoutputlabel>/OUT:nul</checksyntaxoutputlabel>
+
 <category name="Optimization">
 
   <switch name="Optimize for">
@@ -540,8 +552,18 @@
 </category>  
 </compiler>
 
+<!-- **************    Mingw compiler  **************   -->
+
 <compiler name="Mingw gcc">
-<default>false</default>
+<default>true</default>
+<libparamslabel>-L</libparamslabel>
+<includeparamslabel>-I</includeparamslabel>
+<compilerlabel>-c </compilerlabel>
+<compileroutputlabel>-o </compileroutputlabel>
+<checksyntaxcompilerlabel>-S</checksyntaxcompilerlabel>
+<checksyntaxoutputlabel>-o nul</checksyntaxoutputlabel>
+
+
 <category name="C Compiler">
 
   <switch name="-ansi">

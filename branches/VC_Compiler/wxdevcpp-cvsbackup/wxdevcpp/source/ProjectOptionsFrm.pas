@@ -547,6 +547,12 @@ end;
 
 procedure TfrmProjectOptions.FormShow(Sender: TObject);
 begin
+{$IFDEF VC_BUILD}
+ // When form is shown, get the original compiler set
+ // This way if the user presses cancel, we set the compiler back to the set
+ //  that was selected when the dialog opened
+ devCompiler.OriginalSet := devCompiler.CompilerSet;
+{$ENDIF}
   PageControl.ActivePageIndex:= 0;
   //CompPages.ActivePageIndex:= 0;
   SubTabs.TabIndex:= 0;
@@ -1043,6 +1049,9 @@ end;
 
 procedure TfrmProjectOptions.cmbCompilerChange(Sender: TObject);
 begin
+{$IfDef VC_BUILD}
+  devCompiler.CompilerSet := cmbCompiler.ItemIndex;
+{$EndIf}
   devCompilerSet.LoadSet(cmbCompiler.ItemIndex);
   devCompilerSet.AssignToCompiler;
   CompOptionsFrame1.FillOptions(fProject);
@@ -1050,6 +1059,10 @@ end;
 
 procedure TfrmProjectOptions.btnCancelClick(Sender: TObject);
 begin
+{$IFDEF VC_BUILD}
+// On cancel, reset to the original compiler set index (the one it had when dialog was opened)
+devCompiler.CompilerSet := devCompiler.OriginalSet;
+{$ENDIF}
   devCompilerSet.LoadSet(fOptions.CompilerSet);
   devCompilerSet.AssignToCompiler;
 end;
@@ -1061,6 +1074,9 @@ end;
 
 procedure TfrmProjectOptions.btnOkClick(Sender: TObject);
 begin
+{$IfDef VC_BUILD}
+    devCompiler.OriginalSet := devCompiler.CompilerSet;
+{$EndIf}
   SaveDirSettings;
   fOptions.CompilerOptions := devCompiler.OptionStr;
 end;
