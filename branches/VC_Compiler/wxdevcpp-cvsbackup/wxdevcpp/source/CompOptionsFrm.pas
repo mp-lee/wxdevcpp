@@ -86,7 +86,6 @@ type
     btnBrowse6: TSpeedButton;
     btnBrowse7: TSpeedButton;
     btnBrowse8: TSpeedButton;
-    is_vc: TCheckBox;
     cmdline: TGroupBox;
     cbCompAdd: TCheckBox;
     Commands: TMemo;
@@ -125,7 +124,6 @@ type
     procedure WindresEditChange(Sender: TObject);
     procedure DllwrapEditChange(Sender: TObject);
     procedure GprofEditChange(Sender: TObject);
-{$IFDEF VC_BUILD}procedure is_vcClick(Sender: TObject);  {$ENDIF}
   private
     fBins: string;
     fLibs: string;
@@ -188,7 +186,6 @@ begin
 
    //RNC
 {$IfDef VC_BUILD}
-   devCompilerSet.IsVC := is_vc.Checked;
    devCompiler.OriginalSet := devCompiler.CompilerSet;
 {$EndIf}
    devCompilerSet.CmdOpts:= Commands.Lines.Text;
@@ -262,9 +259,6 @@ begin
      Commands.Lines.Text:= devCompilerSet.CmdOpts;
      cbCompAdd.Checked:= devCompilerSet.AddtoComp;
     // cbCompAdd.Checked:= AddToComp;
-{$IfDef VC_BUILD}
-     is_vc.Checked := devCompilerSet.IsVC;
-{$EndIf}
      //Linker.Lines.Text:= LinkOpts;
      Linker.Lines.Text:= devCompilerSet.LinkOpts;
      cbLinkerAdd.Checked:= devCompilerSet.AddtoLink;
@@ -513,7 +507,6 @@ begin
   devCompilerSet.AddtoComp:=cbCompAdd.Checked;
 {$IfDef VC_BUILD}
   devCompiler.CompilerSet := cmbCompilerSetComp.ItemIndex;
-  devCompilerSet.IsVC := is_vc.Checked;
 {$EndIf}
   devCompilerSet.SaveSet(currentSet);
 
@@ -547,25 +540,10 @@ begin
 
     devCompiler.OptionStr := OptionsStr;
     CompOptionsFrame1.FillOptions(nil);
-{$IFDEF VC_BUILD}
-    if isVC then
-    begin
-      is_vc.Checked := true;
-      lbldllwrap.Caption := 'link : ';
-      lblwindres.Caption := 'rc : ';
-    end
-    else
-    begin
-      is_vc.Checked := false;
-      lbldllwrap.Caption := 'dllwrap : ';
-      lblwindres.Caption := 'windres : ' ;
-      end;
 
-{$ELSE}
-    lbldllwrap.Caption := 'dllwrap : ';
-    lblwindres.Caption := 'windres : ';
-{$ENDIF}
-
+    lbldllwrap.Caption := devCompiler.DllwrapNameCaption;
+    lblwindres.Caption := devCompiler.WindresNameCaption;
+    
   end;
 
 end;
@@ -688,35 +666,5 @@ procedure TCompForm.GprofEditChange(Sender: TObject);
 begin
   devCompilerSet.gprofName := GprofEdit.Text;
 end;
-
-{$IFDEF VC_BUILD}
-procedure TCompForm.is_vcClick(Sender: TObject);
-begin
-  if is_vc.Checked then
-  begin
-    lbldllwrap.Caption := 'link : ';
-    lblgprof.Enabled := false;
-    GProfEdit.Enabled := false;
-    btnBrowse8.Enabled := false;
-    lblgdb.Enabled := false;
-    GdbEdit.Enabled := false;
-    BtnBrowse5.Enabled := false;
-  end
-  else
-  begin
-    lbldllwrap.Caption := 'dllwrap : ';
-    lblgprof.Enabled := true;
-    GProfEdit.Enabled := true;
-    btnBrowse8.Enabled := true;
-    lblgdb.Enabled := true;
-    GdbEdit.Enabled := true;
-    BtnBrowse5.Enabled := true;
-  end;
-  devCompiler.IsVC := is_vc.Checked;
-  devCompiler.AddDefaultOptions;
-  CompOptionsFrame1.FillOptions(nil);
-
-end;
-{$EndIf}
 
 end.

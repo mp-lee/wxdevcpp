@@ -8,12 +8,19 @@
 <!--  **************  Microsoft VC++ Compiler **************   -->
 <compiler name="ms-vc++">
 <default>false</default>
+<isVC>true</isVC>
 <libparamslabel>/LIBPATH:</libparamslabel>
 <includeparamslabel>/I</includeparamslabel>
+<includedirlabel>  /i </includedirlabel>
 <compilerlabel>/nologo /c</compilerlabel>
 <compileroutputlabel>/Fo</compileroutputlabel>
+<linkerlabel>$(LINK) /nologo </linkerlabel>
+<linkeroutputlabel>/OUT</linkeroutputlabel>
 <checksyntaxcompilerlabel>/nologo /c</checksyntaxcompilerlabel>
 <checksyntaxoutputlabel>/OUT:nul</checksyntaxoutputlabel>
+<lbldllwrapcaption>link : </lbldllwrapcaption>
+<dllwrap>dllwrap.exe</dllwrap>
+<lblwindrescaption>rc : </lblwindrescaption>
 
 <category name="Optimization">
 
@@ -556,13 +563,19 @@
 
 <compiler name="Mingw gcc">
 <default>true</default>
+<isVC>false</isVC>
 <libparamslabel>-L</libparamslabel>
 <includeparamslabel>-I</includeparamslabel>
+<includedirlabel> --include-dir </includedirlabel>
 <compilerlabel>-c </compilerlabel>
 <compileroutputlabel>-o </compileroutputlabel>
 <checksyntaxcompilerlabel>-S</checksyntaxcompilerlabel>
 <checksyntaxoutputlabel>-o nul</checksyntaxoutputlabel>
-
+<linkerlabel>$(CPP)</linkerlabel>
+<linkeroutputlabel>-o </linkeroutputlabel>
+<lbldllwrapcaption>dllwrap : </lbldllwrapcaption>
+<dllwrap></dllwrap>
+<lblwindrescaption>windres : </lblwindrescaption>
 
 <category name="C Compiler">
 
@@ -747,7 +760,7 @@
   </switch>
 
   <switch name="-mwindows">
-    <enabled>false</enabled>
+    <enabled>true</enabled>
     <fieldtype>boolean</fieldtype>
     <switchtype>c,c++,linker</switchtype>
     <excludefrom></excludefrom>

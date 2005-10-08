@@ -288,17 +288,16 @@ begin
   writeln(F, 'LIBS      =' + StringReplace(fLibrariesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'INCS      =' + StringReplace(fIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'CXXINCS   =' + StringReplace(fCppIncludesParams, '\', '/', [rfReplaceAll]));
-  writeln(F, 'BIN       =' + GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)));
-  writeln(F, 'CXXFLAGS  = $(CXXINCS)' + fCppCompileParams);
-  writeln(F, 'CFLAGS    = $(INCS)' + fCompileParams);
+  writeln(F, 'BIN       = ' + GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)));
+  writeln(F, 'CXXFLAGS  = $(CXXINCS) ' + fCppCompileParams);
+  writeln(F, 'CFLAGS    = $(INCS) ' + fCompileParams);
   writeln(F, 'RM        = rm -f');
   if (devCompiler.dllwrapName <> '') then
-    writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
-  else
-    writeln(F, 'LINK      = ' + DLLWRAP_PROGRAM);
+    writeln(F, 'LINK      = ' + devCompiler.dllwrapName);
+    
   Writeln(F, '');
   if DoCheckSyntax then
-    Writeln(F,'.PHONY: all all-before all-after clean clean-custom $(OBJ) $(BIN)')
+    Writeln(F,'.PHONY: all all-before all-after clean clean-custom')
   else
     Writeln(F, '.PHONY: all all-before all-after clean clean-custom');
   Writeln(F, '');
@@ -398,11 +397,11 @@ begin
         writeln(F, GenMakePath2(ofile) + ':' + GenMakePath2(tfile));
 
         if fProject.Units[i].CompileCpp then
-          writeln(F, #9 + '$(CPP) ' + devCompiler.Checksyntaxoutputlabel + ' ' +
-                GenMakePath(tfile) + devCompiler.Checksyntaxoutputlabel + ' $(CXXFLAGS)')
+          writeln(F, #9 + '$(CPP) ' + devCompiler.Checksyntaxcompilerlabel + ' ' +
+                GenMakePath(tfile) + ' ' + devCompiler.Checksyntaxoutputlabel + ' $(CXXFLAGS)')
         else
-          writeln(F, #9 + '$(CC) ' + devCompiler.Checksyntaxoutputlabel + ' '
-              + devCompiler.Checksyntaxoutputlabel + GenMakePath(tfile) + ' $(CFLAGS)');
+          writeln(F, #9 + '$(CC) ' + devCompiler.Checksyntaxcompilerlabel + ' '
+              + devCompiler.Checksyntaxoutputlabel + ' ' + GenMakePath(tfile) + ' $(CFLAGS)');
      
       end
       else
@@ -444,7 +443,7 @@ end;
       ShortPath := GetShortName(fProject.Options.ResourceIncludes[i]);
       // only add include-dir if it is existing dir...
       if ShortPath <> '' then
-	ResIncludes := ResIncludes + ' /i' +
+	ResIncludes := ResIncludes + devCompiler.IncludeDirLabel +
 	  GenMakePath(ShortPath);
     end;
 
@@ -469,11 +468,20 @@ end;
     if DoCheckSyntax then
     begin
       writeln(F, ofile + ':');
-      writeln(F, #9 + '$(WINDRES) /r /fo$(RES) ' + ResIncludes + ' ' + tfile);
+      if (devCompiler.IsVC) then
+        writeln(F, #9 + '$(WINDRES) /r /fo$(RES) ' + ResIncludes + ' ' + tfile)
+      else
+          writeln(F, #9 + '$(WINDRES) -i ' + tfile +
+            ' --input-format=rc -o nul -O coff' + ResIncludes)
+
     end else
     begin
       writeln(F, ofile + ': ' + tfile + ' ' + ResFiles);
-      writeln(F, #9 + '$(WINDRES) /r /fo$(RES) ' + ResIncludes + ' ' + tfile);
+      if (devCompiler.IsVC) then
+        writeln(F, #9 + '$(WINDRES) /r /fo$(RES) ' + ResIncludes + ' ' + tfile)
+      else
+        writeln(F, #9 + '$(WINDRES) -i ' + tfile +
+            ' --input-format=rc -o ' + ofile + ' -O coff' + ResIncludes);
     end;
   end;
 end;
@@ -495,13 +503,10 @@ begin
 
   if not DoCheckSyntax then
 {$IFDEF VC_BUILD}
-    if devCompilerSet.IsVC then
-      writeln(F, #9 + '$(LINK) /nologo $(LINKOBJ) /OUT:"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
-    else
       if fProject.Options.useGPP then
-        writeln(F, #9 + '$(CPP) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
+        writeln(F, #9 + devCompiler.LinkerName + ' $(LINKOBJ) ' + devCompiler.LinkerOutputLabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
       else
-        writeln(F, #9 + '$(CC) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
+        writeln(F, #9 + '$(CC) $(LINKOBJ) ' + devCompiler.LinkerOutputLabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
 
 {$ELSE}
      if fProject.Options.useGPP then
@@ -615,8 +620,6 @@ begin
 
     AppendStr(fCompileParams, fUserParams);
     AppendStr(fCppCompileParams, fUserParams);
-
-
 
     for I := 0 to devCompiler.OptionsCount - 1 do
       // consider project specific options for the compiler

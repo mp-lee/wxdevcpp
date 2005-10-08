@@ -92,10 +92,15 @@ type
     fVC: boolean;
     fLibparamsLabel : string;
     fIncludeparamsLabel : string;
+    fIncludedirLabel : string;
     fCompilerLabel : string;
     fCompileroutputLabel : string;
+    flinkername : string;
+    flinkeroutputlabel : string;
     fChecksyntaxcompilerLabel : string;
     fChecksyntaxoutputLabel : string;
+    fdllwrapNameCaption : string;
+    fwindresNameCaption : string;
 {$EndIf}
    //RNC
    fCompAdd: boolean;          // add fcmdopts to compiler command line
@@ -126,10 +131,15 @@ type
     property IsVC: boolean read fVC write fVC;
     property LibparamsLabel : string read fLibparamsLabel write fLibparamsLabel;
     property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
+    property IncludeDirLabel : string read fIncludedirLabel write fIncludedirLabel;
     property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
     property CompileroutputLabel : string read fCompileroutputLabel write fCompileroutputLabel;
+    property Linkername : string read flinkername write flinkername;
+    property Linkeroutputlabel : string read flinkeroutputlabel write flinkeroutputlabel;
     property ChecksyntaxcompilerLabel : string read fChecksyntaxcompilerLabel write fChecksyntaxcompilerLabel;
     property ChecksyntaxoutputLabel : string read fChecksyntaxoutputLabel write fChecksyntaxoutputLabel;
+    property DllwrapNameCaption : string read fdllwrapNameCaption write fdllwrapNameCaption;
+    property WindresNameCaption : string read fwindresNameCaption write fwindresNameCaption;
 {$EndIf}
     property gccName: string read fgccName write fgccName;
     property gppName: string read fgppName write fgppName;
@@ -165,7 +175,6 @@ type
     fgdbName: string;
     fmakeName: string;
     fwindresName: string;
-    fdllwrapName: string;
     fgprofName: string;
     fCompilerSet: integer;
 {$IfDef VC_BUILD}
@@ -173,10 +182,16 @@ type
     fOriginalSet:integer;
     fLibparamsLabel : string;
     fIncludeparamsLabel : string;
+    fIncludedirLabel : string;
     fCompilerLabel : string;
     fCompileroutputLabel : string;
+    flinkername : string;
+    flinkeroutputlabel : string;
     fChecksyntaxcompilerLabel : string;
     fChecksyntaxoutputLabel : string;
+    fdllwrapNameCaption : string;
+    fdllwrapName : string;
+    fwindresNameCaption : string;
 {$EndIf}
     //Compiler options
     fOptions: TList;
@@ -229,10 +244,15 @@ type
     property OriginalSet : integer read fOriginalSet write fOriginalSet;
     property LibparamsLabel : string read fLibparamsLabel write fLibparamsLabel;
     property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
+    property IncludeDirLabel : string read fIncludedirLabel write fIncludedirLabel;
     property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
     property CompileroutputLabel : string read fCompileroutputLabel write fCompileroutputLabel;
+    property Linkername : string read flinkername write flinkername;
+    property Linkeroutputlabel : string read flinkeroutputlabel write flinkeroutputlabel;
     property ChecksyntaxcompilerLabel : string read fChecksyntaxcompilerLabel write fChecksyntaxcompilerLabel;
     property ChecksyntaxoutputLabel : string read fChecksyntaxoutputLabel write fChecksyntaxoutputLabel;
+    property DllwrapNameCaption : string read fdllwrapNameCaption write fdllwrapNameCaption;
+    property WindresNameCaption : string read fwindresNameCaption write fwindresNameCaption;
 {$EndIf}
     property RunParams: string read fRunParams write fRunParams;
     property OutputDir: string read fOutputDir write fOutputDir; // ** unused
@@ -1139,6 +1159,11 @@ begin
   with XMLCompilerOpts.Root.Items.Item[compilerindex] do
   begin
 
+  if (Items.ItemNamed['isvc'] <> nil) then
+      IsVC := Items.ItemNamed['isvc'].BoolValue
+  else
+      IsVC := false;  // use the Mingw gcc default
+
   // Get the label to use to specify a library to link in the makefile
   if (Items.ItemNamed['libparamslabel'] <> nil) then
       fLibparamsLabel := Items.ItemNamed['libparamslabel'].Value
@@ -1150,6 +1175,12 @@ begin
       fIncludeparamsLabel := Items.ItemNamed['includeparamslabel'].Value
   else
       fIncludeparamsLabel := '-I';   // use the Mingw gcc default label
+
+  // Get the label to use to specify an include directory to add to the makefile
+  if (Items.ItemNamed['includedirlabel'] <> nil) then
+      fIncludedirLabel := Items.ItemNamed['includedirlabel'].Value
+  else
+      fIncludedirLabel := ' --include-dir ';   // use the Mingw gcc default label
 
   // Compiler global switch
   if (Items.ItemNamed['compilerlabel'] <> nil) then
@@ -1163,6 +1194,19 @@ begin
   else
         fCompileroutputLabel := '-o';
 
+  // Switch label to tell the compiler what the linker output file is named
+  if (Items.ItemNamed['linkerlabel'] <> nil) then
+        flinkername := Items.ItemNamed['linkerlabel'].Value
+  else
+        flinkername := '$(CPP)';
+
+  // Switch label to tell the compiler what the linker output file is named
+  if (Items.ItemNamed['linkeroutputlabel'] <> nil) then
+        flinkeroutputlabel := Items.ItemNamed['linkeroutputlabel'].Value
+  else
+        flinkeroutputlabel := '-o ';
+
+
   // Switch label if we just want the compiler to check syntax
   if (Items.ItemNamed['checksyntaxcompilerlabel'] <> nil) then
     fChecksyntaxcompilerLabel := Items.ItemNamed['checksyntaxcompilerlabel'].Value
@@ -1174,6 +1218,24 @@ begin
     fChecksyntaxoutputLabel := Items.ItemNamed['checksyntaxoutputlabel'].Value
   else
      fChecksyntaxoutputLabel := '-o nul';
+
+  // DLL wrapper caption name
+  if (Items.ItemNamed['lbldllwrapcaption'] <> nil) then
+    fdllwrapNameCaption := Items.ItemNamed['lbldllwrapcaption'].Value
+  else
+     fdllwrapNameCaption := 'dllwrap : ';
+
+  // DLL wrapper name
+  if (Items.ItemNamed['dllwrapName'] <> nil) then
+        fdllwrapName := Items.ItemNamed['dllwrapName'].Value
+  else
+        fdllwrapName := '';
+
+  // Windows Resource wrapper name
+  if (Items.ItemNamed['lblwindrescaption'] <> nil) then
+        fwindresNameCaption := Items.ItemNamed['lblwindrescaption'].Value
+  else
+        fwindresNameCaption := 'dllwrap : ';
 
   for i := 0 to Items.Count-1 do
   begin
@@ -1742,7 +1804,6 @@ begin
   fgdbName := GDB_PROGRAM;
   fmakeName := MAKE_PROGRAM;
   fwindresName := WINDRES_PROGRAM;
-  fdllwrapName := DLLWRAP_PROGRAM;
   fgprofName := GPROF_PROGRAM;
   fCompilerSet := 0;
 
@@ -2388,8 +2449,6 @@ begin
      if fmakeName='' then fmakeName:=MAKE_PROGRAM;
     fwindresName := LoadSetting(key, WINDRES_PROGRAM);
      if fwindresName='' then fwindresName:=WINDRES_PROGRAM;
-    fdllwrapName := LoadSetting(key, DLLWRAP_PROGRAM);
-     if fdllwrapName='' then fdllwrapName:=DLLWRAP_PROGRAM;
     fgprofName := LoadSetting(key, GPROF_PROGRAM);
      if fgprofName='' then fgprofName:=GPROF_PROGRAM;
     fOptions := LoadSetting(key, 'Options');
@@ -2452,7 +2511,6 @@ begin
     SaveSetting(key, GDB_PROGRAM, fgdbName);
     SaveSetting(key, MAKE_PROGRAM, fmakeName);
     SaveSetting(key, WINDRES_PROGRAM, fwindresName);
-    SaveSetting(key, DLLWRAP_PROGRAM, fdllwrapName);
     SaveSetting(key, GPROF_PROGRAM, fgprofName);
     SaveSetting(key, 'Options', fOptions);
     SaveSetting(key, 'cmdline', fCmdOptions);
@@ -2486,7 +2544,6 @@ begin
   fgdbName := GDB_PROGRAM;
   fmakeName := MAKE_PROGRAM;
   fwindresName := WINDRES_PROGRAM;
-  fdllwrapName := DLLWRAP_PROGRAM;
   fgprofName := GPROF_PROGRAM;
   fCompAdd:= FALSE;
   fLinkAdd:= FALSE;

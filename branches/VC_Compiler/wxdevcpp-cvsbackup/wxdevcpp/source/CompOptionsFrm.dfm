@@ -151,7 +151,7 @@ object CompForm: TCompForm
         TabOrder = 1
         object btnAddCompilerSet: TSpeedButton
           Left = 338
-          Top = 20
+          Top = 28
           Width = 22
           Height = 22
           Hint = 'Adds  a new compiler set'
@@ -186,7 +186,7 @@ object CompForm: TCompForm
         end
         object btnDelCompilerSet: TSpeedButton
           Left = 362
-          Top = 20
+          Top = 28
           Width = 22
           Height = 22
           Hint = 'Deletes the selected compiler set'
@@ -221,7 +221,7 @@ object CompForm: TCompForm
         end
         object btnRenameCompilerSet: TSpeedButton
           Left = 386
-          Top = 20
+          Top = 28
           Width = 22
           Height = 22
           Hint = 'Renames the selected compiler set'
@@ -256,7 +256,7 @@ object CompForm: TCompForm
         end
         object cmbCompilerSetComp: TComboBox
           Left = 8
-          Top = 20
+          Top = 28
           Width = 321
           Height = 21
           Style = csDropDownList
@@ -268,15 +268,6 @@ object CompForm: TCompForm
           Items.Strings = (
             'gcc 2.95'
             'gcc 3.2')
-        end
-        object is_vc: TCheckBox
-          Left = 8
-          Top = 46
-          Width = 401
-          Height = 17
-          Caption = 'Is this compiler a Visual C++ Compiler?'
-          TabOrder = 1
-          OnClick = is_vcClick
         end
       end
       object cmdline: TGroupBox
