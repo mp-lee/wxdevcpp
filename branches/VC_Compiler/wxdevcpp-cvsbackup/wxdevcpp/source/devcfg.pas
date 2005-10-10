@@ -1119,7 +1119,7 @@ begin
     Dispose(fOptions.Items[i]);
   end;
   fOptions.Clear;
-
+     
 {$IFDEF VC_BUILD}
 
   XMLcompilerOpts := TJvSimpleXML.Create(Nil);
@@ -1163,6 +1163,48 @@ begin
       IsVC := Items.ItemNamed['isvc'].BoolValue
   else
       IsVC := false;  // use the Mingw gcc default
+
+  // Get the name of the c compiler program
+  if (Items.ItemNamed['c_compiler'] <> nil) then
+      fgccName := Items.ItemNamed['c_compiler'].Value
+  else
+      fgccName := GCC_PROGRAM;  // use the Mingw gcc default program
+
+  // Get the name of the c++ compiler program
+  if (Items.ItemNamed['c++_compiler'] <> nil) then
+      fgppName := Items.ItemNamed['c++_compiler'].Value
+  else
+      fgppName := GPP_PROGRAM;  // use the Mingw gcc default program
+
+  // Get the name of the make program
+  if (Items.ItemNamed['make'] <> nil) then
+      fmakeName := Items.ItemNamed['make'].Value
+  else
+      fmakeName := MAKE_PROGRAM;  // use the Mingw gcc default program
+
+  // Get the name of the windres program
+  if (Items.ItemNamed['windres'] <> nil) then
+      fwindresName := Items.ItemNamed['windres'].Value
+  else
+      fwindresName := WINDRES_PROGRAM;  // use the Mingw gcc default program
+
+  // Get the name of the dllwrap program
+  if (Items.ItemNamed['dllwrap'] <> nil) then
+      fdllwrapName := Items.ItemNamed['dllwrap'].Value
+  else
+      fdllwrapName := DLLWRAP_PROGRAM;  // use the Mingw gcc default program
+
+  // Get the name of the debugger program
+  if (Items.ItemNamed['debugger'] <> nil) then
+      fgdbName := Items.ItemNamed['debugger'].Value
+  else
+      fgdbName := GDB_PROGRAM;  // use the Mingw gcc default program
+
+   // Get the name of the gprof program
+  if (Items.ItemNamed['gprof'] <> nil) then
+      fgprofName := Items.ItemNamed['gprof'].Value
+  else
+      fgprofName := GPROF_PROGRAM;  // use the Mingw gcc default program
 
   // Get the label to use to specify a library to link in the makefile
   if (Items.ItemNamed['libparamslabel'] <> nil) then
@@ -1311,175 +1353,6 @@ begin
 
 {$ELSE}
 
-{$IFDEF VC_BUILD}
-  //Generate settings for VC and MingW compilers seperately
-  if self.IsVC then
-  begin
-    sl := TStringList.Create;
-    sl.Add('Neither  =');
-    sl.Add('Speed=Ot');
-    sl.Add('Space=Os');
-    AddOption('Favour', False, True, True, False, 0, '/', 'Code Optimization', [], sl);
-    sl := TStringList.Create;
-    sl.Add('Neither  =');
-    sl.Add('Speed=O2');
-    sl.Add('Space=O1');
-    AddOption('Optimize for', False, True, True, False, 0, '/', 'Code Optimization', [], sl);
-    AddOption('Enable Global Optimization', False, True, True, False, 0, '/Og', 'Code Optimization', [], nil);
-    AddOption('Assume aliasing', False, True, True, False, 0, '/Oa', 'Code Optimization', [], nil);
-    AddOption('Enable intrinsic functions', False, True, True, False, 0, '/Oi', 'Code Optimization', [], nil);
-    AddOption('Assume cross-function aliasing', False, True, True, False, 0, '/Ow', 'Code Optimization', [], nil);
-    AddOption('Optimize for Windows Program', False, True, True, False, 0, '/GA', 'Code Optimization', [], nil);
-    AddOption('Omit frame pointers', false, true, true, false, 0, '/Oy', 'Code Optimization', [], nil);
-
-    //Code generation
-    sl := TStringList.Create;
-    sl.Add('Blended model=B');
-    sl.Add('Pentium=5');
-    sl.Add('Pentium Pro, Pentium II and Pentium III  =6');
-    sl.Add('Pentium 4 or Athlon=7');
-    AddOption('Optimize for', False, True, True, False, 0, '/G', 'Code Generation', [], sl);
-
-    sl := TStringList.Create;
-    sl.Add('None=');
-    sl.Add('__cdecl=/Gd');
-    sl.Add('__fastcall  =/Gr');
-    sl.Add('__stdcall=/Gz');
-    AddOption('Calling Convention', false, true, true, false, 0, '', 'Code Generation', [], sl);
-
-    sl := TStringList.Create;
-    sl.Add('Disable=');
-    sl.Add('Enable=/Gf');
-    sl.Add('Enable Read-Only  =/GF');
-    AddOption('String Pooling', false, true, true, false, 0, '', 'Code Generation', [], sl);
-
-    sl := TStringList.Create;
-    sl.Add('Default=');
-    sl.Add('Compile for CLR  =/clr');
-    sl.Add('No assembly=/clr:noAssembly');
-    AddOption('Common Language Runtime', false, true, true, false, 0, '', 'Code Generation', [], sl);
-
-    sl := TStringList.Create;
-    sl.Add('None=');
-    sl.Add('SSE=/arch:SSE');
-    sl.Add('SSE2  =/arch:SSE2');
-    AddOption('Minimum CPU architecture', false, true, true, false, 0, '', 'Code Generation', [], sl);
-
-    sl := TStringList.Create;
-    sl.Add('No Exceptions=');
-    sl.Add('C++ Exceptions (no SEH)=/EHs');
-    sl.Add('C++ Exceptions (with SEH)  =/EHa');
-    AddOption('Exception handling', false, false, true, false, 0, '', 'Code Generation', [], sl);
-    AddOption('Enable _penter function call', false, true, true, false, 0, '/Gh', 'Code Generation', [], nil);
-    AddOption('Enable _pexit function call', false, true, true, false, 0, '/GH', 'Code Generation', [], nil);
-    AddOption('Enable C++ RTTI', false, false, true, false, 0, '/GR', 'Code Generation', [], nil);
-    AddOption('Enable Minimal Rebuild', false, true, true, false, 0, '/Gm', 'Code Generation', [], nil);
-    AddOption('Enable Link-time Code Generation', false, true, true, true, 0, '/GL', 'Code Generation', [], nil);
-    AddOption('Enable Pentium FDIV fix', false, true, true, false, 1, '/QIfdiv', 'Code Generation', [], nil);
-    AddOption('Enable Pentium 0x0F fix', false, true, true, false, 1, '/QI0f', 'Code Generation', [], nil);
-    AddOption('Extern C defaults to nothrow', false, false, true, false, 0, '/EHc', 'Code Generation', [], nil);
-    AddOption('Seperate functions for linker', false, false, false, true, 0, '/Gy', 'Code Generation', [], nil);
-    AddOption('Use fibre-safe TLS accesses', false, true, true, false, 0, '/GT', 'Code Generation', [], nil);
-    AddOption('Use FIST instead of ftol()', false, true, true, false, 1, '/QIfist', 'Code Generation', [], nil);
-
-    //Checks
-    sl := TStringList.Create;
-    sl.Add('None=');
-    sl.Add('Force Stack Checks=/Ge');
-    sl.Add('Control Stack Checking Calls  =/GS');
-    AddOption('Exclusive checks', false, true, true, false, 0, '', 'Code Checks', [], sl);
-    AddOption('Enable fast checks', false, true, true, false, 0, '/RTC1', 'Code Checks', [], nil);
-    AddOption('Convert to smaller type checks', false, true, true, false, 0, '/RTCc', 'Code Checks', [], nil);
-    AddOption('Stack Frame runtime checking', false, true, true, false, 0, '/RTCs', 'Code Checks', [], nil);
-    AddOption('Check for Variable Usage', false, true, true, false, 0, '/RTCu', 'Code Checks', [], nil);
-
-    //Language Options
-    sl := TStringList.Create;
-    sl.Add('No Debugging Information=');
-    sl.Add('Generate Debugging Information=/Zi /Yd');
-    sl.Add('Edit and Continue Debugging Information  =/ZI');
-    sl.Add('Old-Style Debugging Information=/Z7');
-    sl.Add('Include line numbers only=/Zd');
-    AddOption('Debugging', false, true, true, false, 0, '', 'Language Options', [], sl);
-    AddOption('Enable Extensions', false, true, true, false, 1, '/Ze', 'Language Options', [], nil);
-    AddOption('Omit library name in object file', false, true, true, false, 0,  '/Zl', 'Language Options', [], nil);
-    AddOption('Generate function prototypes', false, true, true, false, 0, '/Zg', 'Language Options', [], nil);
-    AddOption('Enforce Standard C++ scoping', false, false, true, false, 0, '/Zc:forScope', 'Language Options', [], nil);
-    AddOption('Make wchar_t a native type', false, false, true, false, 0, '/Zc:wchar_t', 'Language Options', [], nil);
-
-    //Miscellaneous
-    sl := TStringList.Create;
-    sl.Add('Treat warnings normally=');
-    sl.Add('Treat warnings as errors  =/WX');
-    sl.Add('Suppress all warnings=/w');
-    AddOption('Warnings', false, true, true, false, 0, '', 'Miscellaneous', [], sl);
-    AddOption('Use Precompiled headers', false, true, true, false, 0, '/YX', 'Miscellaneous', [], nil);
-    AddOption('Disable incremental linking', false, false, false, true, 0, '/INCREMENTAL:NO', 'Miscellaneous', [], nil);
-  end
-  else
-  begin
-    AddOption(Lang[ID_COPT_ANSIC], False, True, True, False, 0, '-ansi', Lang[ID_COPT_GRP_C], [], nil);
-    AddOption(Lang[ID_COPT_TRADITIONAL], False, True, True, False, 0, '-traditional-cpp', Lang[ID_COPT_GRP_C], [], nil);
-    AddOption(Lang[ID_COPT_WARNING], False, True, True, False, 0, '-w', Lang[ID_COPT_GRP_C], [], nil);
-    AddOption(Lang[ID_COPT_ACCESS], False, True, True, False, 0, '-fno-access-control', Lang[ID_COPT_GRP_CPP], [], nil);
-    AddOption(Lang[ID_COPT_DOLLAR], False, True, True, False, 0, '-fdollar-in-identifiers', Lang[ID_COPT_GRP_CPP], [], nil);
-    AddOption(Lang[ID_COPT_HEURISTICS], False, True, True, False, 0, '-fsave-memoized', Lang[ID_COPT_GRP_CPP], [], nil);
-    AddOption(Lang[ID_COPT_EXCEPT], False, True, True, False, 0, '-fexceptions', Lang[ID_COPT_GRP_CODEGEN], [], nil);
-    AddOption(Lang[ID_COPT_DBLFLOAT], False, True, True, False, 0, '-fshort-double', Lang[ID_COPT_GRP_CODEGEN], [], nil);
-    AddOption(Lang[ID_COPT_MEM], False, True, True, False, 0, '-fverbose-asm', Lang[ID_COPT_GRP_CODEGEN], [], nil);
-    AddOption(Lang[ID_COPT_OPTMINOR], False, True, True, False, 0, '-fexpensive-optimizations', Lang[ID_COPT_GRP_OPTIMIZE], [], nil);
-    AddOption(Lang[ID_COPT_OPT1], True, True, True, False, 0, '-O1', Lang[ID_COPT_GRP_OPTIMIZE]+'/'+Lang[ID_COPT_FURTHEROPTS], [], nil);
-    AddOption(Lang[ID_COPT_OPTMORE], True, True, True, False, 0, '-O2', Lang[ID_COPT_GRP_OPTIMIZE]+'/'+Lang[ID_COPT_FURTHEROPTS], [], nil);
-    AddOption(Lang[ID_COPT_OPTBEST], True, True, True, False, 0, '-O3', Lang[ID_COPT_GRP_OPTIMIZE]+'/'+Lang[ID_COPT_FURTHEROPTS], [], nil);
-    AddOption(Lang[ID_COPT_PROFILE], False, True, True, False, 0, '-pg', Lang[ID_COPT_PROFILING], [], nil);
-    AddOption(Lang[ID_COPT_OBJC], False, False, False, True, 0, '-lobjc', Lang[ID_COPT_LINKERTAB], [], nil);
-    AddOption(Lang[ID_COPT_DEBUG], False, True, True, True, 0, '-g3', Lang[ID_COPT_LINKERTAB], [], nil);
-    AddOption(Lang[ID_COPT_NOLIBS], False, True, True, True, 0, '-nostdlib', Lang[ID_COPT_LINKERTAB], [], nil);
-    AddOption(Lang[ID_COPT_WIN32], False, True, True, True, 0, '-mwindows', Lang[ID_COPT_LINKERTAB], [dptGUI], nil);
-    AddOption(Lang[ID_COPT_ERRORLINE], False, True, True, True, 0, '-fmessage-length=0', Lang[ID_COPT_GRP_C], [], nil);
-    AddOption(Lang[ID_COPT_STRIP], False, False, False, True, 0, '-s', Lang[ID_COPT_LINKERTAB], [], nil);
-
-    // Architecture params
-    sl := TStringList.Create;
-    sl.Add(''); // /!\ Must contain a starting empty value in order to do not have always to pass the parameter
-    sl.Add('i386=i386');
-    sl.Add('i486=i486');
-    sl.Add('i586=i586');
-    sl.Add('i686=i686');
-    sl.Add('Pentium=pentium');
-    sl.Add('Pentium MMX=pentium-mmx');
-    sl.Add('Pentium Pro=pentiumpro');
-    sl.Add('Pentium 2=pentium2');
-    sl.Add('Pentium 3=pentium3');
-    sl.Add('Pentium 4=pentium4');
-    sl.Add('K6=k6');
-    sl.Add('K6-2=k6-2');
-    sl.Add('K6-3=k6-3');
-    sl.Add('Athlon=athlon');
-    sl.Add('Athlon Tbird=athlon-tbird');
-    sl.Add('Athlon 4=athlon-4');
-    sl.Add('Athlon XP=athlon-xp');
-    sl.Add('Athlon MP=athlon-mp');
-    sl.Add('Winchip C6=winchip-c6');
-    sl.Add('Winchip 2=winchip2');
-    sl.Add('K8=k8');
-    sl.Add('C3=c3');
-    sl.Add('C3-2=c3-2');
-
-    AddOption(Lang[ID_COPT_ARCH], False, True, True, True, 0, '-march=', Lang[ID_COPT_GRP_CODEGEN], [], sl);
-
-    // Built-in processor functions
-    sl := TStringList.Create;
-    sl.Add(''); // /!\ Must contain a starting empty value in order to do not have always to pass the parameter
-    sl.Add('MMX=mmx');
-    sl.Add('SSE=sse');
-    sl.Add('SSE 2=sse2');
-    sl.Add('PNI=pni');
-    sl.Add('3D Now=3dnow');
-
-    AddOption(Lang[ID_COPT_BUILTINPROC], False, True, True, True, 0, '-m', Lang[ID_COPT_GRP_CODEGEN], [], sl);
-  end;
-  {$ELSE}
  AddOption(Lang[ID_COPT_ANSIC], False, True, True, False, 0, '-ansi', Lang[ID_COPT_GRP_C], [], nil);
     AddOption(Lang[ID_COPT_TRADITIONAL], False, True, True, False, 0, '-traditional-cpp', Lang[ID_COPT_GRP_C], [], nil);
     AddOption(Lang[ID_COPT_WARNING], False, True, True, False, 0, '-w', Lang[ID_COPT_GRP_C], [], nil);
@@ -1540,9 +1413,7 @@ begin
     sl.Add('3D Now=3dnow');
 
     AddOption(Lang[ID_COPT_BUILTINPROC], False, True, True, True, 0, '-m', Lang[ID_COPT_GRP_CODEGEN], [], sl);
-  
 
-  {$ENDIF}
 {$ENDIF}
 end;
 
@@ -1798,6 +1669,7 @@ begin
   // makefile
   fFastDep := FALSE;
 
+{$IFNDEF VC_BUILD}
   // Programs
   fgccName := GCC_PROGRAM;
   fgppName := GPP_PROGRAM;
@@ -1806,6 +1678,7 @@ begin
   fwindresName := WINDRES_PROGRAM;
   fgprofName := GPROF_PROGRAM;
   fCompilerSet := 0;
+{$ENDIF}
 
   AddDefaultOptions;
 end;
@@ -2434,10 +2307,12 @@ procedure TdevCompilerSet.LoadSetProgs(Index: integer);
 var
   key: string;
 begin
+
   if Index<0 then Exit;
   with devData do
   begin
     key := OPT_COMPILERSETS + '_' + IntToStr(Index);
+
     // Programs
     fgccName := LoadSetting(key, GCC_PROGRAM);
      if fgccName='' then fgccName:=GCC_PROGRAM;
@@ -2451,6 +2326,7 @@ begin
      if fwindresName='' then fwindresName:=WINDRES_PROGRAM;
     fgprofName := LoadSetting(key, GPROF_PROGRAM);
      if fgprofName='' then fgprofName:=GPROF_PROGRAM;
+
     fOptions := LoadSetting(key, 'Options');
 
      //RNC
@@ -2545,6 +2421,7 @@ begin
   fmakeName := MAKE_PROGRAM;
   fwindresName := WINDRES_PROGRAM;
   fgprofName := GPROF_PROGRAM;
+
   fCompAdd:= FALSE;
   fLinkAdd:= FALSE;
   fCmdOptions:='';
@@ -2575,7 +2452,6 @@ begin
     for I := 0 to sl.Count - 1 do
       fSets.Add(sl.Values[sl.Names[I]]);
 
-    fSets.Add('tony testing');
   finally
     sl.Free;
     Ini.Free;

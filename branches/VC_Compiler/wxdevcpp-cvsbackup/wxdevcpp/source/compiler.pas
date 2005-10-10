@@ -285,6 +285,9 @@ begin
   writeln(F, 'RES       = ' + ObjResFile);
   writeln(F, 'OBJ       =' + Objects + ' $(RES)');
   writeln(F, 'LINKOBJ   =' + LinkObjects + ' $(RES)');
+  writeln(F, 'INCLUDE   = ' + devCompiler.Includeparamslabel);
+  writeln(F, 'COMP_OUT  = ' + devCompiler.Linkeroutputlabel);
+  writeln(F, 'LINK_OUT  = ' + devCompiler.Compileroutputlabel);
   writeln(F, 'LIBS      =' + StringReplace(fLibrariesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'INCS      =' + StringReplace(fIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'CXXINCS   =' + StringReplace(fCppIncludesParams, '\', '/', [rfReplaceAll]));
@@ -421,10 +424,10 @@ begin
 
       if fProject.Units[i].CompileCpp then
               writeln(F, #9 + '$(CPP) ' + devCompiler.Compilerlabel + ' ' +
-                   GenMakePath(tfile) + ' ' + devCompiler.Compileroutputlabel + ofile + ' $(CXXFLAGS)')
+                   GenMakePath(tfile) + ' $(COMP_OUT) ' + ofile + ' $(CXXFLAGS)')
             else
               writeln(F, #9 + '$(CC) ' + devCompiler.Compilerlabel + ' ' +
-                   GenMakePath(tfile) + ' ' + devCompiler.Compileroutputlabel + ofile + ' $(CFLAGS)');
+                   GenMakePath(tfile) + ' $(COMP_OUT) ' + ofile + ' $(CFLAGS)');
         end;
 
 end;
@@ -469,19 +472,22 @@ end;
     begin
       writeln(F, ofile + ':');
       if (devCompiler.IsVC) then
-        writeln(F, #9 + '$(WINDRES) /r /fo$(RES) ' + ResIncludes + ' ' + tfile)
+        writeln(F, #9 + '$(WINDRES) /r $(LINK_OUT)$(RES) ' + ResIncludes + ' ' + tfile)
       else
-          writeln(F, #9 + '$(WINDRES) -i ' + tfile +
-            ' --input-format=rc -o nul -O coff' + ResIncludes)
+          writeln(F, #9 + '$(WINDRES) ' + devCompiler.Includeparamslabel
+             + ' ' + tfile +
+            ' --input-format=rc ' + devCompiler.Checksyntaxoutputlabel
+            + ' -O coff' + ResIncludes)
 
     end else
     begin
       writeln(F, ofile + ': ' + tfile + ' ' + ResFiles);
       if (devCompiler.IsVC) then
-        writeln(F, #9 + '$(WINDRES) /r /fo$(RES) ' + ResIncludes + ' ' + tfile)
+        writeln(F, #9 + '$(WINDRES) /r /$(LINK_OUT)$(RES) ' + ResIncludes + ' ' + tfile)
       else
-        writeln(F, #9 + '$(WINDRES) -i ' + tfile +
-            ' --input-format=rc -o ' + ofile + ' -O coff' + ResIncludes);
+        writeln(F, #9 + '$(WINDRES) -i '
+             + tfile + ' --input-format=rc $(COMP_OUT) '
+             + ofile + ' -O coff' + ResIncludes);
     end;
   end;
 end;
@@ -490,7 +496,7 @@ procedure TCompiler.WriteMakeClean(var F: TextFile);
 begin
   Writeln(F);
   Writeln(F, 'clean: clean-custom');
-  Writeln(F, #9 + '${RM} $(OBJ) $(BIN)');
+  Writeln(F, #9 + '$(RM) $(OBJ) $(BIN)');
 end;
 
 procedure TCompiler.CreateMakefile;
@@ -504,9 +510,9 @@ begin
   if not DoCheckSyntax then
 {$IFDEF VC_BUILD}
       if fProject.Options.useGPP then
-        writeln(F, #9 + devCompiler.LinkerName + ' $(LINKOBJ) ' + devCompiler.LinkerOutputLabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
+        writeln(F, #9 + '$(CPP) $(LINKOBJ) $(LINK_OUT)"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
       else
-        writeln(F, #9 + '$(CC) $(LINKOBJ) ' + devCompiler.LinkerOutputLabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
+        writeln(F, #9 + '$(CC) $(LINKOBJ) $(LINK_OUT)"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
 
 {$ELSE}
      if fProject.Options.useGPP then
@@ -532,7 +538,7 @@ begin
   begin
 {$IFDEF VC_BUILD}
     if devCompilerSet.IsVC then
-      writeln(F, #9 + '$(LINK) /LIB /nologo /OUT:$(BIN) $(LINKOBJ) $(LIBS)')
+      writeln(F, #9 + '$(LINK) /LIB /nologo $(LINK_OUT):$(BIN) $(LINKOBJ) $(LIBS)')
     else
     begin
       writeln(F, #9 + 'ar r $(BIN) $(LINKOBJ)');
@@ -569,7 +575,7 @@ begin
   begin
 {$IFDEF VC_BUILD}
     if devCompilerSet.IsVC then
-      writeln(F, #9 + '$(LINK) /nologo /dll /implib:$(STATICLIB) $(LINKOBJ) $(LIBS) /OUT:$(BIN)')
+      writeln(F, #9 + '$(LINK) /nologo /dll /implib:$(STATICLIB) $(LINKOBJ) $(LIBS) $(LINK_OUT)$(BIN)')
     else
       if fProject.Options.useGPP then
         writeln(F, #9 + '$(DLLWRAP) --output-def $(DEFFILE) ' + '--driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)')

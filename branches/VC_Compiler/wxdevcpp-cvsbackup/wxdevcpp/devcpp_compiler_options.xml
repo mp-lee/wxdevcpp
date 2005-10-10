@@ -9,13 +9,20 @@
 <compiler name="ms-vc++">
 <default>false</default>
 <isVC>true</isVC>
+<c_compiler>vcc.exe</c_compiler>
+<c++_compiler>vcc.exe</c++_compiler>
+<make>nmake.exe</make>
+<windres>windres.exe</windres>
+<dllwrap>link.exe</dllwrap>
+<debugger>gdb.exe</debugger>
+<gprof>gprof.exe</gprof>
 <libparamslabel>/LIBPATH:</libparamslabel>
 <includeparamslabel>/I</includeparamslabel>
 <includedirlabel>  /i </includedirlabel>
 <compilerlabel>/nologo /c</compilerlabel>
 <compileroutputlabel>/Fo</compileroutputlabel>
 <linkerlabel>$(LINK) /nologo </linkerlabel>
-<linkeroutputlabel>/OUT</linkeroutputlabel>
+<linkeroutputlabel>/OUT:</linkeroutputlabel>
 <checksyntaxcompilerlabel>/nologo /c</checksyntaxcompilerlabel>
 <checksyntaxoutputlabel>/OUT:nul</checksyntaxoutputlabel>
 <lbldllwrapcaption>link : </lbldllwrapcaption>
@@ -564,6 +571,13 @@
 <compiler name="Mingw gcc">
 <default>true</default>
 <isVC>false</isVC>
+<c_compiler>gcc.exe</c_compiler>
+<c++_compiler>g++.exe</c++_compiler>
+<make>make.exe</make>
+<windres>windres.exe</windres>
+<dllwrap>dllwrap.exe</dllwrap>
+<debugger>gdb.exe</debugger>
+<gprof>gprof.exe</gprof>
 <libparamslabel>-L</libparamslabel>
 <includeparamslabel>-I</includeparamslabel>
 <includedirlabel> --include-dir </includedirlabel>
@@ -620,6 +634,14 @@
     <switchtype>c,c++</switchtype>
     <excludefrom></excludefrom>
     <label>Accept $ in identifiers (-fdollar-in-identifiers)</label>
+  </switch>
+
+  <switch name="-fmemoized">
+    <enabled>false</enabled>
+    <fieldtype>boolean</fieldtype>
+    <switchtype>c,c++</switchtype>
+    <excludefrom></excludefrom>
+    <label>Placeholder for obsolete switch</label>
   </switch>
 
 </category>
