@@ -171,7 +171,7 @@ var
 begin
 
  XMLcompilerOpts := TJvSimpleXML.Create(Nil);
-  XMLcompilerOpts.LoadFromFile('c:\wxdevcpp_vc\devcpp_compiler_options.xml');
+  XMLcompilerOpts.LoadFromFile('devcpp_compiler_options.xml');
 
   compilerindex := 0;
   

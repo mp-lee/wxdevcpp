@@ -930,7 +930,7 @@ begin
     Ini.Free;
   end;
 end;
-//C:\Documents and Settings\MANDRAVELLOS\Local Settings\Application Data\Copy of devcpp-1.ini
+
 procedure UpdateAltConfigFile;
 var
   Ini: TIniFile;
@@ -1123,7 +1123,7 @@ begin
 {$IFDEF VC_BUILD}
 
   XMLcompilerOpts := TJvSimpleXML.Create(Nil);
-  XMLcompilerOpts.LoadFromFile('c:\wxdevcpp_vc\devcpp_compiler_options.xml');
+  XMLcompilerOpts.LoadFromFile('devcpp_compiler_options.xml');
 
   compilerindex := 0;
   
