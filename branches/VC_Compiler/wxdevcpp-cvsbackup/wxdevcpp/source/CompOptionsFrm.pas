@@ -23,9 +23,6 @@ unit CompOptionsFrm;
 interface
 
 uses
-{$IFDEF VC_BUILD}
-JvSimpleXml, 
-{$ENDIF}
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   Buttons, StdCtrls, Inifiles, ExtCtrls, ComCtrls, devTabs, Spin, XPMenu,
@@ -127,9 +124,6 @@ type
     procedure WindresEditChange(Sender: TObject);
     procedure DllwrapEditChange(Sender: TObject);
     procedure GprofEditChange(Sender: TObject);
-{$IFDEF VC_BUILD}
-    procedure ReadCompilerXML;
-{$ENDIF}
   private
     fBins: string;
     fLibs: string;
@@ -163,102 +157,6 @@ const
     'CompOpt_CodeGen',
     'CompOpt_Linker');
 
-{$IFDEF VC_BUILD}
-procedure TCompForm.ReadCompilerXML;
-var
- i, compilerindex : integer;
- XMLcompilerOpts : TJvSimpleXML;
-begin
-
- XMLcompilerOpts := TJvSimpleXML.Create(Nil);
-  XMLcompilerOpts.LoadFromFile('devcpp_compiler_options.xml');
-
-  compilerindex := 0;
-  
-  // Figure out which compiler we want to use
-  if (devCompiler <> nil) then
-  begin
-
-  // Show what compiler is currently set
-  //showmessage('Current compiler = ' + devCompilerSet.SetName(devCompiler.CompilerSet));
-
-     // Attempt to find the specified compiler name
-     compilerindex := -1;
-     for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
-        if (XMLCompilerOpts.Root.Items.Item[i].Properties <> nil) then begin
-           if XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') = devCompilerSet.SetName(devCompiler.CompilerSet) then
-              compilerindex := i;
-
-  //   if (compilerindex <> -1) then
-  //  showMessage(XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') + ' : ' + devCompilerSet.SetName(devCompiler.CompilerSet));
-           end;
-
-     if (compilerindex = -1) then
-      // if we want the default compiler, then find it.
-      for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
-             if (XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default'] <> nil) then
-                if XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default'].BoolValue then
-                   compilerindex := i;
-
-  //   showMessage('Chosen: ' + XMLCompilerOpts.Root.Items.Item[compilerindex].Properties.Value('name'));
-
-  end;
-
-  with XMLCompilerOpts.Root.Items.Item[compilerindex] do
-  begin
-
-  if (Items.ItemNamed['isvc'] <> nil) then
-      devCompiler.IsVC := Items.ItemNamed['isvc'].BoolValue
-  else
-      devCompiler.IsVC := false;  // use the Mingw gcc default
-
-  // Get the name of the c compiler program
-  if (Items.ItemNamed['c_compiler'] <> nil) then
-      devCompiler.gccName := Items.ItemNamed['c_compiler'].Value
-  else
-      devCompiler.gccName := GCC_PROGRAM;  // use the Mingw gcc default program
-
-  // Get the name of the c++ compiler program
-  if (Items.ItemNamed['c++_compiler'] <> nil) then
-      devCompiler.gppName := Items.ItemNamed['c++_compiler'].Value
-  else
-      devCompiler.gppName := GPP_PROGRAM;  // use the Mingw gcc default program
-
-  // Get the name of the make program
-  if (Items.ItemNamed['make'] <> nil) then
-      devCompiler.makeName := Items.ItemNamed['make'].Value
-  else
-      devCompiler.makeName := MAKE_PROGRAM;  // use the Mingw gcc default program
-
-  // Get the name of the windres program
-  if (Items.ItemNamed['windres'] <> nil) then
-      devCompiler.windresName := Items.ItemNamed['windres'].Value
-  else
-      devCompiler.windresName := WINDRES_PROGRAM;  // use the Mingw gcc default program
-
-  // Get the name of the dllwrap program
-  if (Items.ItemNamed['dllwrap'] <> nil) then
-      devCompiler.dllwrapName := Items.ItemNamed['dllwrap'].Value
-  else
-      devCompiler.dllwrapName := DLLWRAP_PROGRAM;  // use the Mingw gcc default program
-
-  // Get the name of the debugger program
-  if (Items.ItemNamed['debugger'] <> nil) then
-      devCompiler.gdbName := Items.ItemNamed['debugger'].Value
-  else
-      devCompiler.gdbName := GDB_PROGRAM;  // use the Mingw gcc default program
-
-   // Get the name of the gprof program
-  if (Items.ItemNamed['gprof'] <> nil) then
-      devCompiler.gprofName := Items.ItemNamed['gprof'].Value
-  else
-      devCompiler.gprofName := GPROF_PROGRAM;  // use the Mingw gcc default program
-
-  end;
-
-
-end;
-{$ENDIF}
 
 procedure TCompForm.btnCancelClick(Sender: TObject);
 begin
@@ -314,7 +212,7 @@ begin
     dllwrapName := devCompilerSet.dllwrapName;
     gprofName := devCompilerSet.gprofName;
 {$IfDef VC_BUILD}
-    IsVC := devCompilerSet.IsVC;
+    compilerType := devCompilerSet.compilerType;
 {$EndIf}
   end;
 
@@ -379,6 +277,16 @@ begin
     currentSet := finalcompilerset;
     devCompilerSet.LoadSet(finalcompilerset);
     cmbCompilerSetComp.ItemIndex := finalcompilerset;
+
+{$IFDEF VC_BUILD}
+    GccEdit.Text := gccName;
+    GppEdit.Text := gppName;
+    GdbEdit.Text := gdbName;
+    MakeEdit.Text := makeName;
+    WindresEdit.Text := windresName;
+    DllwrapEdit.Text := dllwrapName;
+    GprofEdit.Text := gprofName;
+{$ENDIF}
   end;
 end;
 
@@ -556,9 +464,6 @@ end;
 procedure TCompForm.LoadText;
 begin
 
-{$IFDEF VC_BUILD}
-ReadCompilerXML;
-{$ENDIF}
   if devData.XPTheme then
     XPMenu.Active := true
   else

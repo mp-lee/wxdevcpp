@@ -27,6 +27,9 @@ unit compiler;
 
 interface
 uses
+{$IFDEF VC_BUILD}
+xprocs,
+{$ENDIF}
 {$IFDEF WIN32}
   Windows, SysUtils, Dialogs, StdCtrls, ComCtrls, Forms,
   devrun, version, project, utils, prjtypes, Classes, Graphics;
@@ -471,7 +474,8 @@ end;
     if DoCheckSyntax then
     begin
       writeln(F, ofile + ':');
-      if (devCompiler.IsVC) then
+      
+      if strEqual(devCompiler.compilerType, 'Visual C++') then
         writeln(F, #9 + '$(WINDRES) /r $(LINK_OUT)$(RES) ' + ResIncludes + ' ' + tfile)
       else
           writeln(F, #9 + '$(WINDRES) ' + devCompiler.Includeparamslabel
@@ -482,7 +486,7 @@ end;
     end else
     begin
       writeln(F, ofile + ': ' + tfile + ' ' + ResFiles);
-      if (devCompiler.IsVC) then
+      if strEqual(devCompiler.compilerType, 'Visual C++') then
         writeln(F, #9 + '$(WINDRES) /r /$(LINK_OUT)$(RES) ' + ResIncludes + ' ' + tfile)
       else
         writeln(F, #9 + '$(WINDRES) -i '
@@ -537,7 +541,7 @@ begin
   if not DoCheckSyntax then
   begin
 {$IFDEF VC_BUILD}
-    if devCompilerSet.IsVC then
+    if strEqual(devCompiler.compilerType, 'Visual C++') then
       writeln(F, #9 + '$(LINK) /LIB /nologo $(LINK_OUT):$(BIN) $(LINKOBJ) $(LIBS)')
     else
     begin
@@ -574,7 +578,7 @@ begin
   if not DoCheckSyntax then
   begin
 {$IFDEF VC_BUILD}
-    if devCompilerSet.IsVC then
+    if strEqual(devCompiler.compilerType, 'Visual C++') then
       writeln(F, #9 + '$(LINK) /nologo /dll /implib:$(STATICLIB) $(LINKOBJ) $(LIBS) $(LINK_OUT)$(BIN)')
     else
       if fProject.Options.useGPP then
@@ -1126,7 +1130,7 @@ LowerLine: string;
 cpos: integer;
 begin
   try
-    if devCompilerSet.IsVC then
+    if strEqual(devCompiler.compilerType, 'Visual C++') then
     begin
       if (Pos('Command line error', Line) > 0) then
       begin
@@ -1369,7 +1373,7 @@ begin
     Line := LOutput.Strings[curLine];
     LowerLine := LowerCase(Line);
 
-    if devCompilerSet.IsVC then
+    if strEqual(devCompiler.compilerType, 'Visual C++') then
     begin
       //Do we have to ignore this message?
       if

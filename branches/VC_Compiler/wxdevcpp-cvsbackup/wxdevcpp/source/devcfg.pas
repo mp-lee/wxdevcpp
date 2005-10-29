@@ -89,7 +89,7 @@ type
     fLibDir: string;
     fOptions: string;
 {$IfDef VC_BUILD}
-    fVC: boolean;
+    fcompilerType: string;
     fLibparamsLabel : string;
     fIncludeparamsLabel : string;
     fIncludedirLabel : string;
@@ -128,7 +128,7 @@ type
     property Sets: TStrings read fSets write fSets;
   published
 {$IfDef VC_BUILD}
-    property IsVC: boolean read fVC write fVC;
+    property compilerType : string read fcompilerType write fcompilerType;
     property LibparamsLabel : string read fLibparamsLabel write fLibparamsLabel;
     property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
     property IncludeDirLabel : string read fIncludedirLabel write fIncludedirLabel;
@@ -178,7 +178,7 @@ type
     fgprofName: string;
     fCompilerSet: integer;
 {$IfDef VC_BUILD}
-    fVC: boolean;
+    fcompilerType: string;
     fOriginalSet:integer;
     fLibparamsLabel : string;
     fIncludeparamsLabel : string;
@@ -240,7 +240,7 @@ type
 //   property CmdOpts: string read fCmdOpts write fCmdOpts;
 //   property LinkOpts: string read fLinkopts write fLinkOpts;
 {$IfDef VC_BUILD}
-    property IsVC: boolean read fVC write fVC;
+    property compilerType: string read fcompilerType write fcompilerType;
     property OriginalSet : integer read fOriginalSet write fOriginalSet;
     property LibparamsLabel : string read fLibparamsLabel write fLibparamsLabel;
     property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
@@ -1100,7 +1100,7 @@ var i : integer;
   j, k : integer;
   XMLcompilerOpts : TJvSimpleXML;
   switchdefaultindex, compilerindex : integer;
-  switchoptions, switchname, switchlabel, fieldtype, switchtype, switchcategory : string;
+  switchoptions, switchcommand, switchlabel, fieldtype, switchtype, switchcategory : string;
   linkertype, cpptype, ctype : boolean;
   excludefromtype : string;
 {$ENDIF}
@@ -1119,11 +1119,11 @@ begin
     Dispose(fOptions.Items[i]);
   end;
   fOptions.Clear;
-     
+
 {$IFDEF VC_BUILD}
 
   XMLcompilerOpts := TJvSimpleXML.Create(Nil);
-  XMLcompilerOpts.LoadFromFile('devcpp_compiler_options.xml');
+  XMLcompilerOpts.LoadFromFile(devDirs.Templates + '\wxWidgets\devcpp_compiler_options.xml');
 
   compilerindex := 0;
   
@@ -1142,160 +1142,175 @@ begin
               compilerindex := i;
 
   //   if (compilerindex <> -1) then
-  //  showMessage(XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') + ' : ' + devCompilerSet.SetName(devCompiler.CompilerSet));
+   // showMessage(XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') + ' : ' + devCompilerSet.SetName(devCompiler.CompilerSet));
            end;
 
      if (compilerindex = -1) then
       // if we want the default compiler, then find it.
       for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
-             if (XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default'] <> nil) then
-                if XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default'].BoolValue then
+             if (XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default_compiler'] <> nil) then
+                if XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default_compiler'].BoolValue then
                    compilerindex := i;
 
-  //   showMessage('Chosen: ' + XMLCompilerOpts.Root.Items.Item[compilerindex].Properties.Value('name'));
-
-  end;
+ // showMessage('Chosen: ' + XMLCompilerOpts.Root.Items.Item[compilerindex].Properties.Value('name'));
 
   with XMLCompilerOpts.Root.Items.Item[compilerindex] do
   begin
 
-  if (Items.ItemNamed['isvc'] <> nil) then
-      IsVC := Items.ItemNamed['isvc'].BoolValue
+   if (trim(Properties.Value('type')) <> '') then
+      compilerType := Properties.Value('type')
   else
-      IsVC := false;  // use the Mingw gcc default
+      compilerType := 'Mingw';  // use the Mingw gcc default
 
   // Get the name of the c compiler program
-  if (Items.ItemNamed['c_compiler'] <> nil) then
+ {if (Items.ItemNamed['c_compiler'] <> nil) then
       fgccName := Items.ItemNamed['c_compiler'].Value
   else
-      fgccName := GCC_PROGRAM;  // use the Mingw gcc default program
+      fgccName := GCC_PROGRAM; } // use the Mingw gcc default program
 
   // Get the name of the c++ compiler program
-  if (Items.ItemNamed['c++_compiler'] <> nil) then
-      fgppName := Items.ItemNamed['c++_compiler'].Value
-  else
-      fgppName := GPP_PROGRAM;  // use the Mingw gcc default program
+ { if (Items.ItemNamed['cpp_compiler'] <> nil) then
+  begin
+      fgppName := Items.ItemNamed['cpp_compiler'].Value;
+      devData.SaveSetting('Compiler', GPP_PROGRAM, fgppName)
+  end
+  else   begin
+      fgppName := GPP_PROGRAM; } // use the Mingw gcc default program
+ { end;  }
 
   // Get the name of the make program
-  if (Items.ItemNamed['make'] <> nil) then
+{  if (Items.ItemNamed['make'] <> nil) then
       fmakeName := Items.ItemNamed['make'].Value
   else
-      fmakeName := MAKE_PROGRAM;  // use the Mingw gcc default program
+      fmakeName := MAKE_PROGRAM;  } // use the Mingw gcc default program
 
   // Get the name of the windres program
-  if (Items.ItemNamed['windres'] <> nil) then
+ { if (Items.ItemNamed['windres'] <> nil) then
       fwindresName := Items.ItemNamed['windres'].Value
   else
-      fwindresName := WINDRES_PROGRAM;  // use the Mingw gcc default program
+      fwindresName := WINDRES_PROGRAM;  } // use the Mingw gcc default program
 
   // Get the name of the dllwrap program
-  if (Items.ItemNamed['dllwrap'] <> nil) then
+{ if (Items.ItemNamed['dllwrap'] <> nil) then
       fdllwrapName := Items.ItemNamed['dllwrap'].Value
   else
-      fdllwrapName := DLLWRAP_PROGRAM;  // use the Mingw gcc default program
+      fdllwrapName := DLLWRAP_PROGRAM;  } // use the Mingw gcc default program
 
   // Get the name of the debugger program
-  if (Items.ItemNamed['debugger'] <> nil) then
+ { if (Items.ItemNamed['debugger'] <> nil) then
       fgdbName := Items.ItemNamed['debugger'].Value
   else
-      fgdbName := GDB_PROGRAM;  // use the Mingw gcc default program
+      fgdbName := GDB_PROGRAM; } // use the Mingw gcc default program
 
    // Get the name of the gprof program
-  if (Items.ItemNamed['gprof'] <> nil) then
+ { if (Items.ItemNamed['gprof'] <> nil) then
       fgprofName := Items.ItemNamed['gprof'].Value
   else
-      fgprofName := GPROF_PROGRAM;  // use the Mingw gcc default program
+      fgprofName := GPROF_PROGRAM; } // use the Mingw gcc default program
 
   // Get the label to use to specify a library to link in the makefile
-  if (Items.ItemNamed['libparamslabel'] <> nil) then
+  {if (Items.ItemNamed['libparamslabel'] <> nil) then
       fLibparamsLabel := Items.ItemNamed['libparamslabel'].Value
   else
-      fLibparamsLabel := '-L';  // use the Mingw gcc default label
+      fLibparamsLabel := '-L';  } // use the Mingw gcc default label
 
   // Get the label to use to specify an include directory to add to the makefile
-  if (Items.ItemNamed['includeparamslabel'] <> nil) then
+ { if (Items.ItemNamed['includeparamslabel'] <> nil) then
       fIncludeparamsLabel := Items.ItemNamed['includeparamslabel'].Value
   else
-      fIncludeparamsLabel := '-I';   // use the Mingw gcc default label
+      fIncludeparamsLabel := '-I';  } // use the Mingw gcc default label
 
   // Get the label to use to specify an include directory to add to the makefile
-  if (Items.ItemNamed['includedirlabel'] <> nil) then
+ { if (Items.ItemNamed['includedirlabel'] <> nil) then
       fIncludedirLabel := Items.ItemNamed['includedirlabel'].Value
   else
-      fIncludedirLabel := ' --include-dir ';   // use the Mingw gcc default label
+      fIncludedirLabel := ' --include-dir ';  } // use the Mingw gcc default label
 
   // Compiler global switch
-  if (Items.ItemNamed['compilerlabel'] <> nil) then
+ { if (Items.ItemNamed['compilerlabel'] <> nil) then
      fCompilerLabel := Items.ItemNamed['compilerlabel'].Value
   else
-     fCompilerLabel := '-c';
+     fCompilerLabel := '-c'; }
 
   // Switch label to tell the compiler what the output file is named
-  if (Items.ItemNamed['compileroutputlabel'] <> nil) then
+ { if (Items.ItemNamed['compileroutputlabel'] <> nil) then
         fCompileroutputLabel := Items.ItemNamed['compileroutputlabel'].Value
   else
-        fCompileroutputLabel := '-o';
+        fCompileroutputLabel := '-o';  }
 
   // Switch label to tell the compiler what the linker output file is named
-  if (Items.ItemNamed['linkerlabel'] <> nil) then
+{  if (Items.ItemNamed['linkerlabel'] <> nil) then
         flinkername := Items.ItemNamed['linkerlabel'].Value
   else
-        flinkername := '$(CPP)';
+        flinkername := '$(CPP)';     }
 
   // Switch label to tell the compiler what the linker output file is named
-  if (Items.ItemNamed['linkeroutputlabel'] <> nil) then
+{  if (Items.ItemNamed['linkeroutputlabel'] <> nil) then
         flinkeroutputlabel := Items.ItemNamed['linkeroutputlabel'].Value
   else
         flinkeroutputlabel := '-o ';
-
+   }
 
   // Switch label if we just want the compiler to check syntax
-  if (Items.ItemNamed['checksyntaxcompilerlabel'] <> nil) then
+ { if (Items.ItemNamed['checksyntaxcompilerlabel'] <> nil) then
     fChecksyntaxcompilerLabel := Items.ItemNamed['checksyntaxcompilerlabel'].Value
   else
      fChecksyntaxcompilerLabel := '-c';
+     }
 
   // Switch label if we just want the compiler to check syntax (i.e. no file output)
-  if (Items.ItemNamed['checksyntaxoutputlabel'] <> nil) then
+ { if (Items.ItemNamed['checksyntaxoutputlabel'] <> nil) then
     fChecksyntaxoutputLabel := Items.ItemNamed['checksyntaxoutputlabel'].Value
   else
      fChecksyntaxoutputLabel := '-o nul';
+     }
 
   // DLL wrapper caption name
-  if (Items.ItemNamed['lbldllwrapcaption'] <> nil) then
+  {if (Items.ItemNamed['lbldllwrapcaption'] <> nil) then
     fdllwrapNameCaption := Items.ItemNamed['lbldllwrapcaption'].Value
   else
      fdllwrapNameCaption := 'dllwrap : ';
+     }
 
   // DLL wrapper name
-  if (Items.ItemNamed['dllwrapName'] <> nil) then
+ { if (Items.ItemNamed['dllwrapName'] <> nil) then
         fdllwrapName := Items.ItemNamed['dllwrapName'].Value
   else
         fdllwrapName := '';
+    }
 
   // Windows Resource wrapper name
-  if (Items.ItemNamed['lblwindrescaption'] <> nil) then
+  {if (Items.ItemNamed['lblwindrescaption'] <> nil) then
         fwindresNameCaption := Items.ItemNamed['lblwindrescaption'].Value
   else
-        fwindresNameCaption := 'dllwrap : ';
+        fwindresNameCaption := 'dllwrap : ';  }
+
+  // Find the "switches" object
+  i := 0;
+  while (i < Items.Count) and (Items[i].Name <> 'switches') do
+     i := i + 1;
+
+  if (i < Items.Count) then  // "switches" found
+  begin
+
+  with Items[i] do
+  begin
 
   for i := 0 to Items.Count-1 do
   begin
+
      switchcategory := Items[i].Properties.Value('name');
 
       for j := 0 to Items[i].Items.Count-1 do
       begin
-        switchlabel := Items.Item[i].Items.Item[j].Items.ItemNamed['label'].Value;
-        switchname := Items.Item[i].Items.Item[j].Properties.Value('name');
-        fieldtype := Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Value;
-        switchtype := Items.Item[i].Items.Item[j].Items.ItemNamed['switchtype'].Value;
 
-        if Items.Item[i].Items.Item[j].Items.ItemNamed['testint'] <> nil  then
-        ShowMessage(Format('%d', [Items.Item[i].Items.Item[j].Items.ItemNamed['testint'].IntValue]));
-
+      switchlabel := Items.Item[i].Items.Item[j].Properties.Value('name');
+      switchcommand := Items.Item[i].Items.Item[j].Properties.Value('command');
+      fieldtype := Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Properties.Value('type');
+      switchtype := Items.Item[i].Items.Item[j].Items.ItemNamed['switchtype'].Value;
 
         // Tony 4 Oct 2005 - Not quite sure how to use the exclude type option. It's a set of bytes. Doesn't seem to ever get used
-        excludefromtype := Items.Item[i].Items.Item[j].Items.ItemNamed['excludefrom'].Value;
+       excludefromtype := Items.Item[i].Items.Item[j].Items.ItemNamed['excludefrom'].Value;
 
         linkertype := false; cpptype := false; ctype := false;
         for k := 0 to strTokenCount(switchtype, ',')-1 do
@@ -1309,17 +1324,13 @@ begin
         if (AnsiUpperCase(fieldtype) = 'ENUMERATED') then
         begin
 
-          switchoptions := Items.Item[i].Items.Item[j].Items.ItemNamed['options'].Value;
+        sl := TStringList.Create;
 
-          sl := TStringList.Create;
+         for k := 0 to Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Items.Count-1 do
+             sl.Add(Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Items.Item[k].Value + '='
+               + Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Properties.Value('name'));
 
-          for k := 0 to strTokenCount(switchoptions, ',')-1 do
-          begin
-             // Trim spaces and remove return or enter characters #13 #10
-             sl.Add(strtrim(strReplace(
-                   strReplace(strTokenAt(switchoptions, ',', k), #10, ''), #13, '')));
-          end;
-
+         if (Items.Item[i].Items.Item[j].Items.ItemNamed['enabled'].BoolValue) then
           if (Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'] <> nil) then
                 AddOption(switchlabel, Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'].BoolValue, ctype, cpptype, linkertype, Items.Item[i].Items.Item[j].Items.ItemNamed['selection'].IntValue, '', switchcategory, [], sl)
           else
@@ -1331,13 +1342,14 @@ begin
         begin
           sl := TStringList.Create;
           sl.Add('No=');
-          sl.Add('Yes=' + switchname);
+          sl.Add('Yes=' + switchcommand);
 
-          if (Items.Item[i].Items.Item[j].Items.ItemNamed['enabled'].BoolValue) then
+          if (Items.Item[i].Items.Item[j].Items.ItemNamed['default'].BoolValue) then
              switchdefaultindex := 1
           else
              switchdefaultindex := 0;
 
+          if (Items.Item[i].Items.Item[j].Items.ItemNamed['enabled'].BoolValue) then
           if (Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'] <> nil) then
               AddOption(switchlabel, Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'].BoolValue, ctype, cpptype, linkertype, switchdefaultindex, '', switchcategory, [], sl)
           else
@@ -1345,8 +1357,10 @@ begin
 
         end
 
+        end;
      end;
-
+     end;
+  end;
   end;
   end;
   XMLcompilerOpts.Free;
@@ -1526,9 +1540,6 @@ begin
      //fLinkAdd:= LoadBoolSetting(key, 'LinkAdd');
     fcmdOpts := LoadSetting(key, 'cmdline');
     flinkopts := LoadSetting(key, 'LinkLine');
-{$IfDef VC_BUILD}
-    fVC := LoadBoolSetting(key, 'IsVC');
-{$EndIf}
     fSaveLog := LoadBoolSetting(key, 'Log');
     s := LoadSetting(key, 'Delay');
      if s <> '' then fDelay:= strtoint(s);
@@ -1562,7 +1573,7 @@ var
 begin
   with devData do
   begin
-    key := 'Compiler';
+    key := 'Compiler';     
     SaveboolSetting(key, 'UseParams', fUseParams);
     SaveSetting(key, 'InterDir', fIntermediate);
     SaveSetting(key, 'OutputDir', fOutputDir);
@@ -1583,9 +1594,6 @@ begin
     SaveSetting(key, DLLWRAP_PROGRAM, fdllwrapName);
     SaveSetting(key, GPROF_PROGRAM, fgprofName);
     SaveSetting(key, 'CompilerSet', IntToStr(fCompilerSet));
-{$IfDef VC_BUILD}
-    SaveBoolSetting(key, 'IsVC', fVC);
-{$EndIf}
 
     S := '';
     for I := 0 to fOptions.Count - 1 do
@@ -1609,14 +1617,14 @@ begin
   if devDirs.OriginalPath = '' then // first time only
     devDirs.OriginalPath := GetEnvironmentVariable('PATH');
   SetPath(devDirs.Bins);
-  //  devCompilerSet.LoadSet(Value);
-  //  fgccName := devCompilerSet.gccName;
-  //  fgppName := devCompilerSet.gppName;
-  //  fgdbName := devCompilerSet.gdbName;
-  //  fmakeName := devCompilerSet.makeName;
-  //  fwindresName := devCompilerSet.windresName;
-  //  fdllwrapName := devCompilerSet.dllwrapName;
-  //  fgprofName := devCompilerSet.gprofName;
+  devCompilerSet.LoadSet(Value);
+  fgccName := devCompilerSet.gccName;
+  fgppName := devCompilerSet.gppName;
+  fgdbName := devCompilerSet.gdbName;
+  fmakeName := devCompilerSet.makeName;
+  fwindresName := devCompilerSet.windresName;
+  fdllwrapName := devCompilerSet.dllwrapName;
+  fgprofName := devCompilerSet.gprofName;
     // TODO: basedir
 end;
 
@@ -1669,7 +1677,6 @@ begin
   // makefile
   fFastDep := FALSE;
 
-{$IFNDEF VC_BUILD}
   // Programs
   fgccName := GCC_PROGRAM;
   fgppName := GPP_PROGRAM;
@@ -1678,7 +1685,6 @@ begin
   fwindresName := WINDRES_PROGRAM;
   fgprofName := GPROF_PROGRAM;
   fCompilerSet := 0;
-{$ENDIF}
 
   AddDefaultOptions;
 end;
@@ -2065,7 +2071,7 @@ begin
   devCompiler.fcmdOpts:=devCompilerSet.fCmdOptions;
   devCompiler.flinkopts:=devCompilerSet.fLinkOptions;
   {$IFDEF VC_BUILD}
-  devCompiler.IsVC := devCompilerSet.IsVC;
+  devCompiler.compilerType := devCompilerSet.compilerType;
   {$ENDIF}
   // we have to set the devDirs too
   devDirs.Bins := devCompilerSet.BinDir;
@@ -2334,9 +2340,6 @@ begin
     fLinkOptions:=LoadSetting(key, 'LinkLine');
     fCompAdd:= LoadBoolSetting(key, 'CompAdd');
     fLinkAdd:= LoadBoolSetting(key, 'LinkAdd');
-{$IfDef WX_BUILD}
-    fVC:= LoadBoolSetting(key, 'IsVC');
-{$EndIf}
   end;
 end;
 
@@ -2393,9 +2396,6 @@ begin
     SaveSetting(key, 'LinkLine', fLinkOptions);
     SaveBoolSetting(key, 'CompAdd', fCompAdd);
     SaveBoolSetting(key, 'LinkAdd', fLinkAdd);
-{$IfDef WX_BUILD}
-    SaveBoolSetting(key, 'IsVC', fVC);
-{$EndIf}
   end;
 end;
 
@@ -2415,13 +2415,13 @@ end;
 procedure TdevCompilerSet.SettoDefaults;
 begin
   // Programs
-  fgccName := GCC_PROGRAM;
+ { fgccName := GCC_PROGRAM;
   fgppName := GPP_PROGRAM;
   fgdbName := GDB_PROGRAM;
   fmakeName := MAKE_PROGRAM;
   fwindresName := WINDRES_PROGRAM;
   fgprofName := GPROF_PROGRAM;
-
+  }
   fCompAdd:= FALSE;
   fLinkAdd:= FALSE;
   fCmdOptions:='';
