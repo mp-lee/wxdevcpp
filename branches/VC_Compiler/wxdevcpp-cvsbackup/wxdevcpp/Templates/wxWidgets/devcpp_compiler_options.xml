@@ -601,11 +601,12 @@ $Id
         <compiler type="MingW" name="MingW gcc">
                 <default_compiler>true</default_compiler>
 		<formatting>
-			<comp>/c /nologo /OUT:%s</comp>
-			<link>/nologo</link>
+			<comp>-c</comp>
+			<link>-o</link>
 			<lib>/LIBPATH:%s</lib>
-			<include>/I%s</include>
-			<output>/Fo%s</output>
+			<include>-I</include>
+			<includedir>--include-dir </includedir>
+			<output>-o</output>
 		</formatting>
 		<binaries>
 			<binary type="0">make</binary>
@@ -742,7 +743,6 @@ $Id
                                      <option value="k8">K8</option>
                                      <option value="c3">C3</option>
                                      <option value="c3-2">C3-2</option>
-
 				  </fieldtype>
      				  <switchtype>c,c++,linker</switchtype>
      				  <excludefrom></excludefrom>
@@ -861,8 +861,8 @@ $Id
     				  <fieldtype type="boolean"></fieldtype>
     				  <switchtype>c,c++,linker</switchtype>
     				  <excludefrom></excludefrom>
-				 <selection>false</selection>
-				 <default>false</default>
+				 <selection>true</selection>
+				 <default>true</default>
 				 <enabled>true</enabled>
     				</switch>
 

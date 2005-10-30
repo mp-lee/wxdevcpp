@@ -1100,7 +1100,7 @@ var i : integer;
   j, k : integer;
   XMLcompilerOpts : TJvSimpleXML;
   switchdefaultindex, compilerindex : integer;
-  switchoptions, switchcommand, switchlabel, fieldtype, switchtype, switchcategory : string;
+  switchcommand, switchlabel, fieldtype, switchtype, switchcategory : string;
   linkertype, cpptype, ctype : boolean;
   excludefromtype : string;
 {$ENDIF}
@@ -1125,8 +1125,6 @@ begin
   XMLcompilerOpts := TJvSimpleXML.Create(Nil);
   XMLcompilerOpts.LoadFromFile(devDirs.Templates + '\wxWidgets\devcpp_compiler_options.xml');
 
-  compilerindex := 0;
-  
   // Figure out which compiler we want to use
   if (devCompiler <> nil) then
   begin
@@ -1209,61 +1207,61 @@ begin
       fgprofName := GPROF_PROGRAM; } // use the Mingw gcc default program
 
   // Get the label to use to specify a library to link in the makefile
-  {if (Items.ItemNamed['libparamslabel'] <> nil) then
-      fLibparamsLabel := Items.ItemNamed['libparamslabel'].Value
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['libparamslabel'] <> nil) then
+      fLibparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['libparamslabel'].Value
   else
-      fLibparamsLabel := '-L';  } // use the Mingw gcc default label
+      fLibparamsLabel := '-L libparamslabel';   // use the Mingw gcc default label
 
   // Get the label to use to specify an include directory to add to the makefile
- { if (Items.ItemNamed['includeparamslabel'] <> nil) then
-      fIncludeparamsLabel := Items.ItemNamed['includeparamslabel'].Value
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['include'] <> nil) then
+      fIncludeparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['include'].Value
   else
-      fIncludeparamsLabel := '-I';  } // use the Mingw gcc default label
+      fIncludeparamsLabel := '-I';   // use the Mingw gcc default label
 
   // Get the label to use to specify an include directory to add to the makefile
- { if (Items.ItemNamed['includedirlabel'] <> nil) then
-      fIncludedirLabel := Items.ItemNamed['includedirlabel'].Value
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['includedir'] <> nil) then
+      fIncludedirLabel := Items.ItemNamed['formatting'].Items.ItemNamed['includedir'].Value
   else
-      fIncludedirLabel := ' --include-dir ';  } // use the Mingw gcc default label
+      fIncludedirLabel := ' --include-dir';   // use the Mingw gcc default label
 
   // Compiler global switch
- { if (Items.ItemNamed['compilerlabel'] <> nil) then
-     fCompilerLabel := Items.ItemNamed['compilerlabel'].Value
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['comp'] <> nil) then
+     fCompilerLabel := Items.ItemNamed['formatting'].Items.ItemNamed['comp'].Value
   else
-     fCompilerLabel := '-c'; }
+     fCompilerLabel := '-c';
 
   // Switch label to tell the compiler what the output file is named
- { if (Items.ItemNamed['compileroutputlabel'] <> nil) then
-        fCompileroutputLabel := Items.ItemNamed['compileroutputlabel'].Value
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['output'] <> nil) then
+        fCompileroutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['output'].Value
   else
-        fCompileroutputLabel := '-o';  }
+        fCompileroutputLabel := '-o';
 
   // Switch label to tell the compiler what the linker output file is named
-{  if (Items.ItemNamed['linkerlabel'] <> nil) then
-        flinkername := Items.ItemNamed['linkerlabel'].Value
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['linkerlabel'] <> nil) then
+        flinkername := Items.ItemNamed['formatting'].Items.ItemNamed['linkerlabel'].Value
   else
-        flinkername := '$(CPP)';     }
+        flinkername := '$(CPP) linker label';
 
   // Switch label to tell the compiler what the linker output file is named
-{  if (Items.ItemNamed['linkeroutputlabel'] <> nil) then
-        flinkeroutputlabel := Items.ItemNamed['linkeroutputlabel'].Value
+ if (Items.ItemNamed['formatting'].Items.ItemNamed['link'] <> nil) then
+        flinkeroutputlabel := Items.ItemNamed['formatting'].Items.ItemNamed['link'].Value
   else
-        flinkeroutputlabel := '-o ';
-   }
+        flinkeroutputlabel := '-o';
+
 
   // Switch label if we just want the compiler to check syntax
- { if (Items.ItemNamed['checksyntaxcompilerlabel'] <> nil) then
-    fChecksyntaxcompilerLabel := Items.ItemNamed['checksyntaxcompilerlabel'].Value
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxcompilerlabel'] <> nil) then
+    fChecksyntaxcompilerLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxcompilerlabel'].Value
   else
-     fChecksyntaxcompilerLabel := '-c';
-     }
+     fChecksyntaxcompilerLabel := '-c checksyntaxcompilerlabel';
+
 
   // Switch label if we just want the compiler to check syntax (i.e. no file output)
- { if (Items.ItemNamed['checksyntaxoutputlabel'] <> nil) then
-    fChecksyntaxoutputLabel := Items.ItemNamed['checksyntaxoutputlabel'].Value
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxoutputlabel'] <> nil) then
+    fChecksyntaxoutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxoutputlabel'].Value
   else
-     fChecksyntaxoutputLabel := '-o nul';
-     }
+     fChecksyntaxoutputLabel := '-o nul checksyntaxoutputlabel';
+
 
   // DLL wrapper caption name
   {if (Items.ItemNamed['lbldllwrapcaption'] <> nil) then

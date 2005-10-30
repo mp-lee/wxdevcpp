@@ -289,8 +289,8 @@ begin
   writeln(F, 'OBJ       =' + Objects + ' $(RES)');
   writeln(F, 'LINKOBJ   =' + LinkObjects + ' $(RES)');
   writeln(F, 'INCLUDE   = ' + devCompiler.Includeparamslabel);
-  writeln(F, 'COMP_OUT  = ' + devCompiler.Linkeroutputlabel);
-  writeln(F, 'LINK_OUT  = ' + devCompiler.Compileroutputlabel);
+  writeln(F, 'LINK_OUT  = ' + devCompiler.Linkeroutputlabel);
+  writeln(F, 'COMP_OUT  = ' + devCompiler.Compileroutputlabel);
   writeln(F, 'LIBS      =' + StringReplace(fLibrariesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'INCS      =' + StringReplace(fIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'CXXINCS   =' + StringReplace(fCppIncludesParams, '\', '/', [rfReplaceAll]));
