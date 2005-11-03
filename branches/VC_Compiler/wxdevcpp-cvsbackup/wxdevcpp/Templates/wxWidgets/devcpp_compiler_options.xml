@@ -20,13 +20,29 @@ $Id
 
 	<compiler type="Visual C++" name="Microsoft Visual C++">
                 <default_compiler>false</default_compiler>
+		<programs>
+			<c_compiler>vcc.exe</c_compiler>
+			<c++_compiler>vcc.exe</c++_compiler>
+			<make>nmake.exe</make>
+			<windres>windres.exe</windres>
+			<dllwrap>link.exe</dllwrap>
+			<debugger>gdb.exe</debugger>
+			<gprof>gprof.exe</gprof>
+		</programs>
 		<formatting>
 			<comp>/c /nologo /OUT:%s</comp>
 			<link>/nologo</link>
-			<lib>/LIBPATH:%s</lib>
+			<lib></lib>
+			<libdir>/LIBPATH:%s</libdir>
 			<include>/I%s</include>
 			<output>/Fo%s</output>
+			<checksyntaxcompilerlabel>/nologo /c</checksyntaxcompilerlabel>
+			<checksyntaxoutputlabel>/OUT:nul</checksyntaxoutputlabel>
 		</formatting>
+		<captions>
+			<dllwrap></dllwrap>
+			<windres></windres>
+		</captions>
 		<binaries>
 			<binary type="0">make</binary>
 			<binary type="1">cl</binary>
@@ -600,14 +616,30 @@ $Id
 
         <compiler type="MingW" name="MingW gcc">
                 <default_compiler>true</default_compiler>
+		<programs>
+			<c_compiler>gcc.exe</c_compiler>
+			<c++_compiler>g++.exe</c++_compiler>
+			<make>make.exe</make>
+			<windres>windres.exe</windres>
+			<dllwrap>dllwrap.exe</dllwrap>
+			<debugger>gdb.exe</debugger>
+			<gprof>gprof.exe</gprof>
+		</programs>
 		<formatting>
 			<comp>-c</comp>
 			<link>-o</link>
-			<lib>/LIBPATH:%s</lib>
+			<lib>-l</lib>
+			<libdir>-L</libdir>
 			<include>-I</include>
 			<includedir>--include-dir </includedir>
 			<output>-o</output>
+			<checksyntaxcompiler>-S</checksyntaxcompiler>
+			<checksyntaxoutput>-o nul </checksyntaxoutput>
 		</formatting>
+		<captions>
+			<dllwrap>link : </dllwrap>
+			<windres>rc : </windres>
+		</captions>
 		<binaries>
 			<binary type="0">make</binary>
 			<binary type="1">cl</binary>

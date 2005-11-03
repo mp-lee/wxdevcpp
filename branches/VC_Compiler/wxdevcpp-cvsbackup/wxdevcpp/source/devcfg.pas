@@ -90,7 +90,7 @@ type
     fOptions: string;
 {$IfDef VC_BUILD}
     fcompilerType: string;
-    fLibparamsLabel : string;
+    fLibDirparamsLabel : string;
     fIncludeparamsLabel : string;
     fIncludedirLabel : string;
     fCompilerLabel : string;
@@ -129,7 +129,7 @@ type
   published
 {$IfDef VC_BUILD}
     property compilerType : string read fcompilerType write fcompilerType;
-    property LibparamsLabel : string read fLibparamsLabel write fLibparamsLabel;
+    property LibDirparamsLabel : string read fLibDirparamsLabel write fLibDirparamsLabel;
     property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
     property IncludeDirLabel : string read fIncludedirLabel write fIncludedirLabel;
     property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
@@ -180,7 +180,7 @@ type
 {$IfDef VC_BUILD}
     fcompilerType: string;
     fOriginalSet:integer;
-    fLibparamsLabel : string;
+    fLibDirparamsLabel : string;
     fIncludeparamsLabel : string;
     fIncludedirLabel : string;
     fCompilerLabel : string;
@@ -242,7 +242,7 @@ type
 {$IfDef VC_BUILD}
     property compilerType: string read fcompilerType write fcompilerType;
     property OriginalSet : integer read fOriginalSet write fOriginalSet;
-    property LibparamsLabel : string read fLibparamsLabel write fLibparamsLabel;
+    property LibDirparamsLabel : string read fLibDirparamsLabel write fLibDirparamsLabel;
     property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
     property IncludeDirLabel : string read fIncludedirLabel write fIncludedirLabel;
     property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
@@ -1206,11 +1206,11 @@ begin
   else
       fgprofName := GPROF_PROGRAM; } // use the Mingw gcc default program
 
-  // Get the label to use to specify a library to link in the makefile
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['libparamslabel'] <> nil) then
-      fLibparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['libparamslabel'].Value
+  // Get the label to use to specify a library directory to link in the makefile
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['libdir'] <> nil) then
+      fLibDirparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['libdir'].Value
   else
-      fLibparamsLabel := '-L libparamslabel';   // use the Mingw gcc default label
+      fLibDirparamsLabel := '-L';   // use the Mingw gcc default label
 
   // Get the label to use to specify an include directory to add to the makefile
   if (Items.ItemNamed['formatting'].Items.ItemNamed['include'] <> nil) then
@@ -1240,7 +1240,7 @@ begin
   if (Items.ItemNamed['formatting'].Items.ItemNamed['linkerlabel'] <> nil) then
         flinkername := Items.ItemNamed['formatting'].Items.ItemNamed['linkerlabel'].Value
   else
-        flinkername := '$(CPP) linker label';
+        flinkername := '$(CPP)';
 
   // Switch label to tell the compiler what the linker output file is named
  if (Items.ItemNamed['formatting'].Items.ItemNamed['link'] <> nil) then
@@ -1248,40 +1248,30 @@ begin
   else
         flinkeroutputlabel := '-o';
 
-
   // Switch label if we just want the compiler to check syntax
   if (Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxcompilerlabel'] <> nil) then
     fChecksyntaxcompilerLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxcompilerlabel'].Value
   else
-     fChecksyntaxcompilerLabel := '-c checksyntaxcompilerlabel';
+     fChecksyntaxcompilerLabel := '-c';
 
 
   // Switch label if we just want the compiler to check syntax (i.e. no file output)
   if (Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxoutputlabel'] <> nil) then
     fChecksyntaxoutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxoutputlabel'].Value
   else
-     fChecksyntaxoutputLabel := '-o nul checksyntaxoutputlabel';
-
+     fChecksyntaxoutputLabel := '-o nul';
 
   // DLL wrapper caption name
-  {if (Items.ItemNamed['lbldllwrapcaption'] <> nil) then
-    fdllwrapNameCaption := Items.ItemNamed['lbldllwrapcaption'].Value
+  if (Items.ItemNamed['captions'].Items.ItemNamed['dllwrapcaption'] <> nil) then
+    fdllwrapNameCaption := Items.ItemNamed['captions'].Items.ItemNamed['dllwrapcaption'].Value
   else
-     fdllwrapNameCaption := 'dllwrap : ';
-     }
-
-  // DLL wrapper name
- { if (Items.ItemNamed['dllwrapName'] <> nil) then
-        fdllwrapName := Items.ItemNamed['dllwrapName'].Value
-  else
-        fdllwrapName := '';
-    }
+     fdllwrapNameCaption := 'link : ';
 
   // Windows Resource wrapper name
-  {if (Items.ItemNamed['lblwindrescaption'] <> nil) then
-        fwindresNameCaption := Items.ItemNamed['lblwindrescaption'].Value
+  if (Items.ItemNamed['captions'].Items.ItemNamed['windrescaption'] <> nil) then
+        fwindresNameCaption := Items.ItemNamed['captions'].Items.ItemNamed['windrescaption'].Value
   else
-        fwindresNameCaption := 'dllwrap : ';  }
+        fwindresNameCaption := 'rc : ';
 
   // Find the "switches" object
   i := 0;

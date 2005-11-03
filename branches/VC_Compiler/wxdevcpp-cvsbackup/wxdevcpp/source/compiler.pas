@@ -684,7 +684,7 @@ begin
 
 {$IFDEF VC_BUILD}
 
-cAppendStr := '%s ' + devCompiler.LibparamsLabel + '"%s" ';
+cAppendStr := '%s ' + devCompiler.LibDirparamsLabel + '"%s" ';
  fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
 //RNC
   if (devCompilerSet.LinkOpts <> '') and devCompilerSet.AddtoLink then
