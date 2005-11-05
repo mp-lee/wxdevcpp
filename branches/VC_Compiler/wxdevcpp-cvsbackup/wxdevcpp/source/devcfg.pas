@@ -1316,7 +1316,7 @@ begin
 
          for k := 0 to Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Items.Count-1 do
              sl.Add(Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Items.Item[k].Value + '='
-               + Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Properties.Value('name'));
+               + switchcommand + Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Items.Item[k].Properties.Value('value'));
 
          if (Items.Item[i].Items.Item[j].Items.ItemNamed['enabled'].BoolValue) then
           if (Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'] <> nil) then

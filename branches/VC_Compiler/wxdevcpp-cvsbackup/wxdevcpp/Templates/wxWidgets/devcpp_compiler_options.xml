@@ -22,7 +22,7 @@ $Id
                 <default_compiler>false</default_compiler>
 		<programs>
 			<c_compiler>vcc.exe</c_compiler>
-			<c++_compiler>vcc.exe</c++_compiler>
+			<cpp_compiler>vcc.exe</cpp_compiler>
 			<make>nmake.exe</make>
 			<windres>windres.exe</windres>
 			<dllwrap>link.exe</dllwrap>
@@ -618,7 +618,7 @@ $Id
                 <default_compiler>true</default_compiler>
 		<programs>
 			<c_compiler>gcc.exe</c_compiler>
-			<c++_compiler>g++.exe</c++_compiler>
+			<cpp_compiler>g++.exe</cpp_compiler>
 			<make>make.exe</make>
 			<windres>windres.exe</windres>
 			<dllwrap>dllwrap.exe</dllwrap>
@@ -748,7 +748,7 @@ $Id
 				 <enabled>true</enabled>
     				</switch>
 
-				<switch name="Generate instructions for the following machine (-march)" command="-march">
+				<switch name="Generate instructions for the following machine (-march)" command="-march=">
      				  <enabled>true</enabled>
      				  <fieldtype type="enumerated">
 				     <option value="">None</option>
