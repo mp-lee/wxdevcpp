@@ -95,7 +95,8 @@ type
     fIncludedirLabel : string;
     fCompilerLabel : string;
     fCompileroutputLabel : string;
-    flinkername : string;
+    fRCoutputlabel : string;
+    fRCincludelabel : string;
     flinkeroutputlabel : string;
     fChecksyntaxcompilerLabel : string;
     fChecksyntaxoutputLabel : string;
@@ -134,7 +135,8 @@ type
     property IncludeDirLabel : string read fIncludedirLabel write fIncludedirLabel;
     property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
     property CompileroutputLabel : string read fCompileroutputLabel write fCompileroutputLabel;
-    property Linkername : string read flinkername write flinkername;
+    property RCoutputLabel : string read fRCoutputLabel write fRCoutputLabel;
+    property RCincludeLabel : string read fRCincludeLabel write fRCincludeLabel;
     property Linkeroutputlabel : string read flinkeroutputlabel write flinkeroutputlabel;
     property ChecksyntaxcompilerLabel : string read fChecksyntaxcompilerLabel write fChecksyntaxcompilerLabel;
     property ChecksyntaxoutputLabel : string read fChecksyntaxoutputLabel write fChecksyntaxoutputLabel;
@@ -185,7 +187,8 @@ type
     fIncludedirLabel : string;
     fCompilerLabel : string;
     fCompileroutputLabel : string;
-    flinkername : string;
+    fRCoutputLabel : string;
+    fRCincludeLabel : string;
     flinkeroutputlabel : string;
     fChecksyntaxcompilerLabel : string;
     fChecksyntaxoutputLabel : string;
@@ -247,7 +250,8 @@ type
     property IncludeDirLabel : string read fIncludedirLabel write fIncludedirLabel;
     property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
     property CompileroutputLabel : string read fCompileroutputLabel write fCompileroutputLabel;
-    property Linkername : string read flinkername write flinkername;
+    property RCoutputLabel : string read fRCoutputLabel write fRCoutputLabel;
+    property RCincludeLabel : string read fRCincludeLabel write fRCincludeLabel;
     property Linkeroutputlabel : string read flinkeroutputlabel write flinkeroutputlabel;
     property ChecksyntaxcompilerLabel : string read fChecksyntaxcompilerLabel write fChecksyntaxcompilerLabel;
     property ChecksyntaxoutputLabel : string read fChecksyntaxoutputLabel write fChecksyntaxoutputLabel;
@@ -1129,149 +1133,143 @@ begin
   if (devCompiler <> nil) then
   begin
 
-  // Show what compiler is currently set
-  //showmessage('Current compiler = ' + devCompilerSet.SetName(devCompiler.CompilerSet));
-
      // Attempt to find the specified compiler name
      compilerindex := -1;
      for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
-        if (XMLCompilerOpts.Root.Items.Item[i].Properties <> nil) then begin
+        if (XMLCompilerOpts.Root.Items.Item[i].Properties <> nil) then
            if XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') = devCompilerSet.SetName(devCompiler.CompilerSet) then
               compilerindex := i;
 
-  //   if (compilerindex <> -1) then
-   // showMessage(XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') + ' : ' + devCompilerSet.SetName(devCompiler.CompilerSet));
-           end;
-
      if (compilerindex = -1) then
-      // if we want the default compiler, then find it.
+     // if we want the default compiler, then find it.
       for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
              if (XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default_compiler'] <> nil) then
                 if XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default_compiler'].BoolValue then
                    compilerindex := i;
 
- // showMessage('Chosen: ' + XMLCompilerOpts.Root.Items.Item[compilerindex].Properties.Value('name'));
-
   with XMLCompilerOpts.Root.Items.Item[compilerindex] do
   begin
 
    if (trim(Properties.Value('type')) <> '') then
-      compilerType := Properties.Value('type')
+      compilerType := Properties.Value('type')         
   else
       compilerType := 'Mingw';  // use the Mingw gcc default
 
   // Get the name of the c compiler program
- {if (Items.ItemNamed['c_compiler'] <> nil) then
-      fgccName := Items.ItemNamed['c_compiler'].Value
+ if (Items.ItemNamed['programs'].Items.ItemNamed['c_compiler'] <> nil) then
+      gccName := Items.ItemNamed['programs'].Items.ItemNamed['c_compiler'].Value
   else
-      fgccName := GCC_PROGRAM; } // use the Mingw gcc default program
+      gccName := GCC_PROGRAM;  // use the Mingw gcc default program
 
   // Get the name of the c++ compiler program
- { if (Items.ItemNamed['cpp_compiler'] <> nil) then
+  if (Items.ItemNamed['programs'].Items.ItemNamed['cpp_compiler'] <> nil) then
   begin
-      fgppName := Items.ItemNamed['cpp_compiler'].Value;
-      devData.SaveSetting('Compiler', GPP_PROGRAM, fgppName)
+      gppName := Items.ItemNamed['programs'].Items.ItemNamed['cpp_compiler'].Value;
   end
-  else   begin
-      fgppName := GPP_PROGRAM; } // use the Mingw gcc default program
- { end;  }
+  else
+      gppName := GPP_PROGRAM;  // use the Mingw gcc default program
 
   // Get the name of the make program
-{  if (Items.ItemNamed['make'] <> nil) then
-      fmakeName := Items.ItemNamed['make'].Value
+  if (Items.ItemNamed['programs'].Items.ItemNamed['make'] <> nil) then
+      makeName := Items.ItemNamed['programs'].Items.ItemNamed['make'].Value
   else
-      fmakeName := MAKE_PROGRAM;  } // use the Mingw gcc default program
+      makeName := MAKE_PROGRAM;   // use the Mingw gcc default program
 
   // Get the name of the windres program
- { if (Items.ItemNamed['windres'] <> nil) then
-      fwindresName := Items.ItemNamed['windres'].Value
+  if (Items.ItemNamed['programs'].Items.ItemNamed['windres'] <> nil) then
+      windresName := Items.ItemNamed['programs'].Items.ItemNamed['windres'].Value
   else
-      fwindresName := WINDRES_PROGRAM;  } // use the Mingw gcc default program
+      windresName := WINDRES_PROGRAM;   // use the Mingw gcc default program
 
   // Get the name of the dllwrap program
-{ if (Items.ItemNamed['dllwrap'] <> nil) then
-      fdllwrapName := Items.ItemNamed['dllwrap'].Value
+  if (Items.ItemNamed['programs'].Items.ItemNamed['dllwrap'] <> nil) then
+      dllwrapName := Items.ItemNamed['programs'].Items.ItemNamed['dllwrap'].Value
   else
-      fdllwrapName := DLLWRAP_PROGRAM;  } // use the Mingw gcc default program
+      dllwrapName := DLLWRAP_PROGRAM;   // use the Mingw gcc default program
 
   // Get the name of the debugger program
- { if (Items.ItemNamed['debugger'] <> nil) then
-      fgdbName := Items.ItemNamed['debugger'].Value
+  if (Items.ItemNamed['programs'].Items.ItemNamed['debugger'] <> nil) then
+      gdbName := Items.ItemNamed['programs'].Items.ItemNamed['debugger'].Value
   else
-      fgdbName := GDB_PROGRAM; } // use the Mingw gcc default program
+      gdbName := GDB_PROGRAM;  // use the Mingw gcc default program
 
    // Get the name of the gprof program
- { if (Items.ItemNamed['gprof'] <> nil) then
-      fgprofName := Items.ItemNamed['gprof'].Value
+  if (Items.ItemNamed['programs'].Items.ItemNamed['gprof'] <> nil) then
+      gprofName := Items.ItemNamed['programs'].Items.ItemNamed['gprof'].Value
   else
-      fgprofName := GPROF_PROGRAM; } // use the Mingw gcc default program
+      gprofName := GPROF_PROGRAM;  // use the Mingw gcc default program
 
   // Get the label to use to specify a library directory to link in the makefile
   if (Items.ItemNamed['formatting'].Items.ItemNamed['libdir'] <> nil) then
-      fLibDirparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['libdir'].Value
+      LibDirparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['libdir'].Value
   else
-      fLibDirparamsLabel := '-L';   // use the Mingw gcc default label
+      LibDirparamsLabel := '-L ';   // use the Mingw gcc default label
 
   // Get the label to use to specify an include directory to add to the makefile
   if (Items.ItemNamed['formatting'].Items.ItemNamed['include'] <> nil) then
-      fIncludeparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['include'].Value
+      IncludeparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['include'].Value
   else
-      fIncludeparamsLabel := '-I';   // use the Mingw gcc default label
-
-  // Get the label to use to specify an include directory to add to the makefile
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['includedir'] <> nil) then
-      fIncludedirLabel := Items.ItemNamed['formatting'].Items.ItemNamed['includedir'].Value
-  else
-      fIncludedirLabel := ' --include-dir';   // use the Mingw gcc default label
+      IncludeparamsLabel := '-I ';   // use the Mingw gcc default label
 
   // Compiler global switch
   if (Items.ItemNamed['formatting'].Items.ItemNamed['comp'] <> nil) then
-     fCompilerLabel := Items.ItemNamed['formatting'].Items.ItemNamed['comp'].Value
+     CompilerLabel := Items.ItemNamed['formatting'].Items.ItemNamed['comp'].Value
   else
-     fCompilerLabel := '-c';
+     CompilerLabel := '-c ';
 
   // Switch label to tell the compiler what the output file is named
   if (Items.ItemNamed['formatting'].Items.ItemNamed['output'] <> nil) then
-        fCompileroutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['output'].Value
+        CompileroutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['output'].Value
   else
-        fCompileroutputLabel := '-o';
+        CompileroutputLabel := '-o ';
 
-  // Switch label to tell the compiler what the linker output file is named
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['linkerlabel'] <> nil) then
-        flinkername := Items.ItemNamed['formatting'].Items.ItemNamed['linkerlabel'].Value
+  // Switch label
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['includedir'] <> nil) then
+        IncludedirLabel := Items.ItemNamed['formatting'].Items.ItemNamed['includedir'].Value
   else
-        flinkername := '$(CPP)';
+        IncludedirLabel := '--include-dir ';
+
+  // Switch label to tell the resource compiler what the output file is named
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['rcoutput'] <> nil) then
+        RCoutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['rcoutput'].Value
+  else
+        RCoutputLabel := '-o ';
+
+  // Switch label to tell the resource compiler what the output file is named
+  if (Items.ItemNamed['formatting'].Items.ItemNamed['rcinclude'] <> nil) then
+        RCincludeLabel := Items.ItemNamed['formatting'].Items.ItemNamed['rcinclude'].Value
+  else
+        RCincludeLabel := '-o ';
 
   // Switch label to tell the compiler what the linker output file is named
  if (Items.ItemNamed['formatting'].Items.ItemNamed['link'] <> nil) then
-        flinkeroutputlabel := Items.ItemNamed['formatting'].Items.ItemNamed['link'].Value
+        linkeroutputlabel := Items.ItemNamed['formatting'].Items.ItemNamed['link'].Value
   else
-        flinkeroutputlabel := '-o';
+        linkeroutputlabel := '-o ';
 
   // Switch label if we just want the compiler to check syntax
   if (Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxcompilerlabel'] <> nil) then
-    fChecksyntaxcompilerLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxcompilerlabel'].Value
+    ChecksyntaxcompilerLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxcompilerlabel'].Value
   else
-     fChecksyntaxcompilerLabel := '-c';
-
+     ChecksyntaxcompilerLabel := '-c ';
 
   // Switch label if we just want the compiler to check syntax (i.e. no file output)
   if (Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxoutputlabel'] <> nil) then
-    fChecksyntaxoutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxoutputlabel'].Value
+    ChecksyntaxoutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxoutputlabel'].Value
   else
-     fChecksyntaxoutputLabel := '-o nul';
+    ChecksyntaxoutputLabel := '-o nul ';
 
   // DLL wrapper caption name
   if (Items.ItemNamed['captions'].Items.ItemNamed['dllwrapcaption'] <> nil) then
-    fdllwrapNameCaption := Items.ItemNamed['captions'].Items.ItemNamed['dllwrapcaption'].Value
+    dllwrapNameCaption := Items.ItemNamed['captions'].Items.ItemNamed['dllwrapcaption'].Value
   else
-     fdllwrapNameCaption := 'link : ';
+     dllwrapNameCaption := 'link : ';
 
   // Windows Resource wrapper name
   if (Items.ItemNamed['captions'].Items.ItemNamed['windrescaption'] <> nil) then
-        fwindresNameCaption := Items.ItemNamed['captions'].Items.ItemNamed['windrescaption'].Value
+        windresNameCaption := Items.ItemNamed['captions'].Items.ItemNamed['windrescaption'].Value
   else
-        fwindresNameCaption := 'rc : ';
+        windresNameCaption := 'rc : ';
 
   // Find the "switches" object
   i := 0;
@@ -2127,6 +2125,7 @@ var
 }
 
 begin
+
   if Index<0 then Exit;
   with devData do
   begin
@@ -2226,6 +2225,8 @@ begin
      + BIN_DIR);
     makeSig := RunAndGetOutput(devCompilerSet.makeName + ' --v',
       ExtractFileDir(Application.ExeName), nil, nil, nil);
+
+{$IFNDEF VC_BUILD}
     if Pos('GNU Make', makeSig) > 0 then
     begin
       msg := 'Dev-C++ was unable to find GNU Make with current settings '
@@ -2255,7 +2256,6 @@ begin
         devCompiler.makeName := 'mingw32-make';
       end;
     end
-
     //check if "mingw32-make" is available in bin directory
     else
     begin
@@ -2293,8 +2293,9 @@ begin
         + 'anything.' ;
       MessageDlg(msg, mtConfirmation, [mbOK], 0);
     end;
-
+    {$ENDIF}
   end;
+
 end;
 
 procedure TdevCompilerSet.LoadSetProgs(Index: integer);

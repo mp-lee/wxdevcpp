@@ -157,7 +157,6 @@ const
     'CompOpt_CodeGen',
     'CompOpt_Linker');
 
-
 procedure TCompForm.btnCancelClick(Sender: TObject);
 begin
 {$IFDEF VC_BUILD}
@@ -529,6 +528,23 @@ begin
   devCompiler.AddDefaultOptions;
   CompOptionsFrame1.FillOptions(nil);
 
+{$IFDEF VC_BUILD}
+  with devCompiler do begin
+    GccEdit.Text := gccName;
+    GppEdit.Text := gppName;
+    GdbEdit.Text := gdbName;
+    MakeEdit.Text := makeName;
+    WindresEdit.Text := windresName;
+    DllwrapEdit.Text := dllwrapName;
+    GprofEdit.Text := gprofName;
+
+    CompOptionsFrame1.FillOptions(nil);
+
+    lbldllwrap.Caption := devCompiler.DllwrapNameCaption;
+    lblwindres.Caption := devCompiler.WindresNameCaption;
+
+  end;
+{$ELSE}
   with devCompilerSet do begin
     fBins := BinDir;
     fC := CDir;
@@ -555,9 +571,9 @@ begin
 
     lbldllwrap.Caption := devCompiler.DllwrapNameCaption;
     lblwindres.Caption := devCompiler.WindresNameCaption;
-    
-  end;
 
+  end;
+  {$ENDIF}
 end;
 
 procedure TCompForm.btnBrws1Click(Sender: TObject);

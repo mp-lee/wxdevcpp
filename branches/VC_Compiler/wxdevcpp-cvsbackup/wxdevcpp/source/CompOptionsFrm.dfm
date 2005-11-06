@@ -121,8 +121,8 @@ object CompForm: TCompForm
     Top = 4
     Width = 440
     Height = 378
-    ActivePage = tabPrograms
-    TabIndex = 3
+    ActivePage = tabCompiler
+    TabIndex = 0
     TabOrder = 4
     object tabCompiler: TTabSheet
       Caption = 'Compiler'

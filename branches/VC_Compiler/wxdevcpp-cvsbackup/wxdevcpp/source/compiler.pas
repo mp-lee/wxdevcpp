@@ -272,7 +272,12 @@ begin
   end;
   result := true;
   writeln(F, '# Project: ' + fProject.Name);
+  {$IFDEF WX_BUILD}
+    writeln(F, '# Makefile created by ' + DEVCPP + ' ' + DEVCPP_VERSION +
+             ' on ' + FormatDateTime('dd/mm/yy hh:nn', Now));
+  {$ELSE}
   writeln(F, '# Makefile created by Dev-C++ ' + DEVCPP_VERSION);
+  {$ENDIF}
   if DoCheckSyntax then
   begin
     writeln(F, '# This Makefile is written for syntax check!');
@@ -288,9 +293,11 @@ begin
   writeln(F, 'RES       = ' + ObjResFile);
   writeln(F, 'OBJ       =' + Objects + ' $(RES)');
   writeln(F, 'LINKOBJ   =' + LinkObjects + ' $(RES)');
-  writeln(F, 'INCLUDE   = ' + devCompiler.Includeparamslabel);
-  writeln(F, 'LINK_OUT  = ' + devCompiler.Linkeroutputlabel);
-  writeln(F, 'COMP_OUT  = ' + devCompiler.Compileroutputlabel);
+ // writeln(F, 'INCLUDE   = ' + devCompiler.Includeparamslabel);
+ // writeln(F, 'LINK_OUT  = ' + devCompiler.Linkeroutputlabel);
+ // writeln(F, 'COMP_OUT  = ' + devCompiler.Compileroutputlabel);
+ // writeln(F, 'RCOUTPUT  = ' + devCompiler.RCoutputlabel);
+ // writeln(F, 'RCINCLUDE = ' + devCompiler.RCincludelabel);
   writeln(F, 'LIBS      =' + StringReplace(fLibrariesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'INCS      =' + StringReplace(fIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'CXXINCS   =' + StringReplace(fCppIncludesParams, '\', '/', [rfReplaceAll]));
@@ -298,9 +305,9 @@ begin
   writeln(F, 'CXXFLAGS  = $(CXXINCS) ' + fCppCompileParams);
   writeln(F, 'CFLAGS    = $(INCS) ' + fCompileParams);
   writeln(F, 'RM        = rm -f');
-  if (devCompiler.dllwrapName <> '') then
+ // if (devCompiler.dllwrapName <> '') then
     writeln(F, 'LINK      = ' + devCompiler.dllwrapName);
-    
+
   Writeln(F, '');
   if DoCheckSyntax then
     Writeln(F,'.PHONY: all all-before all-after clean clean-custom')
@@ -427,10 +434,10 @@ begin
 
       if fProject.Units[i].CompileCpp then
               writeln(F, #9 + '$(CPP) ' + devCompiler.Compilerlabel + ' ' +
-                   GenMakePath(tfile) + ' $(COMP_OUT) ' + ofile + ' $(CXXFLAGS)')
+                   GenMakePath(tfile) + ' ' + devCompiler.Compileroutputlabel + ofile + ' $(CXXFLAGS)')
             else
               writeln(F, #9 + '$(CC) ' + devCompiler.Compilerlabel + ' ' +
-                   GenMakePath(tfile) + ' $(COMP_OUT) ' + ofile + ' $(CFLAGS)');
+                   GenMakePath(tfile) + ' ' + devCompiler.Compileroutputlabel + ofile + ' $(CFLAGS)');
         end;
 
 end;
@@ -474,24 +481,14 @@ end;
     if DoCheckSyntax then
     begin
       writeln(F, ofile + ':');
-      
-      if strEqual(devCompiler.compilerType, 'Visual C++') then
-        writeln(F, #9 + '$(WINDRES) /r $(LINK_OUT)$(RES) ' + ResIncludes + ' ' + tfile)
-      else
-          writeln(F, #9 + '$(WINDRES) ' + devCompiler.Includeparamslabel
-             + ' ' + tfile +
-            ' --input-format=rc ' + devCompiler.Checksyntaxoutputlabel
-            + ' -O coff' + ResIncludes)
+      writeln(F, #9 + '$(WINDRES) ' + devCompiler.Includeparamslabel + tfile
+                + ' ' + devCompiler.RCoutputlabel + '$(RES) ' + ResIncludes);
 
     end else
     begin
       writeln(F, ofile + ': ' + tfile + ' ' + ResFiles);
-      if strEqual(devCompiler.compilerType, 'Visual C++') then
-        writeln(F, #9 + '$(WINDRES) /r /$(LINK_OUT)$(RES) ' + ResIncludes + ' ' + tfile)
-      else
-        writeln(F, #9 + '$(WINDRES) -i '
-             + tfile + ' --input-format=rc $(COMP_OUT) '
-             + ofile + ' -O coff' + ResIncludes);
+      writeln(F, #9 + '$(WINDRES) ' + devCompiler.RCincludelabel + tfile
+                + ' ' + devCompiler.RCoutputlabel + '$(RES) ' + ResIncludes);
     end;
   end;
 end;
@@ -499,7 +496,8 @@ end;
 procedure TCompiler.WriteMakeClean(var F: TextFile);
 begin
   Writeln(F);
-  Writeln(F, 'clean: clean-custom');
+//  Writeln(F, 'clean: clean-custom');
+  Writeln(F, 'clean: ');
   Writeln(F, #9 + '$(RM) $(OBJ) $(BIN)');
 end;
 
@@ -514,9 +512,9 @@ begin
   if not DoCheckSyntax then
 {$IFDEF VC_BUILD}
       if fProject.Options.useGPP then
-        writeln(F, #9 + '$(CPP) $(LINKOBJ) $(LINK_OUT)"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
+        writeln(F, #9 + '$(LINK) $(LINKOBJ) ' + devCompiler.Linkeroutputlabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
       else
-        writeln(F, #9 + '$(CC) $(LINKOBJ) $(LINK_OUT)"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
+        writeln(F, #9 + '$(CC) $(LINKOBJ) ' + devCompiler.Linkeroutputlabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
 
 {$ELSE}
      if fProject.Options.useGPP then

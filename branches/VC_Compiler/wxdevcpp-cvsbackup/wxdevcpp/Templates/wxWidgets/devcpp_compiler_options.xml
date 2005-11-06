@@ -16,624 +16,31 @@ $Id
 		<type id="5">debug</type>
 	</binarytypes>
 	
-        <!-- **************    MS VC++ compiler  **************   -->
+       
+<!-- **************    Mingw compiler  **************   -->
 
-	<compiler type="Visual C++" name="Microsoft Visual C++">
-                <default_compiler>false</default_compiler>
-		<programs>
-			<c_compiler>vcc.exe</c_compiler>
-			<cpp_compiler>vcc.exe</cpp_compiler>
-			<make>nmake.exe</make>
-			<windres>windres.exe</windres>
-			<dllwrap>link.exe</dllwrap>
-			<debugger>gdb.exe</debugger>
-			<gprof>gprof.exe</gprof>
-		</programs>
-		<formatting>
-			<comp>/c /nologo /OUT:%s</comp>
-			<link>/nologo</link>
-			<lib></lib>
-			<libdir>/LIBPATH:%s</libdir>
-			<include>/I%s</include>
-			<output>/Fo%s</output>
-			<checksyntaxcompilerlabel>/nologo /c</checksyntaxcompilerlabel>
-			<checksyntaxoutputlabel>/OUT:nul</checksyntaxoutputlabel>
-		</formatting>
-		<captions>
-			<dllwrap></dllwrap>
-			<windres></windres>
-		</captions>
-		<binaries>
-			<binary type="0">make</binary>
-			<binary type="1">cl</binary>
-			<binary type="2">cl</binary>
-			<binary type="3">link</binary>
-			<binary type="4">rc</binary>
-		</binaries>
-		<switches>
-			<category name="Optimizations">
-				<switch name="Optimize for" command="">
-					<fieldtype type="enumerated">
-						<option value="">Neither</option>
-						<option value="/O2">Speed</option>
-						<option value="/O1">Space</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Favour speed or space" command="">
-					<fieldtype type="enumerated">
-						<option value="">Neither</option>
-						<option value="/Ot">Speed</option>
-						<option value="/Os">Space</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Enable global optimization" command="/Og">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Assume aliasing" command="/Oa">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Enable intrinsic functions" command="/Oi">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Assume cross-function aliasing" command="/Ow">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Optimize for windows program" command="/GA">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Enable frame pointer omission" command="/Oy">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Inline expansion" command="/Ob">
-					<fieldtype type="integer" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Disable optimizations" command="/Od">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Improve floating point consistency" command="/Op">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-  					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Favor code space" command="/Os">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Favor code speed" command="/Ot">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-    					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Maximum optimizations" command="/Ox">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-                                        <selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-			</category>
-			<category name="Code Generation">
-				<switch name="Optimize for" command="/G">
-					<fieldtype type="enumerated">
-						<option value="B">Blended Model</option>
-						<option value="5">Pentium</option>
-						<option value="6">Pentium Pro, Pentium II and Pentium III</option>
-						<option value="7">Pentium 4 or Athlon</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Calling convention" command="">
-					<fieldtype type="enumerated">
-						<option value="">None</option>
-						<option value="/Gd">__cdecl</option>
-						<option value="/Gr">__fastcall</option>
-						<option value="/Gz">__stdcall</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="String Pooling" command="">
-					<fieldtype type="enumerated">
-						<option value="">None</option>
-						<option value="/Gf">Read and Write</option>
-						<option value="/GF">Read-only</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-    					<selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Control stack checking calls" command="/Gs">
-					<fieldtype type="integer" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Minimum CPU architecture" command="">
-					<fieldtype type="enumerated">
-						<option value="">None</option>
-						<option value="/arch:SSE">SSE</option>
-						<option value="/arch:SSE2">SSE2</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>0</selection>
-					<default>0</default>
-					<enabled>0</enabled>
-				</switch>
-					
-				<switch name="Common Language Runtime" command="">
-					<fieldtype type="enumerated">
-						<option value="">None</option>
-						<option value="/clr">Compile for CLR</option>
-						<option value="/clr:noAssembly">Compile for CLR without Assembly</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Exception handling" command="">
-					<fieldtype type="enumerated">
-						<option value="">None</option>
-						<option value="/EHs">C++ Exception Handling</option>
-						<option value="/EHa">C++ Exception Handling (with SEH)</option>
-					</fieldtype>
-					<switchtype>c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Enable _penter function call" command="/Gh">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Enable _pexit function call" command="/GH">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Enable C++ RTTI" command="/GR">
-					<fieldtype type="boolean" />
-					<switchtype>c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Enable minimal rebuild" command="/Gm">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Enable link-time code generation" command="/GL">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++,linker</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Enable Pentium FDIV fix" command="/QIfdiv">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Enable Pentium 0x0f fix" command="/QI0f">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Extern C defaults to nothrow" command="/EHc">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Seperate functions for linker" command="/Gy">
-					<fieldtype type="boolean" />
-					<switchtype>linker</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="User fibre-safe TLS accesses" command="/GT">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Use FIST instead of ftol()" command="/QIfist">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-			</category>
-			<category name="Code Checks">
-				<switch name="Exclusive checks" command="">
-					<fieldtype type="enumerated">
-						<option value="">None</option>
-						<option value="/Ge">Force Stack Checks</option>
-						<option value="/GS">Control Stack Checking Calls</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Enable fast checks" command="/RTC1">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Convert to smaller type checks" command="/RTCc">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Stack frame runtime checking" command="/RTCs">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Check for variable usage" command="/RTCu">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-			</category>
-			<category name="Language Options">
-				<switch name="Debugging" command="">
-					<fieldtype type="enumerated">
-						<option value="">No debugging information</option>
-						<option value="/Zi /Yd /ZI">Generate debugging information</option>
-						<option value="/Z7 /ZI">Old-style debugging information</option>
-						<option value="/Zd /ZI">Include line numbers only</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Enable extensions" command="/Ze">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Omit library name in object file" command="/Zl">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Generate function prototypes" command="/Zg">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Enforce standard C++ scoping" command="/Zc:forScope">
-					<fieldtype type="boolean" />
-					<switchtype>c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Make wchar_t a native type" command="/Zc:wchar_t">
-					<fieldtype type="boolean" />
-					<switchtype>c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-			</category>
-			<category name="Miscellaneous">
-				<switch name="Warnings" command="">
-					<fieldtype type="enumerated">
-						<option value="">Treat warnings normally</option>
-						<option value="/WX">Treat warnings as errors</option>
-						<option value="/w">Supress all warnings</option>
-					</fieldtype>
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>0</selection>
-					<default>0</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Warning level" command="/W">
-					<fieldtype type="integer" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Use precompiled headers" command="/YX">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-					
-				<switch name="Disable incremental linking" command="/INCREMENTAL:NO">
-					<fieldtype type="boolean" />
-					<switchtype>linker</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-			</category>
-			<category name="Preprocessor">
-				<switch name="Don't strip comments" command="/C">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Ignore standard directories" command="/X">
-					<fieldtype type="boolean" />
-					<switchtype>c,c++</switchtype>
-					<excludefrom></excludefrom>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-			</category> 
-			<category name="Linker">
-				<switch name="Link with MSVCRT.LIB" command="/MD">
-					<fieldtype type="boolean" />
-					<excludefrom></excludefrom>
-					<switchtype>linker</switchtype>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Link with MSVCRT.LIB debug library" command="/MDd">
-					<fieldtype type="boolean" />
-					<excludefrom></excludefrom>
-					<switchtype>linker</switchtype>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Link with LIBC.LIB" command="/ML">
-					<fieldtype type="boolean" />
-					<excludefrom></excludefrom>
-					<switchtype>linker</switchtype>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Link with LIBC.LIB debug library" command="/MLd">
-					<fieldtype type="boolean" />
-					<excludefrom></excludefrom>
-					<switchtype>linker</switchtype>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Link with LIBCMT.LIB" command="/MT">
-					<fieldtype type="boolean" />
-					<excludefrom></excludefrom>
-					<switchtype>linker</switchtype>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Link with LIBCMT.LIB debug library" command="/MTd">
-					<fieldtype type="boolean" />
-					<excludefrom></excludefrom>
-					<switchtype>linker</switchtype>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-				
-				<switch name="Set stack size" command="/F">
-					<fieldtype type="integer" />
-					<excludefrom></excludefrom>
-					<switchtype>linker</switchtype>
-					<selection>false</selection>
-					<default>false</default>
-					<enabled>true</enabled>
-				</switch>
-			</category>  
-		</switches>
-	</compiler>
-
-        <!-- **************    Mingw compiler  **************   -->
-
-        <compiler type="MingW" name="MingW gcc">
+        <compiler type="MingW" name="Mingw gcc">
                 <default_compiler>true</default_compiler>
 		<programs>
 			<c_compiler>gcc.exe</c_compiler>
 			<cpp_compiler>g++.exe</cpp_compiler>
 			<make>make.exe</make>
 			<windres>windres.exe</windres>
-			<dllwrap>dllwrap.exe</dllwrap>
+			<dllwrap>g++.exe</dllwrap>
 			<debugger>gdb.exe</debugger>
 			<gprof>gprof.exe</gprof>
 		</programs>
 		<formatting>
-			<comp>-c</comp>
-			<link>-o</link>
-			<lib>-l</lib>
-			<libdir>-L</libdir>
-			<include>-I</include>
+			<comp>-c </comp>
+			<link>-o </link>
+			<lib>-l </lib>
+			<libdir>-L </libdir>
+			<include>-I </include>
+			<output>-o </output>
+			<rcinclude>--input-format=rc -i </rcinclude>
+			<rcoutput>-O coff -o </rcoutput>
 			<includedir>--include-dir </includedir>
-			<output>-o</output>
-			<checksyntaxcompiler>-S</checksyntaxcompiler>
+			<checksyntaxcompiler>-S </checksyntaxcompiler>
 			<checksyntaxoutput>-o nul </checksyntaxoutput>
 		</formatting>
 		<captions>
@@ -910,6 +317,605 @@ $Id
 			</category>
 		</switches>
        </compiler>
-      
+       
+<!-- **************    MS VC++ compiler  **************   -->
+
+	<compiler type="Visual C++" name="Microsoft Visual C++">
+                <default_compiler>false</default_compiler>
+		<programs>
+			<c_compiler>cl.exe</c_compiler>
+			<cpp_compiler>cl.exe</cpp_compiler>
+			<make>nmake.exe</make>
+			<windres>rc.exe</windres>
+			<dllwrap>link.exe</dllwrap>
+			<debugger></debugger>
+			<gprof></gprof>
+		</programs>
+		<formatting>
+			<comp>/nologo /c</comp>
+			<link>/nologo /OUT:</link>
+			<lib></lib>
+			<libdir>/LIBPATH:</libdir>
+			<include>/I</include>
+			<output>/Fo</output>
+			<rcinclude>/r /i</rcinclude>
+			<rcoutput>/fo</rcoutput>
+			<includedir>/I </includedir>
+			<checksyntaxcompilerlabel>/nologo /c</checksyntaxcompilerlabel>
+			<checksyntaxoutputlabel>/OUT:nul</checksyntaxoutputlabel>
+		</formatting>
+		<captions>
+			<dllwrap></dllwrap>
+			<windres></windres>
+		</captions>
+		<binaries>
+			<binary type="0">make</binary>
+			<binary type="1">cl</binary>
+			<binary type="2">cl</binary>
+			<binary type="3">link</binary>
+			<binary type="4">rc</binary>
+		</binaries>
+		<switches>
+			<category name="Optimizations">
+				<switch name="Optimize for" command="">
+					<fieldtype type="enumerated">
+						<option value="">Neither</option>
+						<option value="/O2">Speed</option>
+						<option value="/O1">Space</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>0</selection>
+					<default>0</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Favour speed or space" command="">
+					<fieldtype type="enumerated">
+						<option value="">Neither</option>
+						<option value="/Ot">Speed</option>
+						<option value="/Os">Space</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>0</selection>
+					<default>0</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Enable global optimization" command="/Og">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Assume aliasing" command="/Oa">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Enable intrinsic functions" command="/Oi">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Assume cross-function aliasing" command="/Ow">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Optimize for windows program" command="/GA">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Enable frame pointer omission" command="/Oy">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Inline expansion" command="/Ob">
+					<fieldtype type="integer" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Disable optimizations" command="/Od">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Improve floating point consistency" command="/Op">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+  					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Favor code space" command="/Os">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Favor code speed" command="/Ot">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+    					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Maximum optimizations" command="/Ox">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+                                        <selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+			</category>
+			<category name="Code Generation">
+				<switch name="Optimize for" command="/G">
+					<fieldtype type="enumerated">
+						<option value="B">Blended Model</option>
+						<option value="5">Pentium</option>
+						<option value="6">Pentium Pro, Pentium II and Pentium III</option>
+						<option value="7">Pentium 4 or Athlon</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>0</selection>
+					<default>0</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Calling convention" command="">
+					<fieldtype type="enumerated">
+						<option value="">None</option>
+						<option value="/Gd">__cdecl</option>
+						<option value="/Gr">__fastcall</option>
+						<option value="/Gz">__stdcall</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>0</selection>
+					<default>0</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="String Pooling" command="">
+					<fieldtype type="enumerated">
+						<option value="">None</option>
+						<option value="/Gf">Read and Write</option>
+						<option value="/GF">Read-only</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+    					<selection>0</selection>
+					<default>0</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Control stack checking calls" command="/Gs">
+					<fieldtype type="integer" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Minimum CPU architecture" command="">
+					<fieldtype type="enumerated">
+						<option value="">None</option>
+						<option value="/arch:SSE">SSE</option>
+						<option value="/arch:SSE2">SSE2</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>0</selection>
+					<default>0</default>
+					<enabled>0</enabled>
+				</switch>
+					
+				<switch name="Common Language Runtime" command="">
+					<fieldtype type="enumerated">
+						<option value="">None</option>
+						<option value="/clr">Compile for CLR</option>
+						<option value="/clr:noAssembly">Compile for CLR without Assembly</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>0</selection>
+					<default>0</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Exception handling" command="">
+					<fieldtype type="enumerated">
+						<option value="">None</option>
+						<option value="/EHs">C++ Exception Handling</option>
+						<option value="/EHa">C++ Exception Handling (with SEH)</option>
+					</fieldtype>
+					<switchtype>c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>2</selection>
+					<default>2</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Enable _penter function call" command="/Gh">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Enable _pexit function call" command="/GH">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Enable C++ RTTI" command="/GR">
+					<fieldtype type="boolean" />
+					<switchtype>c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Enable minimal rebuild" command="/Gm">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Enable link-time code generation" command="/GL">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++,linker</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Enable Pentium FDIV fix" command="/QIfdiv">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Enable Pentium 0x0f fix" command="/QI0f">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Extern C defaults to nothrow" command="/EHc">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Seperate functions for linker" command="/Gy">
+					<fieldtype type="boolean" />
+					<switchtype>linker</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="User fibre-safe TLS accesses" command="/GT">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>true</selection>
+					<default>true</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Use FIST instead of ftol()" command="/QIfist">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+			</category>
+			<category name="Code Checks">
+				<switch name="Exclusive checks" command="">
+					<fieldtype type="enumerated">
+						<option value="">None</option>
+						<option value="/Ge">Force Stack Checks</option>
+						<option value="/GS">Control Stack Checking Calls</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>0</selection>
+					<default>0</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Enable fast checks" command="/RTC1">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Convert to smaller type checks" command="/RTCc">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Stack frame runtime checking" command="/RTCs">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Check for variable usage" command="/RTCu">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+			</category>
+			<category name="Language Options">
+				<switch name="Debugging" command="">
+					<fieldtype type="enumerated">
+						<option value="">No debugging information</option>
+						<option value="/Zi /Yd /ZI">Generate debugging information</option>
+						<option value="/Z7 /ZI">Old-style debugging information</option>
+						<option value="/Zd /ZI">Include line numbers only</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>0</selection>
+					<default>0</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Enable extensions" command="/Ze">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>true</selection>
+					<default>true</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Omit library name in object file" command="/Zl">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Generate function prototypes" command="/Zg">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Enforce standard C++ scoping" command="/Zc:forScope">
+					<fieldtype type="boolean" />
+					<switchtype>c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>true</selection>
+					<default>true</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Make wchar_t a native type" command="/Zc:wchar_t">
+					<fieldtype type="boolean" />
+					<switchtype>c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+			</category>
+			<category name="Miscellaneous">
+				<switch name="Warnings" command="">
+					<fieldtype type="enumerated">
+						<option value="">Treat warnings normally</option>
+						<option value="/WX">Treat warnings as errors</option>
+						<option value="/w">Supress all warnings</option>
+					</fieldtype>
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>0</selection>
+					<default>0</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Warning level" command="/W">
+					<fieldtype type="integer" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Use precompiled headers" command="/YX">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>true</selection>
+					<default>true</default>
+					<enabled>true</enabled>
+				</switch>
+					
+				<switch name="Disable incremental linking" command="/INCREMENTAL:NO">
+					<fieldtype type="boolean" />
+					<switchtype>linker</switchtype>
+					<excludefrom></excludefrom>
+					<selection>true</selection>
+					<default>true</default>
+					<enabled>true</enabled>
+				</switch>
+			</category>
+			<category name="Preprocessor">
+				<switch name="Don't strip comments" command="/C">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Ignore standard directories" command="/X">
+					<fieldtype type="boolean" />
+					<switchtype>c,c++</switchtype>
+					<excludefrom></excludefrom>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+			</category> 
+			<category name="Linker">
+				<switch name="Link with MSVCRT.LIB" command="/MD">
+					<fieldtype type="boolean" />
+					<excludefrom></excludefrom>
+					<switchtype>linker</switchtype>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Link with MSVCRT.LIB debug library" command="/MDd">
+					<fieldtype type="boolean" />
+					<excludefrom></excludefrom>
+					<switchtype>linker</switchtype>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Link with LIBC.LIB" command="/ML">
+					<fieldtype type="boolean" />
+					<excludefrom></excludefrom>
+					<switchtype>linker</switchtype>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Link with LIBC.LIB debug library" command="/MLd">
+					<fieldtype type="boolean" />
+					<excludefrom></excludefrom>
+					<switchtype>linker</switchtype>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Link with LIBCMT.LIB" command="/MT">
+					<fieldtype type="boolean" />
+					<excludefrom></excludefrom>
+					<switchtype>linker</switchtype>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Link with LIBCMT.LIB debug library" command="/MTd">
+					<fieldtype type="boolean" />
+					<excludefrom></excludefrom>
+					<switchtype>linker</switchtype>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+				
+				<switch name="Set stack size" command="/F">
+					<fieldtype type="integer" />
+					<excludefrom></excludefrom>
+					<switchtype>linker</switchtype>
+					<selection>false</selection>
+					<default>false</default>
+					<enabled>true</enabled>
+				</switch>
+			</category>  
+		</switches>
+	</compiler>
+
 </devcpp_compilers>
 
