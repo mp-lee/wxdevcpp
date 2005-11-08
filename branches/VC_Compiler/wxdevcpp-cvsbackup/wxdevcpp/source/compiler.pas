@@ -1967,6 +1967,7 @@ begin
     fil := '';
     for I := 0 to fProject.Units.Count - 1 do begin
       srch := ExtractFilename(fProject.Units[I].FileName);
+{$IfNDef VC_BUILD}
       if Pos(srch, Line) > 0 then begin
         fil := srch;
         prog := I + 1;
@@ -1976,6 +1977,17 @@ begin
         Break;
       end;
     end;
+{$Else}
+    if Line = srch then begin
+        fil := srch;
+        prog := I + 1;
+        if not schk then
+          act := 'Compiling';
+        OK := True;
+        Break;
+      end;
+    end;
+{$EndIf}
     if not OK then begin
       srch := ExtractFileName(fProject.Options.PrivateResource);
       if Pos(srch, Line) > 0 then begin
