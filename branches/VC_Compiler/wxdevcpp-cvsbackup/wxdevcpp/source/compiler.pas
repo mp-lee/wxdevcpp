@@ -62,7 +62,7 @@ type
     DoCheckSyntax: Boolean;
     fWarnCount: integer;
     fSingleFile: boolean;
-    fOriginalSet: integer;
+    fOriginalSet : integer;
     procedure DoLogEntry(const msg: string);
     procedure DoOutput(const s, s2, s3: string);
     procedure DoResOutput(const s, s2, s3: string);
@@ -1855,8 +1855,9 @@ end;
 
 function TCompiler.SwitchToProjectCompilerSet: integer;
 begin
-  fOriginalSet := devCompiler.CompilerSet;
   result := 0;
+
+  fOriginalSet := devCompiler.CompilerSet;
 
   if not Assigned(fProject) then
     Exit;

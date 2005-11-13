@@ -1051,6 +1051,7 @@ procedure TfrmProjectOptions.cmbCompilerChange(Sender: TObject);
 begin
 {$IfDef VC_BUILD}
   devCompiler.CompilerSet := cmbCompiler.ItemIndex;
+  devCompiler.AddDefaultOptions;
 {$EndIf}
   devCompilerSet.LoadSet(cmbCompiler.ItemIndex);
   devCompilerSet.AssignToCompiler;
@@ -1062,6 +1063,8 @@ begin
 {$IFDEF VC_BUILD}
 // On cancel, reset to the original compiler set index (the one it had when dialog was opened)
 devCompiler.CompilerSet := devCompiler.OriginalSet;
+cmbCompiler.ItemIndex := devCompiler.OriginalSet;
+devCompiler.AddDefaultOptions;
 {$ENDIF}
   devCompilerSet.LoadSet(fOptions.CompilerSet);
   devCompilerSet.AssignToCompiler;

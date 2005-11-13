@@ -7,15 +7,6 @@ $Id
 -->
 <devcpp_compilers>
 	
-	<binarytypes>
-		<type id="0">make</type>
-		<type id="1">c_compiler</type>
-		<type id="2">cpp_compiler</type>
-		<type id="3">linker</type>
-		<type id="4">resource</type>
-		<type id="5">debug</type>
-	</binarytypes>
-	
        
 <!-- **************    Mingw compiler  **************   -->
 

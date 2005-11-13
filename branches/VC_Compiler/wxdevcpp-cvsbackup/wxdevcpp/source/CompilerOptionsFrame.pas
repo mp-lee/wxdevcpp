@@ -105,7 +105,6 @@ var
 begin
   fProject := Proj;
   tv.Items.Clear;
-  devCompiler.AddDefaultOptions;
   for I := 0 to devCompiler.OptionsCount - 1 do
     CreateSectionNode(nil, devCompiler.Options[I].optSection);
 {$IFDEF WIN32}

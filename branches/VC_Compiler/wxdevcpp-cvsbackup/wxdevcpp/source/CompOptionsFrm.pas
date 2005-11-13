@@ -137,7 +137,7 @@ type
 var
   NumOpt: integer;
   currentSet: integer;
-
+  
 implementation
 
 uses 
@@ -156,16 +156,16 @@ const
     'CompOpt_Compiler',
     'CompOpt_CodeGen',
     'CompOpt_Linker');
-
+                                    
 procedure TCompForm.btnCancelClick(Sender: TObject);
 begin
-{$IFDEF VC_BUILD}
-// On cancel, reset to the original compiler set index (the one it had when dialog was opened)
-devCompiler.CompilerSet := devCompiler.OriginalSet;
-//cmbCompilerSetComp.ItemIndex := devCompiler.OriginalSet;
-{$ELSE}
-devCompiler.CompilerSet:=cmbCompilerSetComp.ItemIndex;
-{$ENDIF}
+  {$IFDEF VC_BUILD}
+    cmbCompilerSetComp.ItemIndex := devCompiler.OriginalSet;
+    devCompiler.CompilerSet:=cmbCompilerSetComp.ItemIndex;
+    cmbCompilerSetCompChange(nil);
+  {$ELSE}
+     devCompiler.CompilerSet:=cmbCompilerSetComp.ItemIndex;
+  {$ENDIF}
   Close;
 end;
 
@@ -185,9 +185,6 @@ begin
   end;
 
    //RNC
-{$IfDef VC_BUILD}
-   devCompiler.OriginalSet := devCompiler.CompilerSet;
-{$EndIf}
    devCompilerSet.CmdOpts:= Commands.Lines.Text;
    devCompilerSet.AddtoLink:= cbLinkerAdd.Checked;
    devCompilerSet.AddtoComp:= cbCompAdd.Checked;
@@ -210,9 +207,6 @@ begin
     windresName := devCompilerSet.windresName;
     dllwrapName := devCompilerSet.dllwrapName;
     gprofName := devCompilerSet.gprofName;
-{$IfDef VC_BUILD}
-    compilerType := devCompilerSet.compilerType;
-{$EndIf}
   end;
 
   with devDirs do
@@ -232,24 +226,12 @@ end;
 
 procedure TCompForm.FormActivate(Sender: TObject);
 begin
-
   SetOptions;
   DirTabsChange(Self);
-
-{$IFDEF VC_BUILD}
- // When form is activated, get the original compiler set
- // This way if the user presses cancel, we set the compiler back to the set
- //  that was selected when the dialog opened
- devCompiler.OriginalSet := devCompiler.CompilerSet;
-{$ENDIF}
-
 end;
 
 procedure TCompForm.SetOptions;
-var
-finalcompilerset: integer;
 begin
-
   with devCompiler do
   begin
     seCompDelay.Value := Delay;
@@ -269,23 +251,13 @@ begin
     cmbCompilerSetComp.Items.Assign(devCompilerSet.Sets);
 
     if CompilerSet < cmbCompilerSetComp.Items.Count then
-      finalcompilerset := CompilerSet
-    else
-      finalcompilerset := 0;
+      cmbCompilerSetComp.ItemIndex := CompilerSet
+    else if cmbCompilerSetComp.Items.Count > 0 then
+      cmbCompilerSetComp.ItemIndex := 0;
 
-    currentSet := finalcompilerset;
-    devCompilerSet.LoadSet(finalcompilerset);
-    cmbCompilerSetComp.ItemIndex := finalcompilerset;
-
-{$IFDEF VC_BUILD}
-    GccEdit.Text := gccName;
-    GppEdit.Text := gppName;
-    GdbEdit.Text := gdbName;
-    MakeEdit.Text := makeName;
-    WindresEdit.Text := windresName;
-    DllwrapEdit.Text := dllwrapName;
-    GprofEdit.Text := gprofName;
-{$ENDIF}
+    currentSet := cmbCompilerSetComp.ItemIndex;
+    devCompilerSet.LoadSet(CompilerSet);
+    cmbCompilerSetCompChange(nil);
   end;
 end;
 
@@ -457,12 +429,11 @@ begin
   CompOptionsFrame1.FillOptions(nil);
   MainPages.ActivePageIndex := 0;
   DirTabs.TabIndex := 0;
-
+  devCompiler.originalSet := devCompiler.CompilerSet;
 end;
 
 procedure TCompForm.LoadText;
 begin
-
   if devData.XPTheme then
     XPMenu.Active := true
   else
@@ -509,42 +480,21 @@ end;
 
 procedure TCompForm.cmbCompilerSetCompChange(Sender: TObject);
 begin
-
   devCompilerSet.OptionsStr := devCompiler.OptionStr;
   devCompilerSet.CmdOpts:=Commands.Lines.Text;
   devCompilerSet.LinkOpts:=Linker.Lines.Text;
 
   devCompilerSet.AddtoLink:=cbLinkerAdd.Checked;
   devCompilerSet.AddtoComp:=cbCompAdd.Checked;
-{$IfDef VC_BUILD}
-  devCompiler.CompilerSet := cmbCompilerSetComp.ItemIndex;
-{$EndIf}
   devCompilerSet.SaveSet(currentSet);
 
+  {$IFDEF VC_BUILD}
+  devCompiler.CompilerSet := cmbCompilerSetComp.ItemIndex;
+  devCompiler.AddDefaultOptions;
+  {$ENDIF}
+  devCompilerSet.LoadSet(cmbCompilerSetComp.ItemIndex);
   currentSet := cmbCompilerSetComp.ItemIndex;
 
-  devCompilerSet.LoadSet(currentSet);
-  devCompilerSet.AssignToCompiler;
-  devCompiler.AddDefaultOptions;
-  CompOptionsFrame1.FillOptions(nil);
-
-{$IFDEF VC_BUILD}
-  with devCompiler do begin
-    GccEdit.Text := gccName;
-    GppEdit.Text := gppName;
-    GdbEdit.Text := gdbName;
-    MakeEdit.Text := makeName;
-    WindresEdit.Text := windresName;
-    DllwrapEdit.Text := dllwrapName;
-    GprofEdit.Text := gprofName;
-
-    CompOptionsFrame1.FillOptions(nil);
-
-    lbldllwrap.Caption := devCompiler.DllwrapNameCaption;
-    lblwindres.Caption := devCompiler.WindresNameCaption;
-
-  end;
-{$ELSE}
   with devCompilerSet do begin
     fBins := BinDir;
     fC := CDir;
@@ -568,12 +518,7 @@ begin
 
     devCompiler.OptionStr := OptionsStr;
     CompOptionsFrame1.FillOptions(nil);
-
-    lbldllwrap.Caption := devCompiler.DllwrapNameCaption;
-    lblwindres.Caption := devCompiler.WindresNameCaption;
-
-  end;
-  {$ENDIF}
+end;
 end;
 
 procedure TCompForm.btnBrws1Click(Sender: TObject);

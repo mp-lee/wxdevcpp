@@ -89,6 +89,7 @@ type
     fLibDir: string;
     fOptions: string;
 {$IfDef VC_BUILD}
+    fXMLfilename : string;
     fcompilerType: string;
     fLibDirparamsLabel : string;
     fIncludeparamsLabel : string;
@@ -129,6 +130,7 @@ type
     property Sets: TStrings read fSets write fSets;
   published
 {$IfDef VC_BUILD}
+    property XMLfilename : string read fXMLfilename write fXMLfilename;
     property compilerType : string read fcompilerType write fcompilerType;
     property LibDirparamsLabel : string read fLibDirparamsLabel write fLibDirparamsLabel;
     property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
@@ -741,6 +743,9 @@ var
 implementation
 
 uses
+{$IFDEF VC_BUILD}
+ main,
+{$ENDIF}
 {$IFDEF WIN32}
   MultiLangSupport, SysUtils, Forms, Controls, version, utils, SynEditMiscClasses,
   datamod, FileAssocs;
@@ -1126,8 +1131,58 @@ begin
 
 {$IFDEF VC_BUILD}
 
+   if assigned(MainForm) then // The only case where MainForm isn't assigned is during program startup
+      begin
+         if assigned(MainForm.fProject) then  // A project is loaded
+           if FileExists(MainForm.fProject.Directory + XML_OPTIONS_FILE) then   // Try to find XML file in current directory
+              begin
+                devCompilerSet.XMLfilename := MainForm.fProject.Directory + XML_OPTIONS_FILE;
+              end
+           else if FileExists(devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE) then
+                // If XML file not in current directory, then try to find in c:\Dev-Cpp\Templates\wxWidgets
+                //  If that's found, then copy it to the working (project) directory
+                begin
+                  XMLcompilerOpts := TJvSimpleXML.Create(Nil);
+                  XMLcompilerOpts.LoadFromFile(devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE);
+                  devCompilerSet.XMLfilename := MainForm.fProject.Directory + XML_OPTIONS_FILE;
+                  XMLcompilerOpts.SaveToFile(devCompilerSet.XMLfilename);
+                  XMLcompilerOpts.Free;
+                end
+           else
+                begin
+                  ShowMessage('Error: I can''t find the compiler options file:' + devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE);
+                  exit;
+                end
+        else   // A project is not loaded
+            if FileExists(devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE) then
+                // If XML file not in current directory, then try to find in c:\Dev-Cpp\Templates\wxWidgets
+                //  If that's found, then copy it to the working (project) directory
+                begin
+                  devCompilerSet.XMLfilename := devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE;
+                end
+           else
+                begin
+                  ShowMessage('Error: I can''t find the compiler options file:' + devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE);
+                end
+      end
+  else   // Program is starting; mainform is not active
+    begin
+
+        if FileExists(devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE) then
+        // If XML file not in current directory, then try to find in c:\Dev-Cpp\Templates\wxWidgets
+        //  If that's found, then copy it to the working (project) directory
+        begin
+          devCompilerSet.XMLfilename := devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE;
+        end
+        else
+                begin
+                ShowMessage('Error: I can''t find the compiler options file:' + devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE);
+                exit;
+                end;
+    end;
+
   XMLcompilerOpts := TJvSimpleXML.Create(Nil);
-  XMLcompilerOpts.LoadFromFile(devDirs.Templates + '\wxWidgets\devcpp_compiler_options.xml');
+  XMLcompilerOpts.LoadFromFile(devCompilerSet.XMLfilename);
 
   // Figure out which compiler we want to use
   if (devCompiler <> nil) then
@@ -1163,9 +1218,7 @@ begin
 
   // Get the name of the c++ compiler program
   if (Items.ItemNamed['programs'].Items.ItemNamed['cpp_compiler'] <> nil) then
-  begin
-      gppName := Items.ItemNamed['programs'].Items.ItemNamed['cpp_compiler'].Value;
-  end
+     gppName := Items.ItemNamed['programs'].Items.ItemNamed['cpp_compiler'].Value
   else
       gppName := GPP_PROGRAM;  // use the Mingw gcc default program
 
@@ -2083,16 +2136,9 @@ begin
 end;
 
 procedure TdevCompilerSet.LoadSet(Index: integer);
-var
-key: string;
 begin
   LoadSetProgs(Index);
   LoadSetDirs(Index);
-
-  //Then load the configuration information for this compiler set
-  key := OPT_COMPILERSETS + '_' + IntToStr(Index);
-  self.OptionsStr := devdata.LoadSetting(key, 'CompilerStr');
- // ShowMessage(self.OptionsStr);     // Debug: Joel's VC Code
 end;
 
 procedure TdevCompilerSet.LoadSetDirs(Index: integer);
@@ -2308,7 +2354,7 @@ begin
   begin
     key := OPT_COMPILERSETS + '_' + IntToStr(Index);
 
-    // Programs
+      // Programs
     fgccName := LoadSetting(key, GCC_PROGRAM);
      if fgccName='' then fgccName:=GCC_PROGRAM;
     fgppName := LoadSetting(key, GPP_PROGRAM);
@@ -2338,15 +2384,9 @@ begin
 end;
 
 procedure TdevCompilerSet.SaveSet(Index: integer);
-var
-key: string;
 begin
   SaveSetProgs(Index);
   SaveSetDirs(Index);
-
-  //Then save the configuration information for this compiler set
-  key := OPT_COMPILERSETS + '_' + IntToStr(Index);
-  devdata.SaveSetting(key, 'CompilerStr', self.OptionsStr);
 end;
 
 procedure TdevCompilerSet.SaveSetDirs(Index: integer);
@@ -2358,6 +2398,7 @@ begin
   begin
     key := OPT_COMPILERSETS + '_' + IntToStr(Index);
     // dirs
+
     SaveSetting(key, 'Bins', fBinDir);
     SaveSetting(key, 'C', fCDir);
     SaveSetting(key, 'Cpp', fCppDir);
@@ -2380,6 +2421,7 @@ begin
     SaveSetting(key, MAKE_PROGRAM, fmakeName);
     SaveSetting(key, WINDRES_PROGRAM, fwindresName);
     SaveSetting(key, GPROF_PROGRAM, fgprofName);
+{$IFDEF VC_BUILD}SaveSetting(key, DLLWRAP_PROGRAM, fdllwrapName);{$ENDIF}
     SaveSetting(key, 'Options', fOptions);
     SaveSetting(key, 'cmdline', fCmdOptions);
     SaveSetting(key, 'LinkLine', fLinkOptions);
