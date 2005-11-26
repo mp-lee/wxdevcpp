@@ -441,8 +441,6 @@ begin
 
      if cmbLangID.ItemIndex>-1 then
     begin
-      //fOptions.VersionInfo.LanguageID:=Languages.LocaleID[cmbLangID.ItemIndex];
-
       for I := 0 to Languages.Count-1 do
         if SameText(Languages.Name[I], cmbLangID.Text) then
         begin
@@ -1087,7 +1085,7 @@ var
   tfile, ofile: string;
 begin
   Result := '';
-{  if GetFileTyp(fProject.Units[idx].FileName) <> utSrc then
+  if GetFileTyp(fProject.Units[idx].FileName) <> utSrc then
     Exit;
 
   tfile := ExtractFileName(fProject.Units[idx].FileName);
@@ -1099,18 +1097,18 @@ begin
   else
     ofile := GenMakePath(ChangeFileExt(tfile, OBJ_EXT));
 
-  {$IFDEF VC_BUILD}{
-  if fProject.Units[idx].CompileCpp then
-    Result := '$(CPP) ' + devCompiler.CompilerLabel + GenMakePath(tfile) + ' ' + devCompiler.CompileroutputLabel + ofile + ' $(CXXFLAGS)'
-  else
-    Result := '$(CC) ' + devCompiler.CompilerLabel + GenMakePath(tfile) + ' ' + devCompiler.CompileroutputLabel + ofile + ' $(CFLAGS)';
-  {$ELSE}           {
+{$IFDEF VC_BUILD}
+    if fProject.Units[idx].CompileCpp then
+      Result := #9 + '$(CPP) ' + format(devCompiler.OutputFormat, [GenMakePath(tfile), ofile]) + ' $(CXXFLAGS)'
+    else
+      Result := #9 + '$(CC) ' + format(devCompiler.OutputFormat, [GenMakePath(tfile), ofile]) + ' $(CFLAGS)';
+{$ELSE}
      if fProject.Units[idx].CompileCpp then
     Result := '$(CPP) -c ' + GenMakePath(tfile) + ' -o ' + ofile + ' $(CXXFLAGS)'
   else
     Result := '$(CC) -c ' + GenMakePath(tfile) + ' -o ' + ofile + ' $(CFLAGS)';
 
-  {$ENDIF}
+{$ENDIF}
 end;
 
 procedure TfrmProjectOptions.txtOverrideBuildCmdChange(Sender: TObject);

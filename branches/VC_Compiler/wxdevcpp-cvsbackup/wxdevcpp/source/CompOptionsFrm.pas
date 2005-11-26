@@ -202,6 +202,7 @@ begin
   end;
 
   self.SaveSettings;
+  devCompilerSet.AssignToCompiler;
   with devCompiler do
   begin
     Delay := seCompDelay.Value;

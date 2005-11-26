@@ -763,7 +763,9 @@ end;
 
 procedure TCompiler.Compile(SingleFile: string);
 resourcestring
+{$IfNDef VC_BUILD}
   cCmdLine = '%s "%s" /Fo "%s" %s %s %s';
+{$EndIf}
   cMakeLine = '%s -f "%s" all';
   cSingleFileMakeLine = '%s -f "%s" %s';
   cMake = ' make';
@@ -772,7 +774,13 @@ var
   cmdline: string;
   s: string;
   ofile: string;
+{$IfDef VC_BUILD}
+  cCmdLine: string;
+{$EndIf}
 begin
+{$IfDef VC_BUILD}
+  cCmdLine := devCompiler.SingleCompile;
+{$EndIf}
   fSingleFile := SingleFile <> '';
   fRunAfterCompileFinish := FALSE;
   if Assigned(fDevRun) then
@@ -830,7 +838,6 @@ begin
       s := devCompiler.windresName
     else
       s := WINDRES_PROGRAM;
-    cmdline := s + ' ' + fSourceFile + ' /fo' + ChangeFileExt(fSourceFile, OBJ_EXT);
     DoLogEntry(format(Lang[ID_EXECUTING], [' ' + s + cDots]));
     DoLogEntry(cmdline);
   end
@@ -847,10 +854,16 @@ begin
           [s, fSourceFile, 'nul', fCppCompileParams,
           fCppIncludesParams, fLibrariesParams])
       else
-        cmdline := format(cCmdLine,
-          [s, fSourceFile, ChangeFileExt(fSourceFile, EXE_EXT),
-	  fCppCompileParams, fCppIncludesParams, '/link ' + fLibrariesParams]);
-      cmdline := AnsiReplaceStr(cmdline, ' /Fo"' + ChangeFileExt(fSourceFile, EXE_EXT) + '"', '') + ' /OUT:"' + ChangeFileExt(fSourceFile, EXE_EXT) + '"';
+      begin
+        if devCompiler.CompilerType = ID_COMPILER_VC then
+          cmdline := format(cCmdLine,
+            [s, fSourceFile, fCppCompileParams, fCppIncludesParams, fLibrariesParams])
+        else
+          cmdline := format(cCmdLine,
+            [s, fSourceFile, ChangeFileExt(fSourceFile, EXE_EXT),
+      	    fCppCompileParams, fCppIncludesParams, fLibrariesParams]);
+
+      end;
       DoLogEntry(format(Lang[ID_EXECUTING], [' ' + s + cDots]));
       DoLogEntry(cmdline);
     end
@@ -1439,12 +1452,13 @@ begin
 	//Line number
 	O_Line := Copy(Line, Pos('(', Line) + 1, Pos(')', Line) - Pos('(', Line) - 1);
 	O_File := Trim(Copy(Line, 0, Pos('(', Line) - 1));
-	O_File := ExtractRelativePath(fProject.FileName, O_File);
+        if fProject <> nil then
+	    O_File := ExtractRelativePath(fProject.FileName, O_File);
 	O_Msg := Copy(Line, Pos(': ', Line) + 2, Length(Line));
       end
       else
       begin
-      	O_Msg := '[Uncaught message] ' + Line;
+      	O_Msg := Line;
       end;
         Inc(Messages);
         DoOutput(O_Line, O_file, O_Msg);

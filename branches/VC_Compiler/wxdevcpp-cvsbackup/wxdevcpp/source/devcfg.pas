@@ -99,6 +99,7 @@ type
     fIncludeFormat: string;
     fDllFormat: string;
     fLibFormat: string;
+    fSingleCompile: string;
 {$EndIf}
     fCmdOptions : string;
     fLinkOptions : string;
@@ -137,6 +138,7 @@ type
     property IncludeFormat: string read fIncludeFormat write fIncludeFormat;
     property DllFormat: string read fDllFormat write fDllFormat;
     property LibFormat: string read fLibFormat write fLibFormat;
+    property SingleCompile: string read fSingleCompile write fSingleCompile;
 {$EndIf}
     property gccName: string read fgccName write fgccName;
     property gppName: string read fgppName write fgppName;
@@ -183,6 +185,7 @@ type
     fIncludeFormat: string;
     fDllFormat: string;
     fLibFormat: string;
+    fSingleCompile: string;
 {$EndIf}
     //Compiler options
     fOptions: TList;
@@ -244,6 +247,7 @@ type
     property IncludeFormat: string read fIncludeFormat write fIncludeFormat;
     property DllFormat: string read fDllFormat write fDllFormat;
     property LibFormat: string read fLibFormat write fLibFormat;
+    property SingleCompile: string read fSingleCompile write fSingleCompile;
 {$EndIf}
     property RunParams: string read fRunParams write fRunParams;
     property OutputDir: string read fOutputDir write fOutputDir; // ** unused
@@ -1939,6 +1943,7 @@ begin
   devCompiler.IncludeFormat         := devCompilerSet.IncludeFormat;
   devCompiler.DllFormat             := devCompilerSet.DllFormat;
   devCompiler.LibFormat             := devCompilerSet.LibFormat;
+  devCompiler.SingleCompile         := devCompilerSet.SingleCompile;
   {$ENDIF}
   // we have to set the devDirs too
   devDirs.Bins := devCompilerSet.BinDir;
@@ -2200,6 +2205,8 @@ begin
       fDllFormat             := LoadSetting(key, 'DllFormat');
     if LoadSetting(key, 'LibFormat') <> '' then
       fLibFormat             := LoadSetting(key, 'LibFormat');
+    if LoadSetting(key, 'SingleCompile') <> '' then
+      fSingleCompile         := LoadSetting(key, 'SingleCompile');
   end;
 end;
 
@@ -2291,6 +2298,7 @@ begin
     fIncludeFormat          := '/I"%s"';
     fDllFormat              := '/dll /implib:"%s" /out:"%s"';
     fLibFormat              := '/lib /out:"%s"';
+    fSingleCompile          := '%s "%s" %s %s /link %s';
   end
   else if CompilerType = ID_COMPILER_MINGW then
   begin
@@ -2303,6 +2311,7 @@ begin
     fIncludeFormat          := '-I"%s"';
     fDllFormat              := '--implib "%s" -o %s';
     fLibFormat              := '=ar' + #10#13 + 'OUT=%s' + #10#13 + '$(LINK) r $(OUT) %s' + #10#13 + 'ranlib $(OUT)';
+    fSingleCompile          := '%s "%s" -o "%s" %s %s %s';
   end;
 
   // dirs
