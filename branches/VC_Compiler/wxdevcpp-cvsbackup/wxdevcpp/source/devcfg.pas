@@ -1220,7 +1220,7 @@ begin
     sl.Add('Level 3  =/W3');
     sl.Add('Level 2  =/W2');
     sl.Add('Level 1  =/W1');
-    AddOption('Warning Level', false, true, true, true, 0, '', 'Miscellaneous', [], sl);
+    AddOption('Warning Level', false, true, true, false, 0, '', 'Miscellaneous', [], sl);
     AddOption('Use Precompiled headers', false, true, true, false, 0, '/YX', 'Miscellaneous', [], nil);
     AddOption('Disable incremental linking', false, false, false, true, 0, '/INCREMENTAL:NO', 'Miscellaneous', [], nil);
   end
@@ -1402,8 +1402,6 @@ begin
     fIntermediate := LoadSetting(key, 'InterDir');
     fOutputDir := LoadSetting(key, 'OutputDir');
     fRunParams := LoadSetting(key, 'RunParams');
-     //fCompAdd:= LoadBoolSetting(key, 'CompAdd');
-     //fLinkAdd:= LoadBoolSetting(key, 'LinkAdd');
     fcmdOpts := LoadSetting(key, 'cmdline');
     flinkopts := LoadSetting(key, 'LinkLine');
     fSaveLog := LoadBoolSetting(key, 'Log');
@@ -2258,6 +2256,19 @@ begin
     SaveSetting(key, 'cmdline', fCmdOptions);
     SaveSetting(key, 'LinkLine', fLinkOptions);
     SaveSetting(key, 'CompilerType', IntToStr(fCompilerType));
+
+{$IfDef VC_BUILD}
+    SaveSetting(key, 'CheckSyntax', fCheckSyntaxFormat);
+    SaveSetting(key, 'OutputFormat', fOutputFormat);
+    SaveSetting(key, 'ResourceInclude', fResourceIncludeFormat);
+    SaveSetting(key, 'ResourceFormat', fResourceFormat);
+    SaveSetting(key, 'LinkerFormat', fLinkerFormat);
+    SaveSetting(key, 'LinkerPaths', LinkerPaths);
+    SaveSetting(key, 'IncludeFormat', fIncludeFormat);
+    SaveSetting(key, 'DllFormat', fDllFormat);
+    SaveSetting(key, 'LibFormat', fLibFormat);
+    SaveSetting(key, 'SingleCompile', fSingleCompile);
+{$EndIf}
   end;
 end;
 
