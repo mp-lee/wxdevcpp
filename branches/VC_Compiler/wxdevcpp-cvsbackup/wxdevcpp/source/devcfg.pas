@@ -2302,7 +2302,7 @@ begin
   begin
     fCheckSyntaxFormat      := '/Zs';
     fOutputFormat           := '/c %s /Fo%s';
-    fResourceIncludeFormat  := '/I"%s"';
+    fResourceIncludeFormat  := '/I%s';
     fResourceFormat         := '/r /fo"%s"';
     fLinkerFormat           := '/out:"%s"';
     fLinkerPaths            := '/libpath:"%s"';
