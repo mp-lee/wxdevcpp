@@ -121,8 +121,8 @@ object CompForm: TCompForm
     Top = 5
     Width = 440
     Height = 378
-    ActivePage = TabSheet1
-    TabIndex = 1
+    ActivePage = tabCompiler
+    TabIndex = 0
     TabOrder = 4
     object tabCompiler: TTabSheet
       Caption = 'Compiler'
@@ -146,11 +146,11 @@ object CompForm: TCompForm
         Left = 6
         Top = 6
         Width = 420
-        Height = 49
+        Height = 75
         Caption = 'Compiler set to configure'
         TabOrder = 1
         object btnAddCompilerSet: TSpeedButton
-          Left = 338
+          Left = 341
           Top = 18
           Width = 22
           Height = 22
@@ -185,7 +185,7 @@ object CompForm: TCompForm
           OnClick = btnAddCompilerSetClick
         end
         object btnDelCompilerSet: TSpeedButton
-          Left = 362
+          Left = 365
           Top = 18
           Width = 22
           Height = 22
@@ -220,7 +220,7 @@ object CompForm: TCompForm
           OnClick = btnDelCompilerSetClick
         end
         object btnRenameCompilerSet: TSpeedButton
-          Left = 386
+          Left = 389
           Top = 18
           Width = 22
           Height = 22
@@ -254,42 +254,64 @@ object CompForm: TCompForm
             BFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBF}
           OnClick = btnRenameCompilerSetClick
         end
+        object CompilerTypeLbl: TLabel
+          Left = 8
+          Top = 48
+          Width = 70
+          Height = 13
+          Caption = 'Compiler Type:'
+        end
         object cmbCompilerSetComp: TComboBox
           Left = 8
           Top = 18
-          Width = 321
+          Width = 324
           Height = 21
           Style = csDropDownList
           ItemHeight = 13
           ItemIndex = 0
           TabOrder = 0
-          Text = 'gcc 2.95'
+          Text = 'MingW 3.4.2'
           OnChange = cmbCompilerSetCompChange
           Items.Strings = (
-            'gcc 2.95'
-            'gcc 3.2')
+            'MingW 3.4.2')
+        end
+        object CompilerTypes: TComboBox
+          Left = 86
+          Top = 45
+          Width = 325
+          Height = 21
+          AutoComplete = False
+          Style = csDropDownList
+          ItemHeight = 13
+          ItemIndex = 0
+          TabOrder = 1
+          Text = 'MingW'
+          OnChange = CompilerTypesClick
+          Items.Strings = (
+            'MingW'
+            'Visual C++')
         end
       end
       object cmdline: TGroupBox
         Left = 6
-        Top = 58
+        Top = 86
         Width = 420
-        Height = 240
+        Height = 212
         Caption = 'Compiler Command Line'
         TabOrder = 2
         DesignSize = (
           420
-          240)
+          212)
         object lblDelay: TLabel
           Left = 6
-          Top = 211
+          Top = 185
           Width = 70
           Height = 13
           Caption = 'Compile Delay:'
         end
         object lblDelayMsg: TLabel
           Left = 158
-          Top = 203
+          Top = 177
           Width = 252
           Height = 28
           AutoSize = False
@@ -308,8 +330,8 @@ object CompForm: TCompForm
           Caption = 'Add the following commands when calling the compiler:'
         end
         object cbLinkerAdd: TLabel
-          Left = 10
-          Top = 111
+          Left = 9
+          Top = 98
           Width = 228
           Height = 13
           Caption = 'Add these commands to the linker command line'
@@ -318,24 +340,24 @@ object CompForm: TCompForm
           Left = 10
           Top = 32
           Width = 400
-          Height = 68
+          Height = 55
           Anchors = [akLeft, akTop, akRight]
           ScrollBars = ssVertical
           TabOrder = 0
           WantReturns = False
         end
         object Linker: TMemo
-          Left = 10
-          Top = 127
+          Left = 9
+          Top = 114
           Width = 400
-          Height = 68
+          Height = 55
           ScrollBars = ssVertical
           TabOrder = 1
           WantReturns = False
         end
         object seCompDelay: TSpinEdit
           Left = 83
-          Top = 207
+          Top = 181
           Width = 60
           Height = 22
           MaxValue = 0
@@ -343,54 +365,6 @@ object CompForm: TCompForm
           TabOrder = 2
           Value = 650
         end
-      end
-    end
-    object TabSheet1: TTabSheet
-      Caption = 'Compiler Details'
-      ImageIndex = 4
-      object compilerbox: TGroupBox
-        Left = 6
-        Top = 5
-        Width = 420
-        Height = 304
-        Caption = 'Registered Compiler Types'
-        TabOrder = 0
-        object CompilerTypes: TListBox
-          Left = 9
-          Top = 18
-          Width = 400
-          Height = 274
-          ItemHeight = 13
-          Items.Strings = (
-            'Visual C++'
-            'MingW')
-          TabOrder = 0
-          OnClick = CompilerTypesClick
-        end
-      end
-      object edittypes: TButton
-        Left = 269
-        Top = 318
-        Width = 75
-        Height = 25
-        Caption = 'Edit'
-        TabOrder = 1
-      end
-      object add: TButton
-        Left = 188
-        Top = 318
-        Width = 75
-        Height = 25
-        Caption = 'Add'
-        TabOrder = 2
-      end
-      object delete: TButton
-        Left = 350
-        Top = 318
-        Width = 75
-        Height = 25
-        Caption = 'Delete'
-        TabOrder = 3
       end
     end
     object tabCodeGen: TTabSheet

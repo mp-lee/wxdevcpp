@@ -275,6 +275,8 @@ begin
   {$IFDEF WX_BUILD}
     writeln(F, '# Makefile created by ' + DEVCPP + ' ' + DEVCPP_VERSION +
              ' on ' + FormatDateTime('dd/mm/yy hh:nn', Now));
+    writeln(F, '# Compiler: ' + devCompiler.Name);
+    writeln(F, '# CompilerType: ' + inttostr(devCompiler.CompilerType));
   {$ELSE}
   writeln(F, '# Makefile created by Dev-C++ ' + DEVCPP_VERSION);
   {$ENDIF}

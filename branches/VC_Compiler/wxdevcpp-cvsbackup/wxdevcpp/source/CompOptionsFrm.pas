@@ -92,14 +92,10 @@ type
     lblDelay: TLabel;
     seCompDelay: TSpinEdit;
     lblDelayMsg: TLabel;
-    TabSheet1: TTabSheet;
-    compilerbox: TGroupBox;
-    CompilerTypes: TListBox;
-    edittypes: TButton;
-    add: TButton;
-    delete: TButton;
     cbCompAdd: TLabel;
     cbLinkerAdd: TLabel;
+    CompilerTypes: TComboBox;
+    CompilerTypeLbl: TLabel;
     
     procedure btnCancelClick(Sender: TObject);
     procedure btnOkClick(Sender: TObject);

@@ -52,9 +52,9 @@ const
   BoolVal10: array[0..27] of string = ('0', '1', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',   // Had to use letters for multiple choices
     'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
     's', 't', 'u', 'v', 'w', 'x', 'y', 'z');
-  ID_COMPILER_VC = 0;
-  ID_COMPILER_MINGW = 1;
-
+  ID_COMPILER_MINGW = 0;
+  ID_COMPILER_VC = 1;
+  
 type
   // the comments are an example of the record
   PCompilerOption = ^TCompilerOption;
