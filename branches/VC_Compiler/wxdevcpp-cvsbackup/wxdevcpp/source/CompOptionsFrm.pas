@@ -486,6 +486,7 @@ begin
     DllwrapEdit.Text        := dllwrapName;
     GprofEdit.Text          := gprofName;
     devCompiler.OptionStr   := OptionsStr;
+    devCompiler.AddDefaultOptions;
     CompOptionsFrame1.FillOptions(nil);
   end;
 end;

@@ -121,8 +121,8 @@ object CompForm: TCompForm
     Top = 5
     Width = 440
     Height = 378
-    ActivePage = TabSheet1
-    TabIndex = 1
+    ActivePage = tabCodeGen
+    TabIndex = 2
     TabOrder = 4
     object tabCompiler: TTabSheet
       Caption = 'Compiler'
@@ -350,10 +350,10 @@ object CompForm: TCompForm
       ImageIndex = 4
       object compilerbox: TGroupBox
         Left = 6
-        Top = 6
+        Top = 5
         Width = 420
         Height = 304
-        Caption = 'Compiler Types for'
+        Caption = 'Registered Compiler Types'
         TabOrder = 0
         object CompilerTypes: TListBox
           Left = 9
@@ -368,7 +368,7 @@ object CompForm: TCompForm
         end
       end
       object edittypes: TButton
-        Left = 87
+        Left = 269
         Top = 318
         Width = 75
         Height = 25
@@ -376,7 +376,7 @@ object CompForm: TCompForm
         TabOrder = 1
       end
       object add: TButton
-        Left = 6
+        Left = 188
         Top = 318
         Width = 75
         Height = 25
@@ -384,7 +384,7 @@ object CompForm: TCompForm
         TabOrder = 2
       end
       object delete: TButton
-        Left = 168
+        Left = 350
         Top = 318
         Width = 75
         Height = 25

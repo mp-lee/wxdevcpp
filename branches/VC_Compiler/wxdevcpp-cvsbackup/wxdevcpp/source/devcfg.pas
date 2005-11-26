@@ -52,8 +52,8 @@ const
   BoolVal10: array[0..27] of string = ('0', '1', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',   // Had to use letters for multiple choices
     'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
     's', 't', 'u', 'v', 'w', 'x', 'y', 'z');
-  ID_COMPILER_VC = 1;
-  ID_COMPILER_MINGW = 2;
+  ID_COMPILER_VC = 0;
+  ID_COMPILER_MINGW = 1;
 
 type
   // the comments are an example of the record
@@ -1071,6 +1071,17 @@ begin
   fOptions.Clear;
 
 {$IFDEF VC_BUILD}
+  //Begin by clearing the compiler options list
+  devCompiler.ClearOptions;
+
+  if (devCompilerSet.CompilerType = ID_COMPILER_VC) then
+  begin
+    AddOption('Test', false, false, false, false, 0, '/Fonul', 'A', [], nil);
+  end
+  else
+    AddOption('Test Mingw', false, false, false, false, 0, '/Fonul', 'A Mingw', [], nil);
+  begin
+  end
 {$ELSE}
 
  AddOption(Lang[ID_COPT_ANSIC], False, True, True, False, 0, '-ansi', Lang[ID_COPT_GRP_C], [], nil);
@@ -1167,12 +1178,15 @@ end;
 
 procedure TdevCompiler.ClearOptions;
 begin
-  while fOptions.Count > 0 do begin
-    if Assigned(PCompilerOption(fOptions[0]).optChoices) then
-      PCompilerOption(fOptions[0]).optChoices.Free;
-    if Assigned(fOptions[0]) then
-      Dispose(fOptions[0]);
-    fOptions.Delete(0);
+  if (self <> nil) then
+  begin
+    while fOptions.Count > 0 do begin
+      if Assigned(PCompilerOption(fOptions[0]).optChoices) then
+        PCompilerOption(fOptions[0]).optChoices.Free;
+      if Assigned(fOptions[0]) then
+        Dispose(fOptions[0]);
+      fOptions.Delete(0);
+    end;
   end;
 end;
 
