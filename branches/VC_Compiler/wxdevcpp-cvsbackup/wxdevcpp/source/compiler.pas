@@ -378,7 +378,7 @@ var
  ResIncludes: String;
   tfile, ofile, ResFiles, tmp: string;
 begin
-{  for i := 0 to pred(fProject.Units.Count) do
+  for i := 0 to pred(fProject.Units.Count) do
   begin
     if not fProject.Units[i].Compile then
       Continue;
@@ -392,6 +392,7 @@ begin
       tfile := ExtractFileName(tFile)
     else
       tfile := ExtractRelativePath(Makefile, tfile);
+
     if GetFileTyp(tfile) <> utHead then
     begin
       writeln(F);
@@ -410,12 +411,9 @@ begin
         writeln(F, GenMakePath2(ofile) + ':' + GenMakePath2(tfile));
 
         if fProject.Units[i].CompileCpp then
-          writeln(F, #9 + '$(CPP) ' + devCompiler.Checksyntaxcompilerlabel + ' ' +
-                GenMakePath(tfile) + ' ' + devCompiler.Checksyntaxoutputlabel + ' $(CXXFLAGS)')
+          writeln(F, #9'$(CPP) ' + format(devCompiler.CheckSyntaxFormat, [GenMakePath(tfile)]) + ' $(CFLAGS)')
         else
-          writeln(F, #9 + '$(CC) ' + devCompiler.Checksyntaxcompilerlabel + ' '
-              + devCompiler.Checksyntaxoutputlabel + ' ' + GenMakePath(tfile) + ' $(CFLAGS)');
-     
+          writeln(F, #9'$(CC) ' + format(devCompiler.CheckSyntaxFormat, [GenMakePath(tfile)]) + ' $(CFLAGS)');
       end
       else
       begin
@@ -424,20 +422,18 @@ begin
         else
           writeln(F, GenMakePath2(ofile) + ': ' + GenMakePath2(tfile));
 
-        if fProject.Units[i].OverrideBuildCmd and (fProject.Units[i].BuildCmd <> '') then  begin
+        if fProject.Units[i].OverrideBuildCmd and (fProject.Units[i].BuildCmd <> '') then
+        begin
           tmp := fProject.Units[i].BuildCmd;
           tmp := StringReplace(tmp, '<CRTAB>', #10#9, [rfReplaceAll]);
           writeln(F, #9 + tmp);
         end
         else
         begin
-
-      if fProject.Units[i].CompileCpp then
-              writeln(F, #9 + '$(CPP) ' + devCompiler.Compilerlabel + ' ' +
-                   GenMakePath(tfile) + ' ' + devCompiler.Compileroutputlabel + ofile + ' $(CXXFLAGS)')
-            else
-              writeln(F, #9 + '$(CC) ' + devCompiler.Compilerlabel + ' ' +
-                   GenMakePath(tfile) + ' ' + devCompiler.Compileroutputlabel + ofile + ' $(CFLAGS)');
+          if fProject.Units[i].CompileCpp then
+            writeln(F, #9 + '$(CPP) ' + format(devCompiler.OutputFormat, [GenMakePath(tfile), ofile]) + ' $(CXXFLAGS)')
+          else
+            writeln(F, #9 + '$(CC) ' + format(devCompiler.OutputFormat, [GenMakePath(tfile), ofile]) + ' $(CFLAGS)');
         end;
       end;
     end;
@@ -452,11 +448,9 @@ begin
     // in "--include-dir"...
     for i := 0 to fProject.Options.ResourceIncludes.Count - 1 do
     begin
-      ShortPath := GetShortName(fProject.Options.ResourceIncludes[i]);
-      // only add include-dir if it is existing dir...
+      ShortPath := fProject.Options.ResourceIncludes[i];
       if ShortPath <> '' then
-	ResIncludes := ResIncludes + devCompiler.IncludeDirLabel +
-	  GenMakePath(ShortPath);
+	ResIncludes := ResIncludes + format(devCompiler.ResourceIncludeFormat, [GenMakePath(ShortPath)]) + ' ';
     end;
 
     for i := 0 to fProject.Units.Count - 1 do
@@ -468,34 +462,32 @@ begin
       if FileExists(GetRealPath(tfile, fProject.Directory)) then
               ResFiles := ResFiles + GenMakePath2(tfile) + ' ';
     end;
-
     writeln(F);
+    
+    if fProject.Options.ObjectOutput<>'' then
+      ofile := IncludeTrailingPathDelimiter(fProject.Options.ObjectOutput)+ChangeFileExt(fProject.Options.PrivateResource, RES_EXT)
+    else
+      ofile := ChangeFileExt(fProject.Options.PrivateResource, RES_EXT);
 
-      if fProject.Options.ObjectOutput<>'' then
-        ofile := IncludeTrailingPathDelimiter(fProject.Options.ObjectOutput)+ChangeFileExt(fProject.Options.PrivateResource, RES_EXT)
-      else
-        ofile := ChangeFileExt(fProject.Options.PrivateResource, RES_EXT);
-      ofile := GenMakePath(ExtractRelativePath(fProject.FileName, ofile));//GenMakePath(ExtractRelativePath(Makefile, ChangeFileExt(fProject.Options.PrivateResource, RES_EXT)));
-      tfile := GenMakePath(ExtractRelativePath(fProject.FileName, fProject.Options.PrivateResource));
+    ofile := GenMakePath(ExtractRelativePath(fProject.FileName, ofile));
+    tfile := GenMakePath(ExtractRelativePath(fProject.FileName, fProject.Options.PrivateResource));
     if DoCheckSyntax then
     begin
       writeln(F, ofile + ':');
-      writeln(F, #9 + '$(WINDRES) ' + devCompiler.Includeparamslabel + tfile
-                + ' ' + devCompiler.RCoutputlabel + '$(RES) ' + ResIncludes);
-
-    end else
+      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES) ')]) + ResIncludes + tfile);
+    end
+    else
     begin
       writeln(F, ofile + ': ' + tfile + ' ' + ResFiles);
-      writeln(F, #9 + '$(WINDRES) ' + devCompiler.RCincludelabel + tfile
-                + ' ' + devCompiler.RCoutputlabel + '$(RES) ' + ResIncludes);
+      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES) ')]) + ResIncludes + tfile);
     end;
-  end;}
+  end;
 end;
 
 procedure TCompiler.WriteMakeClean(var F: TextFile);
 begin
   Writeln(F);
-//  Writeln(F, 'clean: clean-custom');
+  Writeln(F, 'clean: clean-custom');
   Writeln(F, 'clean: ');
   Writeln(F, #9 + '$(RM) $(OBJ) $(BIN)');
 end;
@@ -506,16 +498,17 @@ var
 begin
   if not NewMakeFile(F) then
     exit;
-  writeln(F, '$(BIN): $(OBJ)');// CL: changed from $(LINKOBJ) to $(OBJ), in order to call overrided buid commands not included in linking
+  writeln(F, '$(BIN): $(OBJ)');
 
   if not DoCheckSyntax then
 {$IFDEF VC_BUILD}
-{
-      if fProject.Options.useGPP then
-        writeln(F, #9 + '$(LINK) $(LINKOBJ) ' + devCompiler.Linkeroutputlabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
-      else
-        writeln(F, #9 + '$(CC) $(LINKOBJ) ' + devCompiler.Linkeroutputlabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
-}
+  if devCompiler.CompilerType = ID_COMPILER_VC then
+    writeln(F, #9 + '$(LINK) $(LINKOBJ) ' + format(devCompiler.LinkerFormat, [ExtractRelativePath(Makefile,fProject.Executable)]) + ' $(LIBS)')
+  else
+    if fProject.Options.useGPP then
+      writeln(F, #9 + '$(CPP) $(LINKOBJ) ' + format(devCompiler.LinkerFormat, [ExtractRelativePath(Makefile,fProject.Executable)]) + ' $(LIBS)')
+    else
+      writeln(F, #9 + '$(CC) $(LINKOBJ) ' + format(devCompiler.LinkerFormat, [ExtractRelativePath(Makefile,fProject.Executable)]) + ' $(LIBS)');
 {$ELSE}
      if fProject.Options.useGPP then
         writeln(F, #9 + '$(CPP) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
@@ -538,14 +531,8 @@ begin
   writeln(F, '$(BIN): $(LINKOBJ)');
   if not DoCheckSyntax then
   begin
-{$IFDEF VC_BUILD}{
-    if strEqual(devCompiler.compilerType, 'Visual C++') then
-      writeln(F, #9 + '$(LINK) /LIB /nologo $(LINK_OUT):$(BIN) $(LINKOBJ) $(LIBS)')
-    else
-    begin
-      writeln(F, #9 + 'ar r $(BIN) $(LINKOBJ)');
-      writeln(F, #9 + 'ranlib $(BIN)');
-    end;
+{$IFDEF VC_BUILD}
+    writeln(F, #9 + '$(LINK) ' + format(devCompiler.LibFormat, ['$(BIN)']) + ' $(LINKOBJ) $(LIBS)');
 {$ELSE}
      writeln(F, #9 + 'ar r $(BIN) $(LINKOBJ)');
       writeln(F, #9 + 'ranlib $(BIN)');
@@ -575,14 +562,8 @@ begin
 
   if not DoCheckSyntax then
   begin
-{$IFDEF VC_BUILD
-    if strEqual(devCompiler.compilerType, 'Visual C++') then
-      writeln(F, #9 + '$(LINK) /nologo /dll /implib:$(STATICLIB) $(LINKOBJ) $(LIBS) $(LINK_OUT)$(BIN)')
-    else
-      if fProject.Options.useGPP then
-        writeln(F, #9 + '$(DLLWRAP) --output-def $(DEFFILE) ' + '--driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)')
-      else
-        writeln(F, #9 + '$(DLLWRAP) --output-def $(DEFFILE) ' + '--implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)');
+{$IFDEF VC_BUILD}
+    writeln(F, #9 + '$(LINK) ' + format(devcompiler.DllFormat, ['$(STATICLIB)', '$(BIN)']) + ' $(LINKOBJ) $(LIBS)')
 {$ELSE}
    if fProject.Options.useGPP then
         writeln(F, #9 + '$(DLLWRAP) --output-def $(DEFFILE) ' + '--driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)')
@@ -611,10 +592,6 @@ begin
     fCppCompileParams := '';
     fUserParams := '';
 
-    {     if Assigned(fProject) and fProject.Options.useGPP then
-           fUserParams := fProject.Options.cmdlines.CppCompiler
-         else if Assigned(fProject) then
-           fUserParams := fProject.Options.cmdlines.Compiler; }
     if Assigned(fProject) then begin
       fCppCompileParams := StringReplace(fProject.Options.cmdlines.CppCompiler, '_@@_', ' ', [rfReplaceAll]);
       fCompileParams := StringReplace(fProject.Options.cmdlines.Compiler, '_@@_',' ', [rfReplaceAll]);
@@ -676,23 +653,18 @@ var
 {$IFDEF VC_BUILD}cAppendStr : string;{$ENDIF}
 begin
   fLibrariesParams := '';
+{$IFDEF VC_BUILD}
+  cAppendStr := '%s ' + devCompiler.LinkerPaths;
+  fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
 
-{$IFDEF VC_BUILD
-
-cAppendStr := '%s ' + devCompiler.LibDirparamsLabel + '"%s" ';
- fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
-//RNC
-  if (devCompilerSet.LinkOpts <> '') and devCompilerSet.AddtoLink then
+  if devCompilerSet.LinkOpts <> '' then
     fLibrariesParams := fLibrariesParams + ' ' + devCompilerSet.LinkOpts;
-  if (fTarget = ctProject) and assigned(fProject) then begin
+  if (fTarget = ctProject) and assigned(fProject) then
+  begin
     for i := 0 to pred(fProject.Options.Libs.Count) do
       fLibrariesParams := format(cAppendStr, [fLibrariesParams, fProject.Options.Libs[i]]);
-    // got sick of "symbol 'blah blah' is deprecated"
- //   if fProject.Options.typ = dptGUI then
- //     fLibrariesParams := fLibrariesParams + ' -mwindows';
     fLibrariesParams := fLibrariesParams + ' ' + StringReplace(fProject.Options.cmdLines.Linker, '_@@_', ' ', [rfReplaceAll]);
   end;
-
 {$ELSE}
 
   fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
@@ -752,18 +724,16 @@ begin
   fCppIncludesParams := '';
 
 {$IFDEF VC_BUILD}
-{ cAppendStr := '%s ' + devCompiler.IncludeparamsLabel + '"%s" ';
-
- fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
+  cAppendStr := '%s ' + devCompiler.IncludeFormat;
+  fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
   fCppIncludesParams := CommaStrToStr(devDirs.Cpp, cAppendStr);
-
+  
   if (fTarget = ctProject) and assigned(fProject) then
     for i := 0 to pred(fProject.Options.Includes.Count) do
       if directoryExists(fProject.Options.Includes[i]) then  begin
         fIncludesParams := format(cAppendStr, [fIncludesParams, fProject.Options.Includes[i]]);
         fCppIncludesParams := format(cAppendStr, [fCppIncludesParams, fProject.Options.Includes[i]]);
       end;
-}
 {$ELSE}
 
   fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
@@ -852,7 +822,6 @@ begin
 
     DoLogEntry(format(Lang[ID_EXECUTING], [cMake + cDots]));
     DoLogEntry(cmdline);
-    //DoLogEntry('Compiler Delay: '+inttostr(devCompiler.Delay));
     Sleep(devCompiler.Delay);
     LaunchThread(cmdline, ExtractFilePath(Project.FileName));
   end
@@ -1860,7 +1829,7 @@ begin
 
   if devCompiler.CompilerSet = fProject.Options.CompilerSet then
     Exit;
-
+  
   devCompilerSet.LoadSet(fProject.Options.CompilerSet);
   devCompilerSet.AssignToCompiler;
   devCompiler.CompilerSet := fProject.Options.CompilerSet;
@@ -1937,7 +1906,6 @@ var
 begin
   if not Assigned(CompileProgressForm) then
     Exit;
-
   with CompileProgressForm do begin
     // report currently compiling file
     if not Assigned(fProject) then begin
@@ -1975,7 +1943,7 @@ begin
       end;
     end;
 {$Else}
-    if Line = srch then begin
+    if Pos(srch, Line) > 0 then begin
         fil := srch;
         prog := I + 1;
         if not schk then

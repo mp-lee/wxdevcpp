@@ -90,6 +90,15 @@ type
     fOptions: string;
 {$IfDef VC_BUILD}
     fCompilerType: integer;
+    fCheckSyntaxFormat: string;
+    fOutputFormat: string;
+    fResourceIncludeFormat: string;
+    fResourceFormat: string;
+    fLinkerFormat: string;
+    fLinkerPaths: string;
+    fIncludeFormat: string;
+    fDllFormat: string;
+    fLibFormat: string;
 {$EndIf}
     fCmdOptions : string;
     fLinkOptions : string;
@@ -118,7 +127,16 @@ type
     property Sets: TStrings read fSets write fSets;
   published
 {$IfDef VC_BUILD}
-    property CompilerType:integer read fCompilerType write fCompilerType;
+    property CompilerType: integer read fCompilerType write fCompilerType;
+    property CheckSyntaxFormat: string read fCheckSyntaxFormat write fCheckSyntaxFormat;
+    property OutputFormat: string read fOutputFormat write fOutputFormat;
+    property ResourceIncludeFormat: string read fResourceIncludeFormat write fResourceIncludeFormat;
+    property ResourceFormat: string read fResourceFormat write fResourceFormat;
+    property LinkerFormat: string read fLinkerFormat write fLinkerFormat;
+    property LinkerPaths: string read fLinkerPaths write fLinkerPaths;
+    property IncludeFormat: string read fIncludeFormat write fIncludeFormat;
+    property DllFormat: string read fDllFormat write fDllFormat;
+    property LibFormat: string read fLibFormat write fLibFormat;
 {$EndIf}
     property gccName: string read fgccName write fgccName;
     property gppName: string read fgppName write fgppName;
@@ -156,6 +174,15 @@ type
     fCompilerSet: integer;
 {$IfDef VC_BUILD}
     fCompilerType: integer;
+    fCheckSyntaxFormat: string;
+    fOutputFormat: string;
+    fResourceIncludeFormat: string;
+    fResourceFormat: string;
+    fLinkerFormat: string;
+    fLinkerPaths: string;
+    fIncludeFormat: string;
+    fDllFormat: string;
+    fLibFormat: string;
 {$EndIf}
     //Compiler options
     fOptions: TList;
@@ -207,7 +234,16 @@ type
     property LinkOpts: string read flinkOpts write flinkOpts;
     property FastDep: Boolean read fFastDep write fFastDep;
 {$IfDef VC_BUILD}
-    property CompilerType:integer read fCompilerType write fCompilerType;
+    property CompilerType: integer read fCompilerType write fCompilerType;
+    property CheckSyntaxFormat: string read fCheckSyntaxFormat write fCheckSyntaxFormat;
+    property OutputFormat: string read fOutputFormat write fOutputFormat;
+    property ResourceIncludeFormat: string read fResourceIncludeFormat write fResourceIncludeFormat;
+    property ResourceFormat: string read fResourceFormat write fResourceFormat;
+    property LinkerFormat: string read fLinkerFormat write fLinkerFormat;
+    property LinkerPaths: string read fLinkerPaths write fLinkerPaths;
+    property IncludeFormat: string read fIncludeFormat write fIncludeFormat;
+    property DllFormat: string read fDllFormat write fDllFormat;
+    property LibFormat: string read fLibFormat write fLibFormat;
 {$EndIf}
     property RunParams: string read fRunParams write fRunParams;
     property OutputDir: string read fOutputDir write fOutputDir; // ** unused
@@ -1893,7 +1929,16 @@ begin
   devCompiler.fcmdOpts:=devCompilerSet.fCmdOptions;
   devCompiler.flinkopts:=devCompilerSet.fLinkOptions;
   {$IFDEF VC_BUILD}
-  devCompiler.compilerType := devCompilerSet.compilerType;
+  devCompiler.compilerType          := devCompilerSet.compilerType;
+  devCompiler.CheckSyntaxFormat     := devCompilerSet.CheckSyntaxFormat;
+  devCompiler.OutputFormat          := devCompilerSet.OutputFormat;
+  devCompiler.ResourceIncludeFormat := devCompilerSet.ResourceIncludeFormat;
+  devCompiler.ResourceFormat        := devCompilerSet.ResourceFormat;
+  devCompiler.LinkerFormat          := devCompilerSet.LinkerFormat;
+  devCompiler.LinkerPaths           := devCompilerSet.LinkerPaths;
+  devCompiler.IncludeFormat         := devCompilerSet.IncludeFormat;
+  devCompiler.DllFormat             := devCompilerSet.DllFormat;
+  devCompiler.LibFormat             := devCompilerSet.LibFormat;
   {$ENDIF}
   // we have to set the devDirs too
   devDirs.Bins := devCompilerSet.BinDir;
@@ -1931,29 +1976,7 @@ var
   tempStr: String;
   maindir: String;
   makeSig, mingwmakeSig: String;
-
-{
-  function isPathInList(pathList, path: String): Boolean;
-  var
-    i: Integer;
-    strs: TStrings;
-  begin
-    Result := False;
-    strs := TStringList.Create;
-    strs.Delimiter := ';';
-    strs.DelimitedText := pathList;
-    for i := 0 to strs.Count -1 do
-      if strs[i] = path then
-      begin
-        Result := True;
-        break;
-      end;
-    strs.Free;
-  end;
-}
-
 begin
-
   if Index<0 then Exit;
   with devData do
   begin
@@ -2135,6 +2158,9 @@ begin
   with devData do
   begin
     key := OPT_COMPILERSETS + '_' + IntToStr(Index);
+    if (LoadSetting(key, 'CompilerType') <> '') then
+      fCompilerType := StrToInt(LoadSetting(key, 'CompilerType'));
+    self.SetToDefaults;
 
       // Programs
     fgccName := LoadSetting(key, GCC_PROGRAM);
@@ -2152,11 +2178,28 @@ begin
     fdllwrapName := LoadSetting(key, DLLWRAP_PROGRAM);
       if fdllwrapName='' then fdllwrapName:=DLLWRAP_PROGRAM;
 
-    if (LoadSetting(key, 'CompilerType') <> '') then
-      fCompilerType := StrToInt(LoadSetting(key, 'CompilerType'));
     fOptions := LoadSetting(key, 'Options');
     fCmdOptions:= LoadSetting(key, 'cmdline');
     fLinkOptions:=LoadSetting(key, 'LinkLine');
+
+    if LoadSetting(key, 'CheckSyntax') <> '' then
+      fCheckSyntaxFormat     := LoadSetting(key, 'CheckSyntax');
+    if LoadSetting(key, 'OutputFormat') <> '' then
+      fOutputFormat          := LoadSetting(key, 'OutputFormat');
+    if LoadSetting(key, 'ResourceInclude') <> '' then
+      fResourceIncludeFormat := LoadSetting(key, 'ResourceInclude');
+    if LoadSetting(key, 'ResourceFormat') <> '' then
+      fResourceFormat        := LoadSetting(key, 'ResourceFormat');
+    if LoadSetting(key, 'LinkerFormat') <> '' then
+      fLinkerFormat          := LoadSetting(key, 'LinkerFormat');
+    if LoadSetting(key, 'LinkerPaths') <> '' then
+      LinkerPaths            := LoadSetting(key, 'LinkerPaths');
+    if LoadSetting(key, 'IncludeFormat') <> '' then
+      fIncludeFormat         := LoadSetting(key, 'IncludeFormat');
+    if LoadSetting(key, 'DllFormat') <> '' then
+      fDllFormat             := LoadSetting(key, 'DllFormat');
+    if LoadSetting(key, 'LibFormat') <> '' then
+      fLibFormat             := LoadSetting(key, 'LibFormat');
   end;
 end;
 
@@ -2237,6 +2280,30 @@ begin
   fCmdOptions  :='';
   fLinkOptions :='';
 
+  if CompilerType = ID_COMPILER_VC then
+  begin
+    fCheckSyntaxFormat      := '/Zs';
+    fOutputFormat           := '/c %s /Fo%s';
+    fResourceIncludeFormat  := '/I"%s"';
+    fResourceFormat         := '/r /fo"%s"';
+    fLinkerFormat           := '/out:"%s"';
+    fLinkerPaths            := '/libpath:"%s"';
+    fIncludeFormat          := '/I"%s"';
+    fDllFormat              := '/dll /implib:"%s" /out:"%s"';
+    fLibFormat              := '/lib /out:"%s"';
+  end
+  else if CompilerType = ID_COMPILER_MINGW then
+  begin
+    fCheckSyntaxFormat      := '-o nul';
+    fOutputFormat           := '-c %s -o %s';
+    fResourceIncludeFormat  := '--include-dir %s';
+    fResourceFormat         := '--input-format=rc -o %s -O coff';
+    fLinkerFormat           := '-o "%s"';
+    fLinkerPaths            := '-L"%s"';
+    fIncludeFormat          := '-I"%s"';
+    fDllFormat              := '--implib "%s" -o %s';
+    fLibFormat              := '=ar' + #10#13 + 'OUT=%s' + #10#13 + '$(LINK) r $(OUT) %s' + #10#13 + 'ranlib $(OUT)';
+  end;
 
   // dirs
   fBinDir  := devDirs.Bins;
