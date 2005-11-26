@@ -1794,7 +1794,6 @@ begin
   devDirs.C := devCompilerSet.CDir;
   devDirs.Cpp := devCompilerSet.CppDir;
   devDirs.Lib := devCompilerSet.LibDir;
-
   devCompiler.OptionStr := devCompilerSet.OptionsStr;
 end;
 

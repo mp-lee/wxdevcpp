@@ -126,6 +126,7 @@ type
     procedure btnDelCompilerSetClick(Sender: TObject);
     procedure btnRenameCompilerSetClick(Sender: TObject);
     procedure SaveSettings();
+    procedure CompilerTypesClick(Sender: TObject);
 
   private
     fBins: string;
@@ -201,7 +202,7 @@ begin
   end;
 
   self.SaveSettings;
-  (*with devCompiler do
+  with devCompiler do
   begin
     Delay := seCompDelay.Value;
     FastDep := cbFastDep.Checked;
@@ -220,7 +221,7 @@ begin
   SetPath(fBins);
 
   devDirs.SaveSettings;
-  devCompiler.SaveSettings;*)
+  devCompiler.SaveSettings;
 end;
 
 procedure TCompForm.FormActivate(Sender: TObject);
@@ -485,8 +486,9 @@ begin
     WindresEdit.Text        := windresName;
     DllwrapEdit.Text        := dllwrapName;
     GprofEdit.Text          := gprofName;
-    devCompiler.OptionStr   := OptionsStr;
+    
     devCompiler.AddDefaultOptions;
+    devCompiler.OptionStr   := OptionsStr;
     CompOptionsFrame1.FillOptions(nil);
   end;
 end;
@@ -566,6 +568,14 @@ begin
 
   cmbCompilerSetComp.Items[cmbCompilerSetComp.ItemIndex] := S;
   cmbCompilerSetComp.ItemIndex := cmbCompilerSetComp.Items.IndexOf(S);
+end;
+
+procedure TCompForm.CompilerTypesClick(Sender: TObject);
+begin
+  devCompilerSet.CompilerType := CompilerTypes.ItemIndex;
+  devCompiler.AddDefaultOptions;
+  devCompiler.OptionStr := devCompilerSet.OptionsStr;
+  CompOptionsFrame1.FillOptions(nil);
 end;
 
 end.

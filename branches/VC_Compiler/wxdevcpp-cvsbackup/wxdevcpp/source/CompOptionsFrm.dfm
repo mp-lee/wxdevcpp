@@ -365,6 +365,7 @@ object CompForm: TCompForm
             'Visual C++'
             'MingW')
           TabOrder = 0
+          OnClick = CompilerTypesClick
         end
       end
       object edittypes: TButton
