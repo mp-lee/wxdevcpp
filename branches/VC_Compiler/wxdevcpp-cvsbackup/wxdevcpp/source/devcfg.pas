@@ -2033,9 +2033,9 @@ begin
     fdllwrapName := LoadSetting(key, DLLWRAP_PROGRAM);
       if fdllwrapName='' then fdllwrapName:=DLLWRAP_PROGRAM;
 
+    if (LoadSetting(key, 'CompilerType') <> '') then
+      fCompilerType := StrToInt(LoadSetting(key, 'CompilerType'));
     fOptions := LoadSetting(key, 'Options');
-
-     //RNC
     fCmdOptions:= LoadSetting(key, 'cmdline');
     fLinkOptions:=LoadSetting(key, 'LinkLine');
   end;
@@ -2088,6 +2088,7 @@ begin
     SaveSetting(key, 'Options', fOptions);
     SaveSetting(key, 'cmdline', fCmdOptions);
     SaveSetting(key, 'LinkLine', fLinkOptions);
+    SaveSetting(key, 'CompilerType', IntToStr(fCompilerType));
   end;
 end;
 
