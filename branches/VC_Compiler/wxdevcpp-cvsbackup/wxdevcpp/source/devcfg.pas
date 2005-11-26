@@ -35,14 +35,11 @@
         do not create instance explicitly:
            i.e. opt:= TdevData.Create;
 *)
-unit devcfg;
 
+unit devcfg;
 interface
 
 uses
-{$IFDEF VC_BUILD}
-JvSimpleXml, xprocs, StdActns,
-{$ENDIF}
 {$IFDEF WIN32}
 Dialogs, Windows, Classes, Graphics, SynEdit, CFGData, CFGTypes, IniFiles, prjtypes;
 {$ENDIF}
@@ -55,6 +52,8 @@ const
   BoolVal10: array[0..27] of string = ('0', '1', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',   // Had to use letters for multiple choices
     'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
     's', 't', 'u', 'v', 'w', 'x', 'y', 'z');
+  ID_COMPILER_VC = 1;
+  ID_COMPILER_MINGW = 2;
 
 type
   // the comments are an example of the record
@@ -83,38 +82,26 @@ type
     fwindresName: string;
     fdllwrapName: string;
     fgprofName: string;
+    
     fBinDir: string;
     fCDir: string;
     fCppDir: string;
     fLibDir: string;
     fOptions: string;
 {$IfDef VC_BUILD}
-    fXMLfilename : string;
-    fcompilerType: string;
-    fLibDirparamsLabel : string;
-    fIncludeparamsLabel : string;
-    fIncludedirLabel : string;
-    fCompilerLabel : string;
-    fCompileroutputLabel : string;
-    fRCoutputlabel : string;
-    fRCincludelabel : string;
-    flinkeroutputlabel : string;
-    fChecksyntaxcompilerLabel : string;
-    fChecksyntaxoutputLabel : string;
-    fdllwrapNameCaption : string;
-    fwindresNameCaption : string;
+    fCompilerType: integer;
 {$EndIf}
-   //RNC
-   fCompAdd: boolean;          // add fcmdopts to compiler command line
-   fLinkAdd: boolean;          // add flinkopts to linker command line
-   fCmdOptions : string;
-   fLinkOptions : string;
+    fCmdOptions : string;
+    fLinkOptions : string;
+
+    //Private ctor and dtor, since we are singletons
+    constructor Create;
+    destructor Destroy; override;
 
     procedure WriteSets;
     procedure UpdateSets;
+
   public
-    constructor Create;
-    destructor Destroy; override;
     procedure SettoDefaults; override;
     procedure SaveSettings; override;
     procedure LoadSettings; override;
@@ -125,25 +112,13 @@ type
     procedure LoadSetDirs(Index: integer);
     procedure LoadSetProgs(Index: integer);
     procedure AssignToCompiler;
-    property Name;
     function SetName(Index: integer): string;
+
+    property Name;
     property Sets: TStrings read fSets write fSets;
   published
 {$IfDef VC_BUILD}
-    property XMLfilename : string read fXMLfilename write fXMLfilename;
-    property compilerType : string read fcompilerType write fcompilerType;
-    property LibDirparamsLabel : string read fLibDirparamsLabel write fLibDirparamsLabel;
-    property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
-    property IncludeDirLabel : string read fIncludedirLabel write fIncludedirLabel;
-    property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
-    property CompileroutputLabel : string read fCompileroutputLabel write fCompileroutputLabel;
-    property RCoutputLabel : string read fRCoutputLabel write fRCoutputLabel;
-    property RCincludeLabel : string read fRCincludeLabel write fRCincludeLabel;
-    property Linkeroutputlabel : string read flinkeroutputlabel write flinkeroutputlabel;
-    property ChecksyntaxcompilerLabel : string read fChecksyntaxcompilerLabel write fChecksyntaxcompilerLabel;
-    property ChecksyntaxoutputLabel : string read fChecksyntaxoutputLabel write fChecksyntaxoutputLabel;
-    property DllwrapNameCaption : string read fdllwrapNameCaption write fdllwrapNameCaption;
-    property WindresNameCaption : string read fwindresNameCaption write fwindresNameCaption;
+    property CompilerType:integer read fCompilerType write fCompilerType;
 {$EndIf}
     property gccName: string read fgccName write fgccName;
     property gppName: string read fgppName write fgppName;
@@ -152,26 +127,23 @@ type
     property windresName: string read fwindresName write fwindresName;
     property dllwrapName: string read fdllwrapName write fdllwrapName;
     property gprofName: string read fgprofName write fgprofName;
+    
     property BinDir: string read fBinDir write fBinDir;
     property CDir: string read fCDir write fCDir;
     property CppDir: string read fCppDir write fCppDir;
     property LibDir: string read fLibDir write fLibDir;
-    property OptionsStr: string read fOptions write fOptions;
-//RNC
-   property CmdOpts: string read fCmdOptions write fCmdOptions;
-   property LinkOpts: string read fLinkOptions write fLinkOptions;
-   property AddtoComp: boolean read fCompAdd write fCompAdd;
-   property AddtoLink: boolean read fLinkAdd write fLinkAdd;
-
+    property OptionsStr: string read fOptions write fOptions; //0, 1, a-z list
+    property CmdOpts: string read fCmdOptions write fCmdOptions; //Manual commands
+    property LinkOpts: string read fLinkOptions write fLinkOptions; //Manual commands
   end;
 
   // compiler options
   TdevCompiler = class(TCFGOptions)
   private
-    fUseParams: boolean; // Use fparams when running prog
-    fIntermediate: string; // directory for mid-compile files -- if needed
-    fOutputDir: string; // directory to place compiled files
-    fRunParams: string; // params to send on execution
+    fUseParams: boolean;   // Use fparams when running prog
+    fIntermediate: string; // directory for object files
+    fOutputDir: string;    // directory to place compiled files
+    fRunParams: string;    // params to send on execution
 
     // program filenames
     fgccName: string;
@@ -180,23 +152,10 @@ type
     fmakeName: string;
     fwindresName: string;
     fgprofName: string;
+    fdllwrapName: string;
     fCompilerSet: integer;
 {$IfDef VC_BUILD}
-    fcompilerType: string;
-    fOriginalSet:integer;
-    fLibDirparamsLabel : string;
-    fIncludeparamsLabel : string;
-    fIncludedirLabel : string;
-    fCompilerLabel : string;
-    fCompileroutputLabel : string;
-    fRCoutputLabel : string;
-    fRCincludeLabel : string;
-    flinkeroutputlabel : string;
-    fChecksyntaxcompilerLabel : string;
-    fChecksyntaxoutputLabel : string;
-    fdllwrapNameCaption : string;
-    fdllwrapName : string;
-    fwindresNameCaption : string;
+    fCompilerType: integer;
 {$EndIf}
     //Compiler options
     fOptions: TList;
@@ -209,56 +168,46 @@ type
 
     fcmdOpts: string;  // command-line adds for compiler
     flinkopts: string; // command-line adds for linker
-
     fSaveLog: boolean; // Save Compiler Output
     fDelay: integer;   // delay in milliseconds -- for compiling
+
+    //Private constructors for singletons
+    constructor Create;
+    destructor Destroy; override;
+    
     procedure SetCompilerSet(const Value: integer);
     function GetOptions(Index: integer): TCompilerOption;
     procedure SetOptions(Index: integer; const Value: TCompilerOption);
+
     function GetOptionStr: string;
     procedure SetOptionStr(const Value: string);
+
   published
     procedure AddDefaultOptions;
+
   public
-    constructor Create;
-    destructor Destroy; override;
+    function OptionsCount: integer;
+    function FindOption(Setting: string; var opt: TCompilerOption; var Index: integer): boolean; // returns the option with setting=<Setting>
+    function ConvertCharToValue(c: char): integer;
+    procedure ChangeOptionsLang;
+    procedure AddOption(_Name: string; _IsGroup, _IsC, _IsCpp, IsLinker: boolean; _Value: integer; _Setting, _Section: string; ExcludeFromTypes: TProjTypeSet; Choices: TStringList);
     procedure SettoDefaults; override;
     procedure SaveSettings; override;
     procedure LoadSettings; override;
-    property Name;
-    property Modified: boolean read fModified write fModified;
-    procedure AddOption(_Name: string; _IsGroup, _IsC, _IsCpp, IsLinker: boolean; _Value: integer; _Setting, _Section: string; ExcludeFromTypes: TProjTypeSet; Choices: TStringList);
-    function OptionsCount: integer;
     procedure ClearOptions;
     procedure DeleteOption(Index: integer);
+
+    property Name;
+    property Modified: boolean read fModified write fModified;
     property Options[Index: integer]: TCompilerOption read GetOptions write SetOptions;
     property OptionStr: string read GetOptionStr write SetOptionStr;
-    function FindOption(Setting: string; var opt: TCompilerOption; var Index: integer): boolean; // returns the option with setting=<Setting>
-    procedure ChangeOptionsLang;
-    function ConvertCharToValue(c: char): integer;
+    
  published
-   property FastDep: Boolean read fFastDep write fFastDep;
-
-//   property AddtoComp: boolean read fCompAdd write fCompAdd;
-//   property AddtoLink: boolean read fLinkAdd write fLinkAdd;
-//RNC
-//   property CmdOpts: string read fCmdOpts write fCmdOpts;
-//   property LinkOpts: string read fLinkopts write fLinkOpts;
+    property CmdOpts: string read fcmdOpts write fcmdOpts;
+    property LinkOpts: string read flinkOpts write flinkOpts;
+    property FastDep: Boolean read fFastDep write fFastDep;
 {$IfDef VC_BUILD}
-    property compilerType: string read fcompilerType write fcompilerType;
-    property OriginalSet : integer read fOriginalSet write fOriginalSet;
-    property LibDirparamsLabel : string read fLibDirparamsLabel write fLibDirparamsLabel;
-    property IncludeparamsLabel : string read fIncludeparamsLabel write fIncludeparamsLabel;
-    property IncludeDirLabel : string read fIncludedirLabel write fIncludedirLabel;
-    property CompilerLabel : string read fCompilerLabel write fCompilerLabel;
-    property CompileroutputLabel : string read fCompileroutputLabel write fCompileroutputLabel;
-    property RCoutputLabel : string read fRCoutputLabel write fRCoutputLabel;
-    property RCincludeLabel : string read fRCincludeLabel write fRCincludeLabel;
-    property Linkeroutputlabel : string read flinkeroutputlabel write flinkeroutputlabel;
-    property ChecksyntaxcompilerLabel : string read fChecksyntaxcompilerLabel write fChecksyntaxcompilerLabel;
-    property ChecksyntaxoutputLabel : string read fChecksyntaxoutputLabel write fChecksyntaxoutputLabel;
-    property DllwrapNameCaption : string read fdllwrapNameCaption write fdllwrapNameCaption;
-    property WindresNameCaption : string read fwindresNameCaption write fwindresNameCaption;
+    property CompilerType:integer read fCompilerType write fCompilerType;
 {$EndIf}
     property RunParams: string read fRunParams write fRunParams;
     property OutputDir: string read fOutputDir write fOutputDir; // ** unused
@@ -274,9 +223,7 @@ type
     property windresName: string read fwindresName write fwindresName;
     property dllwrapName: string read fdllwrapName write fdllwrapName;
     property gprofName: string read fgprofName write fgprofName;
-
     property CompilerSet: integer read fCompilerSet write SetCompilerSet;
-
   end;
 
   // code-completion window size and other config
@@ -1103,15 +1050,9 @@ end;
 
 procedure TdevCompiler.AddDefaultOptions;
 var i : integer;
-  sl: TStringList;
+//  sl: TStringList;
 
 {$IFDEF VC_BUILD}
-  j, k : integer;
-  XMLcompilerOpts : TJvSimpleXML;
-  switchdefaultindex, compilerindex : integer;
-  switchcommand, switchlabel, fieldtype, switchtype, switchcategory : string;
-  linkertype, cpptype, ctype : boolean;
-  excludefromtype : string;
 {$ENDIF}
 
 begin
@@ -1130,280 +1071,6 @@ begin
   fOptions.Clear;
 
 {$IFDEF VC_BUILD}
-
-   if assigned(MainForm) then // The only case where MainForm isn't assigned is during program startup
-      begin
-         if assigned(MainForm.fProject) then  // A project is loaded
-           if FileExists(MainForm.fProject.Directory + XML_OPTIONS_FILE) then   // Try to find XML file in current directory
-              begin
-                devCompilerSet.XMLfilename := MainForm.fProject.Directory + XML_OPTIONS_FILE;
-              end
-           else if FileExists(devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE) then
-                // If XML file not in current directory, then try to find in c:\Dev-Cpp\Templates\wxWidgets
-                //  If that's found, then copy it to the working (project) directory
-                begin
-                  XMLcompilerOpts := TJvSimpleXML.Create(Nil);
-                  XMLcompilerOpts.LoadFromFile(devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE);
-                  devCompilerSet.XMLfilename := MainForm.fProject.Directory + XML_OPTIONS_FILE;
-                  XMLcompilerOpts.SaveToFile(devCompilerSet.XMLfilename);
-                  XMLcompilerOpts.Free;
-                end
-           else
-                begin
-                  ShowMessage('Error: I can''t find the compiler options file:' + devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE);
-                  exit;
-                end
-        else   // A project is not loaded
-            if FileExists(devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE) then
-                // If XML file not in current directory, then try to find in c:\Dev-Cpp\Templates\wxWidgets
-                //  If that's found, then copy it to the working (project) directory
-                begin
-                  devCompilerSet.XMLfilename := devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE;
-                end
-           else
-                begin
-                  ShowMessage('Error: I can''t find the compiler options file:' + devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE);
-                end
-      end
-  else   // Program is starting; mainform is not active
-    begin
-
-        if FileExists(devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE) then
-        // If XML file not in current directory, then try to find in c:\Dev-Cpp\Templates\wxWidgets
-        //  If that's found, then copy it to the working (project) directory
-        begin
-          devCompilerSet.XMLfilename := devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE;
-        end
-        else
-                begin
-                ShowMessage('Error: I can''t find the compiler options file:' + devDirs.Templates + '\wxWidgets\' + XML_OPTIONS_FILE);
-                exit;
-                end;
-    end;
-
-  XMLcompilerOpts := TJvSimpleXML.Create(Nil);
-  XMLcompilerOpts.LoadFromFile(devCompilerSet.XMLfilename);
-
-  // Figure out which compiler we want to use
-  if (devCompiler <> nil) then
-  begin
-
-     // Attempt to find the specified compiler name
-     compilerindex := -1;
-     for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
-        if (XMLCompilerOpts.Root.Items.Item[i].Properties <> nil) then
-           if XMLCompilerOpts.Root.Items.Item[i].Properties.Value('name') = devCompilerSet.SetName(devCompiler.CompilerSet) then
-              compilerindex := i;
-
-     if (compilerindex = -1) then
-     // if we want the default compiler, then find it.
-      for i:= 0 to XMLCompilerOpts.Root.Items.Count-1 do
-             if (XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default_compiler'] <> nil) then
-                if XMLCompilerOpts.Root.Items.Item[i].Items.ItemNamed['default_compiler'].BoolValue then
-                   compilerindex := i;
-
-  with XMLCompilerOpts.Root.Items.Item[compilerindex] do
-  begin
-
-   if (trim(Properties.Value('type')) <> '') then
-      compilerType := Properties.Value('type')         
-  else
-      compilerType := 'Mingw';  // use the Mingw gcc default
-
-  // Get the name of the c compiler program
- if (Items.ItemNamed['programs'].Items.ItemNamed['c_compiler'] <> nil) then
-      gccName := Items.ItemNamed['programs'].Items.ItemNamed['c_compiler'].Value
-  else
-      gccName := GCC_PROGRAM;  // use the Mingw gcc default program
-
-  // Get the name of the c++ compiler program
-  if (Items.ItemNamed['programs'].Items.ItemNamed['cpp_compiler'] <> nil) then
-     gppName := Items.ItemNamed['programs'].Items.ItemNamed['cpp_compiler'].Value
-  else
-      gppName := GPP_PROGRAM;  // use the Mingw gcc default program
-
-  // Get the name of the make program
-  if (Items.ItemNamed['programs'].Items.ItemNamed['make'] <> nil) then
-      makeName := Items.ItemNamed['programs'].Items.ItemNamed['make'].Value
-  else
-      makeName := MAKE_PROGRAM;   // use the Mingw gcc default program
-
-  // Get the name of the windres program
-  if (Items.ItemNamed['programs'].Items.ItemNamed['windres'] <> nil) then
-      windresName := Items.ItemNamed['programs'].Items.ItemNamed['windres'].Value
-  else
-      windresName := WINDRES_PROGRAM;   // use the Mingw gcc default program
-
-  // Get the name of the dllwrap program
-  if (Items.ItemNamed['programs'].Items.ItemNamed['dllwrap'] <> nil) then
-      dllwrapName := Items.ItemNamed['programs'].Items.ItemNamed['dllwrap'].Value
-  else
-      dllwrapName := DLLWRAP_PROGRAM;   // use the Mingw gcc default program
-
-  // Get the name of the debugger program
-  if (Items.ItemNamed['programs'].Items.ItemNamed['debugger'] <> nil) then
-      gdbName := Items.ItemNamed['programs'].Items.ItemNamed['debugger'].Value
-  else
-      gdbName := GDB_PROGRAM;  // use the Mingw gcc default program
-
-   // Get the name of the gprof program
-  if (Items.ItemNamed['programs'].Items.ItemNamed['gprof'] <> nil) then
-      gprofName := Items.ItemNamed['programs'].Items.ItemNamed['gprof'].Value
-  else
-      gprofName := GPROF_PROGRAM;  // use the Mingw gcc default program
-
-  // Get the label to use to specify a library directory to link in the makefile
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['libdir'] <> nil) then
-      LibDirparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['libdir'].Value
-  else
-      LibDirparamsLabel := '-L ';   // use the Mingw gcc default label
-
-  // Get the label to use to specify an include directory to add to the makefile
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['include'] <> nil) then
-      IncludeparamsLabel := Items.ItemNamed['formatting'].Items.ItemNamed['include'].Value
-  else
-      IncludeparamsLabel := '-I ';   // use the Mingw gcc default label
-
-  // Compiler global switch
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['comp'] <> nil) then
-     CompilerLabel := Items.ItemNamed['formatting'].Items.ItemNamed['comp'].Value
-  else
-     CompilerLabel := '-c ';
-
-  // Switch label to tell the compiler what the output file is named
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['output'] <> nil) then
-        CompileroutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['output'].Value
-  else
-        CompileroutputLabel := '-o ';
-
-  // Switch label
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['includedir'] <> nil) then
-        IncludedirLabel := Items.ItemNamed['formatting'].Items.ItemNamed['includedir'].Value
-  else
-        IncludedirLabel := '--include-dir ';
-
-  // Switch label to tell the resource compiler what the output file is named
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['rcoutput'] <> nil) then
-        RCoutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['rcoutput'].Value
-  else
-        RCoutputLabel := '-o ';
-
-  // Switch label to tell the resource compiler what the output file is named
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['rcinclude'] <> nil) then
-        RCincludeLabel := Items.ItemNamed['formatting'].Items.ItemNamed['rcinclude'].Value
-  else
-        RCincludeLabel := '-o ';
-
-  // Switch label to tell the compiler what the linker output file is named
- if (Items.ItemNamed['formatting'].Items.ItemNamed['link'] <> nil) then
-        linkeroutputlabel := Items.ItemNamed['formatting'].Items.ItemNamed['link'].Value
-  else
-        linkeroutputlabel := '-o ';
-
-  // Switch label if we just want the compiler to check syntax
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxcompilerlabel'] <> nil) then
-    ChecksyntaxcompilerLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxcompilerlabel'].Value
-  else
-     ChecksyntaxcompilerLabel := '-c ';
-
-  // Switch label if we just want the compiler to check syntax (i.e. no file output)
-  if (Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxoutputlabel'] <> nil) then
-    ChecksyntaxoutputLabel := Items.ItemNamed['formatting'].Items.ItemNamed['checksyntaxoutputlabel'].Value
-  else
-    ChecksyntaxoutputLabel := '-o nul ';
-
-  // DLL wrapper caption name
-  if (Items.ItemNamed['captions'].Items.ItemNamed['dllwrapcaption'] <> nil) then
-    dllwrapNameCaption := Items.ItemNamed['captions'].Items.ItemNamed['dllwrapcaption'].Value
-  else
-     dllwrapNameCaption := 'link : ';
-
-  // Windows Resource wrapper name
-  if (Items.ItemNamed['captions'].Items.ItemNamed['windrescaption'] <> nil) then
-        windresNameCaption := Items.ItemNamed['captions'].Items.ItemNamed['windrescaption'].Value
-  else
-        windresNameCaption := 'rc : ';
-
-  // Find the "switches" object
-  i := 0;
-  while (i < Items.Count) and (Items[i].Name <> 'switches') do
-     i := i + 1;
-
-  if (i < Items.Count) then  // "switches" found
-  begin
-
-  with Items[i] do
-  begin
-
-  for i := 0 to Items.Count-1 do
-  begin
-
-     switchcategory := Items[i].Properties.Value('name');
-
-      for j := 0 to Items[i].Items.Count-1 do
-      begin
-
-      switchlabel := Items.Item[i].Items.Item[j].Properties.Value('name');
-      switchcommand := Items.Item[i].Items.Item[j].Properties.Value('command');
-      fieldtype := Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Properties.Value('type');
-      switchtype := Items.Item[i].Items.Item[j].Items.ItemNamed['switchtype'].Value;
-
-        // Tony 4 Oct 2005 - Not quite sure how to use the exclude type option. It's a set of bytes. Doesn't seem to ever get used
-       excludefromtype := Items.Item[i].Items.Item[j].Items.ItemNamed['excludefrom'].Value;
-
-        linkertype := false; cpptype := false; ctype := false;
-        for k := 0 to strTokenCount(switchtype, ',')-1 do
-           if AnsiUpperCase(strTokenAt(switchtype, ',', k)) = 'LINKER' then
-              linkertype := true
-           else if AnsiUpperCase(strTokenAt(switchtype, ',', k)) = 'C++' then
-              cpptype := true
-           else if AnsiUpperCase(strTokenAt(switchtype, ',', k)) = 'C' then
-              ctype := true;
-
-        if (AnsiUpperCase(fieldtype) = 'ENUMERATED') then
-        begin
-
-        sl := TStringList.Create;
-
-         for k := 0 to Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Items.Count-1 do
-             sl.Add(Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Items.Item[k].Value + '='
-               + switchcommand + Items.Item[i].Items.Item[j].Items.ItemNamed['fieldtype'].Items.Item[k].Properties.Value('value'));
-
-         if (Items.Item[i].Items.Item[j].Items.ItemNamed['enabled'].BoolValue) then
-          if (Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'] <> nil) then
-                AddOption(switchlabel, Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'].BoolValue, ctype, cpptype, linkertype, Items.Item[i].Items.Item[j].Items.ItemNamed['selection'].IntValue, '', switchcategory, [], sl)
-          else
-                AddOption(switchlabel, false, ctype, cpptype, linkertype, Items.Item[i].Items.Item[j].Items.ItemNamed['selection'].IntValue, '', switchcategory, [], sl);
-
-        end;
-
-        if (AnsiUpperCase(fieldtype) = 'BOOLEAN') then
-        begin
-          sl := TStringList.Create;
-          sl.Add('No=');
-          sl.Add('Yes=' + switchcommand);
-
-          if (Items.Item[i].Items.Item[j].Items.ItemNamed['default'].BoolValue) then
-             switchdefaultindex := 1
-          else
-             switchdefaultindex := 0;
-
-          if (Items.Item[i].Items.Item[j].Items.ItemNamed['enabled'].BoolValue) then
-          if (Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'] <> nil) then
-              AddOption(switchlabel, Items.Item[i].Items.Item[j].Items.ItemNamed['isgroup'].BoolValue, ctype, cpptype, linkertype, switchdefaultindex, '', switchcategory, [], sl)
-          else
-              AddOption(switchlabel, false, ctype, cpptype, linkertype, switchdefaultindex, '', switchcategory, [], sl);
-
-        end
-
-        end;
-     end;
-     end;
-  end;
-  end;
-  end;
-  XMLcompilerOpts.Free;
-
 {$ELSE}
 
  AddOption(Lang[ID_COPT_ANSIC], False, True, True, False, 0, '-ansi', Lang[ID_COPT_GRP_C], [], nil);
@@ -1617,13 +1284,8 @@ begin
     SaveSetting(key, 'InterDir', fIntermediate);
     SaveSetting(key, 'OutputDir', fOutputDir);
     SaveSetting(key, 'RunParams', fRunParams);
-     //SaveBoolSetting(key, 'CompAdd', fCompAdd);
-     //SaveBoolSetting(key, 'LinkAdd', fLinkAdd);
-     //SaveSetting(key, 'cmdline', fcmdOpts);
-     //SaveSetting(key, 'LinkLine', flinkopts);
-
-    SaveBoolSetting(key, 'Log', fSaveLog);
     SaveSetting(key, 'Delay', inttostr(fDelay));
+    SaveBoolSetting(key, 'Log', fSaveLog);
 
     SaveSetting(key, GCC_PROGRAM, fgccName);
     SaveSetting(key, GPP_PROGRAM, fgppName);
@@ -1723,6 +1385,7 @@ begin
   fmakeName := MAKE_PROGRAM;
   fwindresName := WINDRES_PROGRAM;
   fgprofName := GPROF_PROGRAM;
+  fdllwrapName := DLLWRAP_PROGRAM;
   fCompilerSet := 0;
 
   AddDefaultOptions;
@@ -2356,25 +2019,25 @@ begin
 
       // Programs
     fgccName := LoadSetting(key, GCC_PROGRAM);
-     if fgccName='' then fgccName:=GCC_PROGRAM;
+      if fgccName='' then fgccName:=GCC_PROGRAM;
     fgppName := LoadSetting(key, GPP_PROGRAM);
-     if fgppName='' then fgppName:=GPP_PROGRAM;
+      if fgppName='' then fgppName:=GPP_PROGRAM;
     fgdbName := LoadSetting(key, GDB_PROGRAM);
-     if fgdbName='' then fgdbName:=GDB_PROGRAM;
+      if fgdbName='' then fgdbName:=GDB_PROGRAM;
     fmakeName := LoadSetting(key, MAKE_PROGRAM);
-     if fmakeName='' then fmakeName:=MAKE_PROGRAM;
+      if fmakeName='' then fmakeName:=MAKE_PROGRAM;
     fwindresName := LoadSetting(key, WINDRES_PROGRAM);
-     if fwindresName='' then fwindresName:=WINDRES_PROGRAM;
+      if fwindresName='' then fwindresName:=WINDRES_PROGRAM;
     fgprofName := LoadSetting(key, GPROF_PROGRAM);
-     if fgprofName='' then fgprofName:=GPROF_PROGRAM;
+      if fgprofName='' then fgprofName:=GPROF_PROGRAM;
+    fdllwrapName := LoadSetting(key, DLLWRAP_PROGRAM);
+      if fdllwrapName='' then fdllwrapName:=DLLWRAP_PROGRAM;
 
     fOptions := LoadSetting(key, 'Options');
 
      //RNC
     fCmdOptions:= LoadSetting(key, 'cmdline');
     fLinkOptions:=LoadSetting(key, 'LinkLine');
-    fCompAdd:= LoadBoolSetting(key, 'CompAdd');
-    fLinkAdd:= LoadBoolSetting(key, 'LinkAdd');
   end;
 end;
 
@@ -2421,12 +2084,10 @@ begin
     SaveSetting(key, MAKE_PROGRAM, fmakeName);
     SaveSetting(key, WINDRES_PROGRAM, fwindresName);
     SaveSetting(key, GPROF_PROGRAM, fgprofName);
-{$IFDEF VC_BUILD}SaveSetting(key, DLLWRAP_PROGRAM, fdllwrapName);{$ENDIF}
+    SaveSetting(key, DLLWRAP_PROGRAM, fdllwrapName);
     SaveSetting(key, 'Options', fOptions);
     SaveSetting(key, 'cmdline', fCmdOptions);
     SaveSetting(key, 'LinkLine', fLinkOptions);
-    SaveBoolSetting(key, 'CompAdd', fCompAdd);
-    SaveBoolSetting(key, 'LinkAdd', fLinkAdd);
   end;
 end;
 
@@ -2446,25 +2107,22 @@ end;
 procedure TdevCompilerSet.SettoDefaults;
 begin
   // Programs
- { fgccName := GCC_PROGRAM;
-  fgppName := GPP_PROGRAM;
-  fgdbName := GDB_PROGRAM;
-  fmakeName := MAKE_PROGRAM;
+  fgccName     := GCC_PROGRAM;
+  fgppName     := GPP_PROGRAM;
+  fgdbName     := GDB_PROGRAM;
+  fmakeName    := MAKE_PROGRAM;
   fwindresName := WINDRES_PROGRAM;
-  fgprofName := GPROF_PROGRAM;
-  }
-  fCompAdd:= FALSE;
-  fLinkAdd:= FALSE;
-  fCmdOptions:='';
-  fLinkOptions:='';
+  fgprofName   := GPROF_PROGRAM;
+  fdllwrapName := DLLWRAP_PROGRAM;
+  fCmdOptions  :='';
+  fLinkOptions :='';
 
 
   // dirs
-  fBinDir := devDirs.Bins;
-  fCDir := devDirs.C;
-  fCppDir := devDirs.Cpp;
-  fLibDir := devDirs.Lib;
-
+  fBinDir  := devDirs.Bins;
+  fCDir    := devDirs.C;
+  fCppDir  := devDirs.Cpp;
+  fLibDir  := devDirs.Lib;
   fOptions := '';
 end;
 

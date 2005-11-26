@@ -378,7 +378,7 @@ var
  ResIncludes: String;
   tfile, ofile, ResFiles, tmp: string;
 begin
-  for i := 0 to pred(fProject.Units.Count) do
+{  for i := 0 to pred(fProject.Units.Count) do
   begin
     if not fProject.Units[i].Compile then
       Continue;
@@ -439,8 +439,7 @@ begin
               writeln(F, #9 + '$(CC) ' + devCompiler.Compilerlabel + ' ' +
                    GenMakePath(tfile) + ' ' + devCompiler.Compileroutputlabel + ofile + ' $(CFLAGS)');
         end;
-
-end;
+      end;
     end;
   end;
 
@@ -490,7 +489,7 @@ end;
       writeln(F, #9 + '$(WINDRES) ' + devCompiler.RCincludelabel + tfile
                 + ' ' + devCompiler.RCoutputlabel + '$(RES) ' + ResIncludes);
     end;
-  end;
+  end;}
 end;
 
 procedure TCompiler.WriteMakeClean(var F: TextFile);
@@ -511,11 +510,12 @@ begin
 
   if not DoCheckSyntax then
 {$IFDEF VC_BUILD}
+{
       if fProject.Options.useGPP then
         writeln(F, #9 + '$(LINK) $(LINKOBJ) ' + devCompiler.Linkeroutputlabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
       else
         writeln(F, #9 + '$(CC) $(LINKOBJ) ' + devCompiler.Linkeroutputlabel + '"' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
-
+}
 {$ELSE}
      if fProject.Options.useGPP then
         writeln(F, #9 + '$(CPP) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
@@ -538,7 +538,7 @@ begin
   writeln(F, '$(BIN): $(LINKOBJ)');
   if not DoCheckSyntax then
   begin
-{$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}{
     if strEqual(devCompiler.compilerType, 'Visual C++') then
       writeln(F, #9 + '$(LINK) /LIB /nologo $(LINK_OUT):$(BIN) $(LINKOBJ) $(LIBS)')
     else
@@ -575,7 +575,7 @@ begin
 
   if not DoCheckSyntax then
   begin
-{$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD
     if strEqual(devCompiler.compilerType, 'Visual C++') then
       writeln(F, #9 + '$(LINK) /nologo /dll /implib:$(STATICLIB) $(LINKOBJ) $(LIBS) $(LINK_OUT)$(BIN)')
     else
@@ -620,11 +620,8 @@ begin
       fCompileParams := StringReplace(fProject.Options.cmdlines.Compiler, '_@@_',' ', [rfReplaceAll]);
     end;
 
-     //RNC
-     //if (CmdOpts <> '') and AddtoComp then
-     if (devCompilerSet.CmdOpts <> '') and devCompilerSet.AddtoComp then
-      AppendStr(fUserParams, devCompilerSet.CmdOpts);
-      //AppendStr(fUserParams, cmdOpts);
+    if CmdOpts <> '' then
+      AppendStr(fUserParams, CmdOpts);
 
     AppendStr(fCompileParams, fUserParams);
     AppendStr(fCppCompileParams, fUserParams);
@@ -680,7 +677,7 @@ var
 begin
   fLibrariesParams := '';
 
-{$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD
 
 cAppendStr := '%s ' + devCompiler.LibDirparamsLabel + '"%s" ';
  fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
@@ -699,8 +696,7 @@ cAppendStr := '%s ' + devCompiler.LibDirparamsLabel + '"%s" ';
 {$ELSE}
 
   fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
-//RNC
-  if (devCompilerSet.LinkOpts <> '') and devCompilerSet.AddtoLink then
+  if devCompilerSet.LinkOpts <> '' then
     fLibrariesParams := fLibrariesParams + ' ' + devCompilerSet.LinkOpts;
   if (fTarget = ctProject) and assigned(fProject) then begin
     for i := 0 to pred(fProject.Options.Libs.Count) do
@@ -756,7 +752,7 @@ begin
   fCppIncludesParams := '';
 
 {$IFDEF VC_BUILD}
- cAppendStr := '%s ' + devCompiler.IncludeparamsLabel + '"%s" ';
+{ cAppendStr := '%s ' + devCompiler.IncludeparamsLabel + '"%s" ';
 
  fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
   fCppIncludesParams := CommaStrToStr(devDirs.Cpp, cAppendStr);
@@ -767,7 +763,7 @@ begin
         fIncludesParams := format(cAppendStr, [fIncludesParams, fProject.Options.Includes[i]]);
         fCppIncludesParams := format(cAppendStr, [fCppIncludesParams, fProject.Options.Includes[i]]);
       end;
-
+}
 {$ELSE}
 
   fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
@@ -1128,7 +1124,7 @@ LowerLine: string;
 cpos: integer;
 begin
   try
-    if strEqual(devCompiler.compilerType, 'Visual C++') then
+    if devCompiler.compilerType = ID_COMPILER_VC then
     begin
       if (Pos('Command line error', Line) > 0) then
       begin
@@ -1371,7 +1367,7 @@ begin
     Line := LOutput.Strings[curLine];
     LowerLine := LowerCase(Line);
 
-    if strEqual(devCompiler.compilerType, 'Visual C++') then
+    if devCompiler.compilerType = ID_COMPILER_VC then
     begin
       //Do we have to ignore this message?
       if
