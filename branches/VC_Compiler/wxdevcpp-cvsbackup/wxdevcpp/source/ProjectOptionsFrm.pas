@@ -563,6 +563,7 @@ begin
   devCompiler.OptionStr:=fOptions.CompilerOptions;
   SubTabsChange(Self);
   UpdateMakButtons();
+  CompOptionsFrame1.FillOptions(fProject);
 end;
 
 procedure TfrmProjectOptions.btnIconLibClick(Sender: TObject);
@@ -1039,13 +1040,18 @@ begin
 end;
 
 procedure TfrmProjectOptions.cmbCompilerChange(Sender: TObject);
+var currOpts: string;
 begin
 {$IfDef VC_BUILD}
+  currOpts := devCompiler.OptionStr;
   devCompiler.CompilerSet := cmbCompiler.ItemIndex;
   devCompiler.AddDefaultOptions;
 {$EndIf}
   devCompilerSet.LoadSet(cmbCompiler.ItemIndex);
   devCompilerSet.AssignToCompiler;
+{$IfDef VC_BUILD}
+  devCompiler.OptionStr := currOpts;
+{$EndIf}
   CompOptionsFrame1.FillOptions(fProject);
 end;
 
