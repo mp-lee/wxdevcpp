@@ -4217,6 +4217,11 @@ begin
         Exit;
       end;
       fCompiler.Project := fProject;
+      with fProject.Options do
+      begin
+        CompilerSet := devCompiler.compilerSet;
+        CompilerOptions := devCompiler.OptionStr;
+      end;
 
       {$IFDEF WX_BUILD}
       if strContains('wxWidgets Frame', GetTemplate.Name) then
@@ -8611,7 +8616,7 @@ begin
   ini.free;
   with fProject.Options do
   begin
-    compilerSet := devCompiler.compilerSet;
+    CompilerSet := devCompiler.compilerSet;
     CompilerOptions := devCompilerSet.optionsstr;
   end;
   
