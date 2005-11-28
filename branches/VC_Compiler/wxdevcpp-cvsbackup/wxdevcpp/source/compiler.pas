@@ -295,11 +295,6 @@ begin
   writeln(F, 'RES       = ' + ObjResFile);
   writeln(F, 'OBJ       =' + Objects + ' $(RES)');
   writeln(F, 'LINKOBJ   =' + LinkObjects + ' $(RES)');
- // writeln(F, 'INCLUDE   = ' + devCompiler.Includeparamslabel);
- // writeln(F, 'LINK_OUT  = ' + devCompiler.Linkeroutputlabel);
- // writeln(F, 'COMP_OUT  = ' + devCompiler.Compileroutputlabel);
- // writeln(F, 'RCOUTPUT  = ' + devCompiler.RCoutputlabel);
- // writeln(F, 'RCINCLUDE = ' + devCompiler.RCincludelabel);
   writeln(F, 'LIBS      =' + StringReplace(fLibrariesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'INCS      =' + StringReplace(fIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'CXXINCS   =' + StringReplace(fCppIncludesParams, '\', '/', [rfReplaceAll]));
@@ -307,8 +302,13 @@ begin
   writeln(F, 'CXXFLAGS  = $(CXXINCS) ' + fCppCompileParams);
   writeln(F, 'CFLAGS    = $(INCS) ' + fCompileParams);
   writeln(F, 'RM        = rm -f');
- // if (devCompiler.dllwrapName <> '') then
-    writeln(F, 'LINK      = ' + devCompiler.dllwrapName);
+  if devCompiler.CompilerType <> ID_COMPILER_MINGW then
+    writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
+  else
+    if fProject.Options.useGPP then
+      writeln(F, 'LINK      = ' + Comp_ProgCpp)
+    else
+      writeln(F, 'LINK      = ' + Comp_Prog);
 
   Writeln(F, '');
   if DoCheckSyntax then
@@ -504,13 +504,7 @@ begin
 
   if not DoCheckSyntax then
 {$IFDEF VC_BUILD}
-  if devCompiler.CompilerType = ID_COMPILER_VC then
-    writeln(F, #9 + '$(LINK) $(LINKOBJ) ' + format(devCompiler.LinkerFormat, [ExtractRelativePath(Makefile,fProject.Executable)]) + ' $(LIBS)')
-  else
-    if fProject.Options.useGPP then
-      writeln(F, #9 + '$(CPP) $(LINKOBJ) ' + format(devCompiler.LinkerFormat, [ExtractRelativePath(Makefile,fProject.Executable)]) + ' $(LIBS)')
-    else
-      writeln(F, #9 + '$(CC) $(LINKOBJ) ' + format(devCompiler.LinkerFormat, [ExtractRelativePath(Makefile,fProject.Executable)]) + ' $(LIBS)');
+    writeln(F, #9 + '$(LINK) $(LINKOBJ) ' + format(devCompiler.LinkerFormat, [ExtractRelativePath(Makefile,fProject.Executable)]) + ' $(LIBS)');
 {$ELSE}
      if fProject.Options.useGPP then
         writeln(F, #9 + '$(CPP) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
