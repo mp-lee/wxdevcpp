@@ -1,0 +1,18 @@
+[Template]
+ver=1
+Name=wxWidgets Dialog
+IconIndex=0
+Description=A basic Dialog for wxWidgets applications.
+Catagory=Basic
+
+[Project]
+UnitCount=0
+Type=0
+Cpp=1
+ResourceIncludes=
+Compiler=/D_UNICODE_@@_/D__WXMSW___@@_/DWIN32_@@_/DWXUSINGDLL_@@_/D_WIN32_IE=0x0600_@@_/DwxUSE_UNICODE_MSLU=1_@@_/W4_@@_
+CppCompiler=/D_UNICODE_@@_/D__WXMSW___@@_/DWIN32_@@_/DWXUSINGDLL_@@_/D_WIN32_IE=0x0600_@@_/DwxUSE_UNICODE_MSLU=1_@@_/W4_@@_
+Linker=wxmsw27u.lib_@@_wxtiff.lib_@@_wxjpeg.lib_@@_wxpng.lib_@@_wxzlib.lib_@@_wxregexu.lib_@@_wxexpat.lib_@@_kernel32.lib_@@_user32.lib_@@_gdi32.lib_@@_comdlg32.lib_@@_winspool.lib_@@_winmm.lib_@@_shell32.lib_@@_comctl32.lib_@@_ole32.lib_@@_oleaut32.lib_@@_uuid.lib_@@_rpcrt4.lib_@@_advapi32.lib_@@_wsock32.lib_@@_odbc32.lib_@@_opengl32.lib_@@_
+IsCpp=1
+IncludeVersionInfo=0
+SupportXPThemes=0
