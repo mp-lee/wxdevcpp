@@ -1136,7 +1136,7 @@ begin
       begin
 	Inc(fWarnCount);
       end
-    else
+    else if devCompiler.CompilerType = ID_COMPILER_MINGW then
     begin
       LowerLine := LowerCase(Line);
 
@@ -1459,7 +1459,7 @@ begin
         Inc(Messages);
         DoOutput(O_Line, O_file, O_Msg);
       end
-    else
+    else //ID_COMPILER_MINGW
       begin
       Line := LOutput.Strings[curLine];
       LowerLine := LowerCase(Line);
@@ -1941,8 +1941,8 @@ begin
     end;
     fil := '';
     for I := 0 to fProject.Units.Count - 1 do begin
-      srch := ExtractFilename(fProject.Units[I].FileName);
 {$IfNDef VC_BUILD}
+      srch := ExtractFilename(fProject.Units[I].FileName);
       if Pos(srch, Line) > 0 then begin
         fil := srch;
         prog := I + 1;
@@ -1953,14 +1953,16 @@ begin
       end;
     end;
 {$Else}
-    if Pos(srch, Line) > 0 then begin
-        fil := srch;
+      srch := ' ' + GenMakePath(ExtractRelativePath(fProject.FileName, fProject.Units[I].FileName), True, True) + ' ';
+      if Pos(srch, Line) > 0 then
+      begin
+        fil := ExtractFilename(fProject.Units[I].FileName);
         prog := I + 1;
         if not schk then
           act := 'Compiling';
         OK := True;
         Break;
-      end;
+      end
     end;
 {$EndIf}
     if not OK then begin
@@ -1986,11 +1988,14 @@ begin
         if not schk then
           act := 'Linking';
         lblFile.Caption := srch;
-      end;
+      end
     end;
-    Memo1.Lines.Add(act + ' ' + fil);
-    lblStatus.Caption := act + '...';
-    lblFile.Caption := fil;
+    if act + ' ' + fil <> ' ' then
+      Memo1.Lines.Add(act + ' ' + fil);
+    if trim(act) <> '' then
+      lblStatus.Caption := act + '...';
+    if trim(fil) <> '' then
+      lblFile.Caption := fil;
     if (fil <> '') and (pb.Position < pb.Max) then
       pb.Position := prog;
   end;
