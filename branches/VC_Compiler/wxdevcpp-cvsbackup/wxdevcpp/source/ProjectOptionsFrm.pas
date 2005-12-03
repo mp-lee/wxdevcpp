@@ -143,6 +143,8 @@ type
     btnMakeBrowse: TSpeedButton;
     btnMakDown: TSpeedButton;
     btnMakUp: TSpeedButton;
+    lbldefines: TLabel;
+    edDefines: TMemo;
     procedure ListClick(Sender: TObject);
     procedure EditChange(SEnder: TObject);
     procedure ButtonClick(Sender: TObject);
@@ -403,7 +405,11 @@ begin
      for I:=0 to edLinker.Lines.Count-1 do
       cmdLines.Linker := cmdLines.Linker + edLinker.Lines[I] + '_@@_';
     // mandrav: end
-
+{$IfDef VC_BUILD}
+     PreprocDefines := '';
+     for I:=0 to edDefines.Lines.Count-1 do
+      PreprocDefines := PreprocDefines + edDefines.Lines[I] + '_@@_';
+{$EndIf}
      typ:= lstType.ItemIndex;
 
     ExeOutput := edExeOutput.Text;
@@ -471,6 +477,9 @@ begin
   edCompiler.Lines.Text:= StringReplace(fOptions.cmdlines.Compiler, '_@@_', #13#10, [rfReplaceAll]);
   edCppCompiler.Lines.Text:= StringReplace(fOptions.cmdlines.CppCompiler, '_@@_', #13#10, [rfReplaceAll]);
   edLinker.Lines.Text:= StringReplace(fOptions.cmdlines.Linker, '_@@_', #13#10, [rfReplaceAll]);
+{$IfDef VC_BUILD}
+  edDefines.Lines.Text := StringReplace(fOptions.PreProcDefines, '_@@_', #13#10, [rfReplaceAll]);
+{$EndIf}
   edProjectName.Text:= fProject.Name;
   lblPrjFname.Caption:=fProject.FileName;
   lblPrjOutputFname.Caption:=fProject.Executable;

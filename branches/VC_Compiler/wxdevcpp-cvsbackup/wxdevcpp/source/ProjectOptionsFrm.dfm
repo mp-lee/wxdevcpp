@@ -72,8 +72,8 @@ object frmProjectOptions: TfrmProjectOptions
     Top = 8
     Width = 468
     Height = 265
-    ActivePage = tabCompiler
-    TabIndex = 2
+    ActivePage = tabCompOpts
+    TabIndex = 3
     TabOrder = 3
     object tabGeneral: TTabSheet
       Caption = 'General'
@@ -513,11 +513,19 @@ object frmProjectOptions: TfrmProjectOptions
         Caption = 'Linker options / Optional libraries or object files :'
         Transparent = True
       end
+      object lbldefines: TLabel
+        Left = 10
+        Top = 145
+        Width = 293
+        Height = 13
+        Caption = 'Preprocessor Definitions:'
+        Transparent = True
+      end
       object edCompiler: TMemo
         Left = 10
         Top = 40
         Width = 140
-        Height = 190
+        Height = 100
         Lines.Strings = (
           'edCompiler')
         ScrollBars = ssBoth
@@ -527,7 +535,7 @@ object frmProjectOptions: TfrmProjectOptions
         Left = 163
         Top = 40
         Width = 140
-        Height = 190
+        Height = 100
         Lines.Strings = (
           'edCppCompiler')
         ScrollBars = ssBoth
@@ -578,6 +586,16 @@ object frmProjectOptions: TfrmProjectOptions
           5DCCFF5DCCFF000000000000000000000000000000000000BFBFBFBFBFBFBFBF
           BFBFBFBFBFBFBFBFBFBFBFBFBF000000000000000000BFBFBFBFBFBFBFBFBFBF
           BFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBF}
+      end
+      object edDefines: TMemo
+        Left = 10
+        Top = 162
+        Width = 293
+        Height = 65
+        Lines.Strings = (
+          'edDefines')
+        ScrollBars = ssBoth
+        TabOrder = 4
       end
     end
     object tabFilesDir: TTabSheet
@@ -1332,7 +1350,7 @@ object frmProjectOptions: TfrmProjectOptions
           Width = 158
           Height = 21
           Style = csDropDownList
-          ItemHeight = 0
+          ItemHeight = 13
           TabOrder = 4
         end
         object chkAutoIncBuild: TCheckBox

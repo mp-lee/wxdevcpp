@@ -100,6 +100,7 @@ type
     fDllFormat: string;
     fLibFormat: string;
     fSingleCompile: string;
+    fPreprocDefines: string;
 {$EndIf}
     fCmdOptions : string;
     fLinkOptions : string;
@@ -139,6 +140,7 @@ type
     property DllFormat: string read fDllFormat write fDllFormat;
     property LibFormat: string read fLibFormat write fLibFormat;
     property SingleCompile: string read fSingleCompile write fSingleCompile;
+    property PreprocDefines: string read fPreprocDefines write fPreprocDefines;
 {$EndIf}
     property gccName: string read fgccName write fgccName;
     property gppName: string read fgppName write fgppName;
@@ -186,6 +188,7 @@ type
     fDllFormat: string;
     fLibFormat: string;
     fSingleCompile: string;
+    fPreprocDefines: string;
 {$EndIf}
     //Compiler options
     fOptions: TList;
@@ -248,6 +251,7 @@ type
     property DllFormat: string read fDllFormat write fDllFormat;
     property LibFormat: string read fLibFormat write fLibFormat;
     property SingleCompile: string read fSingleCompile write fSingleCompile;
+    property PreprocDefines: string read fPreprocDefines write fPreprocDefines;
 {$EndIf}
     property RunParams: string read fRunParams write fRunParams;
     property OutputDir: string read fOutputDir write fOutputDir; // ** unused
@@ -1942,6 +1946,7 @@ begin
   devCompiler.DllFormat             := devCompilerSet.DllFormat;
   devCompiler.LibFormat             := devCompilerSet.LibFormat;
   devCompiler.SingleCompile         := devCompilerSet.SingleCompile;
+  devCompiler.PreprocDefines        := devCompilerSet.PreprocDefines;
   {$ENDIF}
   // we have to set the devDirs too
   devDirs.Bins := devCompilerSet.BinDir;
@@ -2205,6 +2210,8 @@ begin
       fLibFormat             := LoadSetting(key, 'LibFormat');
     if LoadSetting(key, 'SingleCompile') <> '' then
       fSingleCompile         := LoadSetting(key, 'SingleCompile');
+    if LoadSetting(key, 'PreprocDefines') <> '' then
+      fPreprocDefines        := LoadSetting(key, 'PreprocDefines');
   end;
 end;
 
@@ -2268,6 +2275,7 @@ begin
     SaveSetting(key, 'DllFormat', fDllFormat);
     SaveSetting(key, 'LibFormat', fLibFormat);
     SaveSetting(key, 'SingleCompile', fSingleCompile);
+    SaveSetting(key, 'PreprocDefines', fPreprocDefines);
 {$EndIf}
   end;
 end;
@@ -2310,6 +2318,7 @@ begin
     fDllFormat              := '/dll /implib:"%s" /out:"%s"';
     fLibFormat              := '/lib /out:"%s"';
     fSingleCompile          := '%s "%s" %s %s /link %s';
+    fPreprocDefines         := '/D%s';
   end
   else if CompilerType = ID_COMPILER_MINGW then
   begin
@@ -2323,6 +2332,7 @@ begin
     fDllFormat              := '--implib "%s" -o %s';
     fLibFormat              := '=ar' + #10#13 + 'OUT=%s' + #10#13 + '$(LINK) r $(OUT) %s' + #10#13 + 'ranlib $(OUT)';
     fSingleCompile          := '%s "%s" -o "%s" %s %s %s';
+    fPreprocDefines         := '-D%s';
   end;
 
   // dirs

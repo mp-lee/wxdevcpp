@@ -128,6 +128,9 @@ type
     function NewMakeFile(var F: TextFile): boolean; virtual;
     procedure WriteMakeClean(var F: TextFile); virtual;
     procedure WriteMakeObjFilesRules(var F: TextFile); virtual;
+{$IfDef VC_BUILD}
+    function PreProcDefines(): string;
+{$EndIf}
   end;
 
 implementation
@@ -299,8 +302,14 @@ begin
   writeln(F, 'INCS      =' + StringReplace(fIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'CXXINCS   =' + StringReplace(fCppIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'BIN       = ' + GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)));
+{$IfDef VC_BUILD}
+  writeln(F, 'DEFINES   = ' + PreprocDefines);
+  writeln(F, 'CXXFLAGS  = $(CXXINCS) $(DEFINES) ' + fCppCompileParams);
+  writeln(F, 'CFLAGS    = $(INCS) $(DEFINES) ' + fCompileParams);
+{$Else}
   writeln(F, 'CXXFLAGS  = $(CXXINCS) ' + fCppCompileParams);
   writeln(F, 'CFLAGS    = $(INCS) ' + fCompileParams);
+{$EndIf}
   writeln(F, 'RM        = rm -f');
   if devCompiler.CompilerType <> ID_COMPILER_MINGW then
     writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
@@ -311,11 +320,7 @@ begin
       writeln(F, 'LINK      = ' + Comp_Prog);
 
   Writeln(F, '');
-  if DoCheckSyntax then
-    Writeln(F,'.PHONY: all all-before all-after clean clean-custom')
-  else
-    Writeln(F, '.PHONY: all all-before all-after clean clean-custom');
-  Writeln(F, '');
+  Writeln(F, '.PHONY: all all-before all-after clean clean-custom');
   Writeln(F, 'all: all-before ' +
     GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)) +
     ' all-after');
@@ -413,7 +418,7 @@ begin
         writeln(F, GenMakePath2(ofile) + ':' + GenMakePath2(tfile));
 
         if fProject.Units[i].CompileCpp then
-          writeln(F, #9'$(CPP) ' + format(devCompiler.CheckSyntaxFormat, [GenMakePath(tfile)]) + ' $(CFLAGS)')
+          writeln(F, #9'$(CPP) ' + format(devCompiler.CheckSyntaxFormat, [GenMakePath(tfile)]) + ' $(CXXFLAGS)')
         else
           writeln(F, #9'$(CC) ' + format(devCompiler.CheckSyntaxFormat, [GenMakePath(tfile)]) + ' $(CFLAGS)');
       end
@@ -743,6 +748,29 @@ begin
       end;
 {$ENDIF}
 
+end;
+
+function TCompiler.PreProcDefines: string;
+var
+i: integer;
+values: TStringList;
+tempvalues: string;
+begin
+  Result := '';
+  if assigned(fProject) then
+  begin
+    values := TStringList.Create;
+    tempvalues := StringReplace(fProject.Options.PreProcDefines, '_@@_', #10, [rfReplaceAll]);
+    strTokenToStrings(tempvalues, #10, values);
+
+    for i := 0 to values.Count - 1 do
+    begin
+      Result := Result + ' ' + Format(devCompiler.PreprocDefines, [values[i]]);
+    end;
+
+    //Clean up
+    values.Destroy;
+  end;
 end;
 
 procedure TCompiler.ShowResults;
