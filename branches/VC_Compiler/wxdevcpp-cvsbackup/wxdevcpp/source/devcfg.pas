@@ -107,12 +107,12 @@ type
 
     //Private ctor and dtor, since we are singletons
     constructor Create;
-    destructor Destroy; override;
 
     procedure WriteSets;
     procedure UpdateSets;
 
   public
+  destructor Destroy; override;
     procedure SettoDefaults; override;
     procedure SaveSettings; override;
     procedure LoadSettings; override;
@@ -206,8 +206,7 @@ type
 
     //Private constructors for singletons
     constructor Create;
-    destructor Destroy; override;
-    
+
     procedure SetCompilerSet(const Value: integer);
     function GetOptions(Index: integer): TCompilerOption;
     procedure SetOptions(Index: integer; const Value: TCompilerOption);
@@ -219,6 +218,8 @@ type
     procedure AddDefaultOptions;
 
   public
+  destructor Destroy; override;
+    
     function OptionsCount: integer;
     function FindOption(Setting: string; var opt: TCompilerOption; var Index: integer): boolean; // returns the option with setting=<Setting>
     function ConvertCharToValue(c: char): integer;
