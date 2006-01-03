@@ -1138,12 +1138,15 @@ begin
     AddOption('Omit frame pointers', false, true, true, false, 0, '/Oy', 'Code Optimization', [], nil);
 
     //Code generation
-    sl := TStringList.Create;
-    sl.Add('Blended model=B');
-    sl.Add('Pentium=5');
-    sl.Add('Pentium Pro, Pentium II and Pentium III  =6');
-    sl.Add('Pentium 4 or Athlon=7');
-    AddOption('Optimize for', False, True, True, False, 0, '/G', 'Code Generation', [], sl);
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC) then
+    begin
+        sl := TStringList.Create;
+        sl.Add('Blended model=B');
+        sl.Add('Pentium=5');
+        sl.Add('Pentium Pro, Pentium II and Pentium III  =6');
+        sl.Add('Pentium 4 or Athlon=7');
+        AddOption('Optimize for', False, True, True, False, 0, '/G', 'Code Generation', [], sl);
+    end;
 
     sl := TStringList.Create;
     sl.Add('None=');
@@ -1154,7 +1157,8 @@ begin
 
     sl := TStringList.Create;
     sl.Add('Disable=');
-    sl.Add('Enable=/Gf');
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC) then
+        sl.Add('Enable=/Gf');
     sl.Add('Enable Read-Only  =/GF');
     AddOption('String Pooling', false, true, true, false, 0, '', 'Code Generation', [], sl);
 
