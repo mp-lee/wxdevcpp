@@ -475,6 +475,7 @@ begin
     Linker.Lines.Text       := LinkOpts;
     CompilerTypes.ItemIndex := CompilerType;
     DirTabsChange(DirTabs);
+    CompilerTypesClick(nil);
 
     GccEdit.Text            := gccName;
     GppEdit.Text            := gppName;
@@ -570,9 +571,41 @@ end;
 procedure TCompForm.CompilerTypesClick(Sender: TObject);
 begin
   devCompilerSet.CompilerType := CompilerTypes.ItemIndex;
+  devCompilerSet.SettoDefaults;
   devCompiler.AddDefaultOptions;
   devCompiler.OptionStr := devCompilerSet.OptionsStr;
   CompOptionsFrame1.FillOptions(nil);
+
+  //Set the labels
+  case CompilerTypes.ItemIndex of
+    ID_COMPILER_MINGW:
+      begin
+        lblwindres.Caption := 'windres : ';
+        lbldllwrap.Caption := 'dllwrap : ';
+        lblgprof.Caption := 'gprof : ';
+        lblgprof.Enabled := true;
+        gprofEdit.Enabled := true;
+        btnbrowse8.Enabled := true;
+      end;
+    ID_COMPILER_VC:
+      begin
+        lblwindres.Caption := 'rc : ';
+        lbldllwrap.Caption := 'link : ';
+        lblgprof.Caption := 'mt : ';
+        lblgprof.Enabled := false;
+        gprofEdit.Enabled := false;
+        btnbrowse8.Enabled := false;
+      end;
+    ID_COMPILER_VC2005:
+      begin
+        lblwindres.Caption := 'rc : ';
+        lbldllwrap.Caption := 'link : ';
+        lblgprof.Caption := 'mt : ';
+        lblgprof.Enabled := true;
+        gprofEdit.Enabled := true;
+        btnbrowse8.Enabled := true;
+      end;
+  end;
 end;
 
 end.

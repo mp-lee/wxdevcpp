@@ -247,12 +247,18 @@ begin
   end;
 
   if (devCompiler.gppName <> '') then
-    Comp_ProgCpp := devCompiler.gppName
+    if (devCompiler.compilerType = ID_COMPILER_VC) or (devCompiler.compilerType = ID_COMPILER_VC2005) then
+      Comp_ProgCpp := devCompiler.gppName + ' /nologo'
+    else
+      Comp_ProgCpp := devCompiler.gppName
   else
     Comp_ProgCpp := GPP_PROGRAM;
 
   if (devCompiler.gccName <> '') then
-    Comp_Prog := devCompiler.gccName
+    if (devCompiler.compilerType = ID_COMPILER_VC) or (devCompiler.compilerType = ID_COMPILER_VC2005) then
+      Comp_Prog := devCompiler.gccName + ' /nologo'
+    else
+      Comp_Prog := devCompiler.gccName
   else
     Comp_Prog := GCC_PROGRAM;
 
@@ -306,12 +312,16 @@ begin
   writeln(F, 'DEFINES   = ' + PreprocDefines);
   writeln(F, 'CXXFLAGS  = $(CXXINCS) $(DEFINES) ' + fCppCompileParams);
   writeln(F, 'CFLAGS    = $(INCS) $(DEFINES) ' + fCompileParams);
+  writeln(F, 'GPROF     = ' + devCompilerSet.gprofName);
 {$Else}
   writeln(F, 'CXXFLAGS  = $(CXXINCS) ' + fCppCompileParams);
   writeln(F, 'CFLAGS    = $(INCS) ' + fCompileParams);
 {$EndIf}
   writeln(F, 'RM        = rm -f');
-  if devCompiler.CompilerType <> ID_COMPILER_MINGW then
+
+  if (devCompiler.CompilerType = ID_COMPILER_VC) or (devCompiler.CompilerType = ID_COMPILER_VC2005) then
+    writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo')
+  else if devCompiler.CompilerType <> ID_COMPILER_MINGW then
     writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
   else
     if fProject.Options.useGPP then
@@ -509,7 +519,14 @@ begin
 
   if not DoCheckSyntax then
 {$IFDEF VC_BUILD}
+  begin
     writeln(F, #9 + '$(LINK) $(LINKOBJ) ' + format(devCompiler.LinkerFormat, [ExtractRelativePath(Makefile,fProject.Executable)]) + ' $(LIBS)');
+    if devCompiler.compilerType = ID_COMPILER_VC2005 then
+    begin
+      writeln(F, #9 + '$(GPROF) /nologo /manifest "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest" /outputresource:"' + ExtractRelativePath(Makefile,fProject.Executable) + '"');
+      writeln(F, #9 + '@rm ' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest');
+    end;
+  end;
 {$ELSE}
      if fProject.Options.useGPP then
         writeln(F, #9 + '$(CPP) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
@@ -879,7 +896,7 @@ begin
           fCppIncludesParams, fLibrariesParams])
       else
       begin
-        if devCompiler.CompilerType = ID_COMPILER_VC then
+        if (devCompiler.CompilerType = ID_COMPILER_VC) or (devCompiler.CompilerType = ID_COMPILER_VC2005) then
           cmdline := format(cCmdLine,
             [s, fSourceFile, fCppCompileParams, fCppIncludesParams, fLibrariesParams])
         else
@@ -1130,7 +1147,7 @@ LowerLine: string;
 cpos: integer;
 begin
   try
-    if devCompiler.compilerType = ID_COMPILER_VC then
+    if (devCompiler.compilerType = ID_COMPILER_VC) or (devCompiler.CompilerType = ID_COMPILER_VC2005) then
     begin
       if (Pos('Command line error', Line) > 0) then
       begin
@@ -1373,7 +1390,7 @@ begin
     Line := LOutput.Strings[curLine];
     LowerLine := LowerCase(Line);
 
-    if devCompiler.compilerType = ID_COMPILER_VC then
+    if (devCompiler.compilerType = ID_COMPILER_VC) or (devCompiler.CompilerType = ID_COMPILER_VC2005) then
     begin
       //Do we have to ignore this message?
       if
@@ -1383,6 +1400,7 @@ begin
 	(Copy(Line, 1, 19) = '   Creating library') or
 	(Copy(Line, 1, 9) = 'link.exe ') or
 	(Copy(Line, 1, 13) = 'rc.exe /r /fo') or
+        (Copy(Line, 1, 6) = 'mt.exe') or
 	(Length(Line) = 2) or//One word lines?
 	(Pos('*** [', Line) > 0) or
 	(((Pos('.c', Line) > 0) or (Pos('.cpp', Line) > 0)) and (Pos('(', Line) = 0)) or
@@ -1967,19 +1985,38 @@ begin
       else
         act := '';
     end;
-    fil := '';
-    for I := 0 to fProject.Units.Count - 1 do begin
-{$IfNDef VC_BUILD}
-      srch := ExtractFilename(fProject.Units[I].FileName);
-      if Pos(srch, Line) > 0 then begin
-        fil := srch;
-        prog := I + 1;
-        if not schk then
-          act := 'Compiling';
-        OK := True;
-        Break;
+
+    if Pos('/Yc', Line) > 0 then
+    begin
+      OK := false;
+      act := 'Precompiling';
+      fil := '';
+
+      for i := Pos('/Yc', Line) + 3 to Length(Line) - Pos('/Yc', Line) + 3 do begin
+         if (Line[i] = '"') then
+           OK := not OK;
+
+         if ((Line[i] = ' ') or ((Line[i] = '"') and (OK))) then
+           break
+         else
+           fil := fil + Line[i];
       end;
-    end;
+    end
+    else
+    begin
+      fil := '';
+      for I := 0 to fProject.Units.Count - 1 do begin
+{$IfNDef VC_BUILD}
+        srch := ExtractFilename(fProject.Units[I].FileName);
+        if Pos(srch, Line) > 0 then begin
+          fil := srch;
+          prog := I + 1;
+          if not schk then
+            act := 'Compiling';
+          OK := True;
+          Break;
+        end;
+      end;
 {$Else}
       srch := ' ' + GenMakePath(ExtractRelativePath(fProject.FileName, fProject.Units[I].FileName), True, True) + ' ';
       if Pos(srch, Line) > 0 then
@@ -1993,31 +2030,33 @@ begin
       end
     end;
 {$EndIf}
-    if not OK then begin
-      srch := ExtractFileName(fProject.Options.PrivateResource);
-      if Pos(srch, Line) > 0 then begin
-        fil := srch;
-        prog := pb.Max - 1;
-        if not schk then
-          act := 'Compiling';
-        lblFile.Caption := srch;
+      if not OK then begin
+        srch := ExtractFileName(fProject.Options.PrivateResource);
+        if Pos(srch, Line) > 0 then begin
+          fil := srch;
+          prog := pb.Max - 1;
+          if not schk then
+            act := 'Compiling';
+          lblFile.Caption := srch;
+        end;
+        srch := ExtractFileName(fProject.Executable);
+        if (Pos(srch, Line) > 0) and (Pos('rm -f', Line) > 0) then begin
+          fil := srch;
+          prog := 1;
+          if not schk then
+            act := 'Cleaning';
+          lblFile.Caption := '';
+        end
+        else if (Pos(srch, Line) > 0) then begin
+          fil := srch;
+          prog := pb.Max;
+          if not schk then
+            act := 'Linking';
+          lblFile.Caption := srch;
+        end
       end;
-      srch := ExtractFileName(fProject.Executable);
-      if (Pos(srch, Line) > 0) and (Pos('rm -f', Line) > 0) then begin
-        fil := srch;
-        prog := 1;
-        if not schk then
-          act := 'Cleaning';
-        lblFile.Caption := '';
-      end
-      else if (Pos(srch, Line) > 0) then begin
-        fil := srch;
-        prog := pb.Max;
-        if not schk then
-          act := 'Linking';
-        lblFile.Caption := srch;
-      end
     end;
+    
     if act + ' ' + fil <> ' ' then
       Memo1.Lines.Add(act + ' ' + fil);
     if trim(act) <> '' then

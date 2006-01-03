@@ -283,13 +283,12 @@ object CompForm: TCompForm
           AutoComplete = False
           Style = csDropDownList
           ItemHeight = 13
-          ItemIndex = 0
           TabOrder = 1
-          Text = 'MingW'
           OnChange = CompilerTypesClick
           Items.Strings = (
             'MingW'
-            'Visual C++')
+            'Visual C++ .NET 2003'
+            'Visual C++ 2005')
         end
       end
       object cmdline: TGroupBox

@@ -54,6 +54,7 @@ const
     's', 't', 'u', 'v', 'w', 'x', 'y', 'z');
   ID_COMPILER_MINGW = 0;
   ID_COMPILER_VC = 1;
+  ID_COMPILER_VC2005 = 2;
   
 type
   // the comments are an example of the record
@@ -1098,9 +1099,6 @@ var
   i : integer;
   sl: TStringList;
 
-{$IFDEF VC_BUILD}
-{$ENDIF}
-
 begin
   // WARNING: do *not* re-arrange the options. Their values are written to the ini file
   // with the same order. If you change the order here, the next time the configuration
@@ -1120,7 +1118,7 @@ begin
   //Begin by clearing the compiler options list
   devCompiler.ClearOptions;
 
-  if (devCompilerSet.CompilerType = ID_COMPILER_VC) then
+  if (devCompilerSet.CompilerType = ID_COMPILER_VC) or (devCompilerSet.CompilerType = ID_COMPILER_VC2005) then
   begin
     sl := TStringList.Create;
     sl.Add('Neither  =');
@@ -1164,8 +1162,24 @@ begin
     sl.Add('Default=');
     sl.Add('Compile for CLR  =/clr');
     sl.Add('No assembly=/clr:noAssembly');
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC2005) then
+    begin
+        sl.Add('IL-only output file=/clr:pure');
+        sl.Add('Verifiable IL-only output=/clr:safe');
+        sl.Add('Use old syntax=/clr:oldSyntax');
+        sl.Add('Enable initial AppDomain behaviour  =/clr:initialAppDomain');
+    end;
     AddOption('Common Language Runtime', false, true, true, false, 0, '', 'Code Generation', [], sl);
 
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC2005) then
+    begin
+        sl := TStringList.Create;
+        sl.Add('Precise  =precise');
+        sl.Add('Fast=fast');
+        sl.Add('Strict=strict');
+        AddOption('Floating-Point Model', false, true, true, false, 0, '', 'Code Generation', [], sl);
+    end;
+    
     sl := TStringList.Create;
     sl.Add('None=');
     sl.Add('SSE=/arch:SSE');
@@ -1182,12 +1196,15 @@ begin
     AddOption('Enable C++ RTTI', false, false, true, false, 0, '/GR', 'Code Generation', [], nil);
     AddOption('Enable Minimal Rebuild', false, true, true, false, 0, '/Gm', 'Code Generation', [], nil);
     AddOption('Enable Link-time Code Generation', false, true, true, true, 0, '/GL', 'Code Generation', [], nil);
-    AddOption('Enable Pentium FDIV fix', false, true, true, false, 1, '/QIfdiv', 'Code Generation', [], nil);
-    AddOption('Enable Pentium 0x0F fix', false, true, true, false, 1, '/QI0f', 'Code Generation', [], nil);
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC) then
+    begin
+        AddOption('Enable Pentium FDIV fix', false, true, true, false, 1, '/QIfdiv', 'Code Generation', [], nil);
+        AddOption('Enable Pentium 0x0F fix', false, true, true, false, 1, '/QI0f', 'Code Generation', [], nil);
+        AddOption('Use FIST instead of ftol()', false, true, true, false, 1, '/QIfist', 'Code Generation', [], nil);
+    end;
     AddOption('Extern C defaults to nothrow', false, false, true, false, 0, '/EHc', 'Code Generation', [], nil);
     AddOption('Seperate functions for linker', false, false, false, true, 0, '/Gy', 'Code Generation', [], nil);
     AddOption('Use fibre-safe TLS accesses', false, true, true, false, 0, '/GT', 'Code Generation', [], nil);
-    AddOption('Use FIST instead of ftol()', false, true, true, false, 1, '/QIfist', 'Code Generation', [], nil);
 
     //Checks
     sl := TStringList.Create;
@@ -1208,25 +1225,36 @@ begin
     sl.Add('Old-Style Debugging Information=/Z7');
     sl.Add('Include line numbers only=/Zd');
     AddOption('Debugging', false, true, true, false, 0, '', 'Language Options', [], sl);
-    AddOption('Enable Extensions', false, true, true, false, 1, '/Ze', 'Language Options', [], nil);
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC) then
+        AddOption('Enable Extensions', false, true, true, false, 1, '/Ze', 'Language Options', [], nil);
     AddOption('Omit library name in object file', false, true, true, false, 0,  '/Zl', 'Language Options', [], nil);
     AddOption('Generate function prototypes', false, true, true, false, 0, '/Zg', 'Language Options', [], nil);
-    AddOption('Enforce Standard C++ scoping', false, false, true, false, 0, '/Zc:forScope', 'Language Options', [], nil);
-    AddOption('Make wchar_t a native type', false, false, true, false, 0, '/Zc:wchar_t', 'Language Options', [], nil);
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC2005) then
+        AddOption('Enable OpenMP 2.0 Language Extensions', false, false, true, false, 0, '/openmp', 'Language Options', [], nil);
+
+
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC) then
+    begin
+        AddOption('Enforce Standard C++ scoping', false, false, true, false, 0, '/Zc:forScope', 'Language Options', [], nil);
+        AddOption('Make wchar_t a native type', false, false, true, false, 0, '/Zc:wchar_t', 'Language Options', [], nil);
+    end
+    else
+    begin
+        AddOption('Don''t Enforce Standard C++ scoping', false, false, true, false, 0, '/Zc:forScope-', 'Language Options', [], nil);
+        AddOption('Don''t Make wchar_t a native type', false, false, true, false, 0, '/Zc:wchar_t-', 'Language Options', [], nil);
+    end;
 
     //Miscellaneous
-    sl := TStringList.Create;
-    sl.Add('Treat warnings normally=');
-    sl.Add('Treat warnings as errors  =/WX');
-    sl.Add('Suppress all warnings=/w');
-    AddOption('Warnings', false, true, true, false, 0, '', 'Miscellaneous', [], sl);
+    AddOption('Treat warnings as errors', false, true, true, false, 0, '/WX', 'Miscellaneous', [], nil);
     sl := TStringList.Create;
     sl.Add('Level 4  =/W4');
     sl.Add('Level 3  =/W3');
     sl.Add('Level 2  =/W2');
     sl.Add('Level 1  =/W1');
+    sl.Add('None=/w');
     AddOption('Warning Level', false, true, true, false, 0, '', 'Miscellaneous', [], sl);
-    AddOption('Use Precompiled headers', false, true, true, false, 0, '/YX', 'Miscellaneous', [], nil);
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC) then
+        AddOption('Use Precompiled headers', false, true, true, false, 0, '/YX', 'Miscellaneous', [], nil);
     AddOption('Disable incremental linking', false, false, false, true, 0, '/INCREMENTAL:NO', 'Miscellaneous', [], nil);
   end
   else
@@ -2307,7 +2335,7 @@ begin
   fCmdOptions  :='';
   fLinkOptions :='';
 
-  if CompilerType = ID_COMPILER_VC then
+  if (CompilerType = ID_COMPILER_VC) or (CompilerType = ID_COMPILER_VC2005) then
   begin
     fCheckSyntaxFormat      := '/Zs';
     fOutputFormat           := '/c %s /Fo%s';
