@@ -475,7 +475,6 @@ begin
     Linker.Lines.Text       := LinkOpts;
     CompilerTypes.ItemIndex := CompilerType;
     DirTabsChange(DirTabs);
-    CompilerTypesClick(nil);
 
     GccEdit.Text            := gccName;
     GppEdit.Text            := gppName;
@@ -484,10 +483,11 @@ begin
     WindresEdit.Text        := windresName;
     DllwrapEdit.Text        := dllwrapName;
     GprofEdit.Text          := gprofName;
-    
+
     devCompiler.AddDefaultOptions;
     devCompiler.OptionStr   := OptionsStr;
     CompOptionsFrame1.FillOptions(nil);
+    CompilerTypesClick(nil);
   end;
 end;
 
