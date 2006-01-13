@@ -1049,7 +1049,9 @@ begin
 end;
 
 procedure TfrmProjectOptions.cmbCompilerChange(Sender: TObject);
+{$IfDef VC_BUILD}
 var currOpts: string;
+{$ENDIF}
 begin
 {$IfDef VC_BUILD}
   currOpts := devCompiler.OptionStr;

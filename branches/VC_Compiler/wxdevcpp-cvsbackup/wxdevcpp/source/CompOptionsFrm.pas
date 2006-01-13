@@ -473,7 +473,9 @@ begin
 
     Commands.Lines.Text     := CmdOpts;
     Linker.Lines.Text       := LinkOpts;
+    {$IFDEF VC_BUILD}
     CompilerTypes.ItemIndex := CompilerType;
+    {$ENDIF}
     DirTabsChange(DirTabs);
 
     GccEdit.Text            := gccName;
@@ -570,7 +572,9 @@ end;
 
 procedure TCompForm.CompilerTypesClick(Sender: TObject);
 begin
+  {$IFDEF VC_BUILD}
   devCompilerSet.CompilerType := CompilerTypes.ItemIndex;
+  {$ENDIF}
   devCompilerSet.SettoDefaults;
   devCompiler.AddDefaultOptions;
   devCompiler.OptionStr := devCompilerSet.OptionsStr;

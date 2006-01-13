@@ -2199,8 +2199,10 @@ begin
   with devData do
   begin
     key := OPT_COMPILERSETS + '_' + IntToStr(Index);
+    {$IFDEF VC_BUILD}
     if (LoadSetting(key, 'CompilerType') <> '') then
       fCompilerType := StrToInt(LoadSetting(key, 'CompilerType'));
+    {$ENDIF}
     self.SetToDefaults;
 
       // Programs
@@ -2223,6 +2225,7 @@ begin
     fCmdOptions:= LoadSetting(key, 'cmdline');
     fLinkOptions:=LoadSetting(key, 'LinkLine');
 
+    {$IFDEF VC_BUILD}
     if LoadSetting(key, 'CheckSyntax') <> '' then
       fCheckSyntaxFormat     := LoadSetting(key, 'CheckSyntax');
     if LoadSetting(key, 'OutputFormat') <> '' then
@@ -2245,6 +2248,7 @@ begin
       fSingleCompile         := LoadSetting(key, 'SingleCompile');
     if LoadSetting(key, 'PreprocDefines') <> '' then
       fPreprocDefines        := LoadSetting(key, 'PreprocDefines');
+    {$ENDIF}
   end;
 end;
 
@@ -2295,7 +2299,9 @@ begin
     SaveSetting(key, 'Options', fOptions);
     SaveSetting(key, 'cmdline', fCmdOptions);
     SaveSetting(key, 'LinkLine', fLinkOptions);
+    {$IFDEF VC_BUILD}
     SaveSetting(key, 'CompilerType', IntToStr(fCompilerType));
+    {$ENDIF}
 
 {$IfDef VC_BUILD}
     SaveSetting(key, 'CheckSyntax', fCheckSyntaxFormat);
@@ -2339,6 +2345,7 @@ begin
   fCmdOptions  :='';
   fLinkOptions :='';
 
+  {$IFDEF VC_BUILD}
   if (CompilerType = ID_COMPILER_VC) or (CompilerType = ID_COMPILER_VC2005) then
   begin
     fCheckSyntaxFormat      := '/Zs';
@@ -2367,6 +2374,7 @@ begin
     fSingleCompile          := '%s "%s" -o "%s" %s %s %s';
     fPreprocDefines         := '-D%s';
   end;
+  {$ENDIF}
 
   // dirs
   fBinDir  := devDirs.Bins;
