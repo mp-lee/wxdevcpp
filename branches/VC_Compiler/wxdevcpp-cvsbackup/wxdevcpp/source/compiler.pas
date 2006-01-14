@@ -270,9 +270,10 @@ begin
   {$ENDIF}
       Comp_Prog := devCompiler.gccName
   else
-
-{$IFNDEF VC_BUILD}
-  if devCompiler.FindOption('-g3', opt, idx) then
+{$IFDEF VC_BUILD}
+    Comp_Prog := GCC_PROGRAM;
+{$ELSE}
+   if devCompiler.FindOption('-g3', opt, idx) then
     if (fProject.Options.CompilerOptions <> '') and (fProject.Options.CompilerOptions[idx + 1] = '1') then begin
       Comp_ProgCpp := Comp_ProgCpp + ' -D__DEBUG__';
       Comp_Prog := Comp_Prog + ' -D__DEBUG__';
@@ -302,17 +303,16 @@ begin
     writeln(F, '# Makefile created by ' + DEVCPP + ' ' + DEVCPP_VERSION +
              ' on ' + FormatDateTime('dd/mm/yy hh:nn', Now));
     writeln(F, '# Compiler: ' + devCompiler.Name);
-     writeln(F, '# CompilerType: ' + inttostr(devCompiler.CompilerType));
+    writeln(F, '# CompilerType: ' + inttostr(devCompiler.CompilerType));
   {$ELSE}
   writeln(F, '# Makefile created by Dev-C++ ' + DEVCPP_VERSION);
-  writeln(F);
   {$ENDIF}
   if DoCheckSyntax then
   begin
     writeln(F, '# This Makefile is written for syntax check!');
     writeln(F, '# Regenerate it if you want to use this Makefile to build.');
-  writeln(F);
   end;
+  writeln(F);
   writeln(F, 'CPP       = ' + Comp_ProgCpp);
   writeln(F, 'CC        = ' + Comp_Prog);
   if (devCompiler.windresName <> '') then
@@ -356,15 +356,15 @@ begin
       writeln(F, 'LINK      = ' + Comp_ProgCpp)
     else
       writeln(F, 'LINK      = ' + Comp_Prog);
-{$ELSE}
+{$ENDIF}
   Writeln(F, '');
   if DoCheckSyntax then
     Writeln(F,'.PHONY: all all-before all-after clean clean-custom $(OBJ) $(BIN)')
   else
   Writeln(F, '.PHONY: all all-before all-after clean clean-custom');
   Writeln(F, '');
-{$ENDIF}
-  Writeln(F, 'all: all-before ' +
+
+ Writeln(F, 'all: all-before ' +
     GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)) +
     ' all-after');
   Writeln(F, '');
@@ -570,7 +570,7 @@ begin
     begin
       writeln(F, ofile + ':');
       {$IFDEF VC_BUILD}
-      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES) ')]) + ResIncludes + tfile);
+      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES)')]) + ResIncludes + tfile);
       {$ELSE}
        writeln(F, #9 + '$(WINDRES) -i ' + tfile +
             ' --input-format=rc -o nul -O coff' + ResIncludes)
@@ -579,7 +579,7 @@ begin
     begin
       writeln(F, ofile + ': ' + tfile + ' ' + ResFiles);
       {$IFDEF VC_BUILD}
-      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES) ')]) + ResIncludes + tfile);
+      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES)')]) + ResIncludes + tfile);
       {$ELSE}
         writeln(F, #9 + '$(WINDRES) -i ' + tfile +
             ' --input-format=rc -o ' + ofile + ' -O coff' + ResIncludes);
