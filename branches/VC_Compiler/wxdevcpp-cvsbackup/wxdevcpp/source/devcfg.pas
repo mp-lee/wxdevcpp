@@ -2381,7 +2381,6 @@ begin
   fCDir    := devDirs.C;
   fCppDir  := devDirs.Cpp;
   fLibDir  := devDirs.Lib;
-  fOptions := '';
 end;
 
 procedure TdevCompilerSet.UpdateSets;
