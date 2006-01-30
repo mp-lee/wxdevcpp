@@ -1224,7 +1224,7 @@ begin
     //Language Options
     sl := TStringList.Create;
     sl.Add('No Debugging Information=');
-    sl.Add('Generate Debugging Information=/Zi /Yd');
+    sl.Add('Generate Debugging Information=/Zi');
     sl.Add('Edit and Continue Debugging Information  =/ZI');
     sl.Add('Old-Style Debugging Information=/Z7');
     sl.Add('Include line numbers only=/Zd');
@@ -1251,14 +1251,16 @@ begin
     //Miscellaneous
     AddOption('Treat warnings as errors', false, true, true, false, 0, '/WX', 'Miscellaneous', [], nil);
     sl := TStringList.Create;
-    sl.Add('Level 4  =/W4');
-    sl.Add('Level 3  =/W3');
-    sl.Add('Level 2  =/W2');
-    sl.Add('Level 1  =/W1');
+    sl.Add('Default  =');
+    sl.Add('Level 4=/W4');
+    sl.Add('Level 3=/W3');
+    sl.Add('Level 2=/W2');
+    sl.Add('Level 1=/W1');
     sl.Add('None=/w');
     AddOption('Warning Level', false, true, true, false, 0, '', 'Miscellaneous', [], sl);
     if (devCompilerSet.CompilerType = ID_COMPILER_VC) then
         AddOption('Use Precompiled headers', false, true, true, false, 0, '/YX', 'Miscellaneous', [], nil);
+    AddOption('Enable 64-bit porting warnings', false, true, true, false, 0, '/Wp64', 'Miscellaneous', [], nil);
     AddOption('Disable incremental linking', false, false, false, true, 0, '/INCREMENTAL:NO', 'Miscellaneous', [], nil);
   end
   else
@@ -1270,7 +1272,7 @@ begin
     AddOption(Lang[ID_COPT_WARNING], False, True, True, False, 0, '-w', Lang[ID_COPT_GRP_C], [], nil);
     AddOption(Lang[ID_COPT_ACCESS], False, True, True, False, 0, '-fno-access-control', Lang[ID_COPT_GRP_CPP], [], nil);
     AddOption(Lang[ID_COPT_DOLLAR], False, True, True, False, 0, '-fdollar-in-identifiers', Lang[ID_COPT_GRP_CPP], [], nil);
-    AddOption(Lang[ID_COPT_HEURISTICS], False, True, True, False, 0, '-fsave-memoized', Lang[ID_COPT_GRP_CPP], [], nil);
+    AddOption(Lang[ID_COPT_HEURISTICS], False, True, True, False, 0, '-fsave-memorized', Lang[ID_COPT_GRP_CPP], [], nil);
     AddOption(Lang[ID_COPT_EXCEPT], False, True, True, False, 0, '-fexceptions', Lang[ID_COPT_GRP_CODEGEN], [], nil);
     AddOption(Lang[ID_COPT_DBLFLOAT], False, True, True, False, 0, '-fshort-double', Lang[ID_COPT_GRP_CODEGEN], [], nil);
     AddOption(Lang[ID_COPT_MEM], False, True, True, False, 0, '-fverbose-asm', Lang[ID_COPT_GRP_CODEGEN], [], nil);
