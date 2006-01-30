@@ -668,7 +668,12 @@ begin
   if not DoCheckSyntax then
   begin
 {$IFDEF VC_BUILD}
-    writeln(F, #9 + '$(LINK) ' + format(devcompiler.DllFormat, ['$(STATICLIB)', '$(BIN)']) + ' $(LINKOBJ) $(LIBS)')
+    writeln(F, #9 + '$(LINK) ' + format(devcompiler.DllFormat, ['$(STATICLIB)', '$(BIN)']) + ' $(LINKOBJ) $(LIBS)');
+    if devCompiler.compilerType = ID_COMPILER_VC2005 then
+    begin
+      writeln(F, #9 + '$(GPROF) /nologo /manifest "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest" /outputresource:"' + ExtractRelativePath(Makefile,fProject.Executable) + '"');
+      writeln(F, #9 + '@rm ' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest');
+    end;
 {$ELSE}
    if fProject.Options.useGPP then
         writeln(F, #9 + '$(DLLWRAP) --output-def $(DEFFILE) ' + '--driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)')
@@ -1483,11 +1488,13 @@ begin
     IMod := CalcMod(pred(LOutput.Count));
 
     // Concatenate errors which are on multiple lines
-    for curLine := 0 to pred(LOutput.Count) do begin
-      if (curLine > 0) and AnsiStartsStr('   ', LOutput[curLine]) then begin
-        O_Msg := LOutput[curLine];
-        Delete(O_Msg, 1, 2);
-        LOutput[curLine - 1] := LOutput[curLine - 1] + O_Msg;
+    if devCompiler.compilerType = ID_COMPILER_MINGW then begin
+      for curLine := 0 to pred(LOutput.Count) do begin
+        if (curLine > 0) and AnsiStartsStr('   ', LOutput[curLine]) then begin
+          O_Msg := LOutput[curLine];
+          Delete(O_Msg, 1, 2);
+          LOutput[curLine - 1] := LOutput[curLine - 1] + O_Msg;
+        end;
       end;
     end;
 
@@ -1507,18 +1514,19 @@ begin
     Line := LOutput.Strings[curLine];
     LowerLine := LowerCase(Line);
 
-    {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
     if (devCompiler.compilerType = ID_COMPILER_VC) or (devCompiler.CompilerType = ID_COMPILER_VC2005) then
     begin
       //Do we have to ignore this message?
       if
-	(Line = '') or//Empty line?!
-	(Copy(Line, 1, 14) = 'cl.exe ') or
-	(Copy(Line, 1, 5) = 'rm -f') or
+	(Line = '') or //Empty line?!
+	(Copy(Line, 1, Length(devCompiler.gccName)) = devCompiler.gccName) or
+        (Copy(Line, 1, Length(devCompiler.gppName)) = devCompiler.gppName) or
+	(Copy(Line, 1, Length(devCompiler.dllwrapName)) = devCompiler.dllwrapName) or
+	(Copy(Line, 1, Length(devCompiler.windresName)) = devCompiler.windresName) or
+        (Copy(Line, 1, Length(devCompiler.gprofName)) = devCompiler.gprofName) or
+        (Copy(Line, 1, 5) = 'rm -f') or
 	(Copy(Line, 1, 19) = '   Creating library') or
-	(Copy(Line, 1, 9) = 'link.exe ') or
-	(Copy(Line, 1, 13) = 'rc.exe /r /fo') or
-        (Copy(Line, 1, 6) = 'mt.exe') or
 	(Length(Line) = 2) or//One word lines?
 	(Pos('*** [', Line) > 0) or
 	(((Pos('.c', Line) > 0) or (Pos('.cpp', Line) > 0)) and (Pos('(', Line) = 0)) or
@@ -1622,12 +1630,12 @@ begin
       end;
         Inc(Messages);
         DoOutput(O_Line, O_file, O_Msg);
-      end
+    end
     else //ID_COMPILER_MINGW
-      begin
+    begin
       Line := LOutput.Strings[curLine];
       LowerLine := LowerCase(Line);
-    {$ENDIF}
+{$ENDIF}
       { Is this a compiler message? }
       if (Pos(':', Line) <= 0) or
         (CompareText(Copy(LowerLine, 1, 7), gpp) = 0) or
