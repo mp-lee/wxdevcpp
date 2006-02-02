@@ -611,7 +611,7 @@ begin
     if devCompiler.compilerType = ID_COMPILER_VC2005 then
     begin
       writeln(F, #9 + '$(GPROF) /nologo /manifest "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest" /outputresource:"' + ExtractRelativePath(Makefile,fProject.Executable) + '"');
-      writeln(F, #9 + '@rm ' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest');
+      writeln(F, #9 + '@rm "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest"');
     end;
   end;
 {$ELSE}
@@ -672,7 +672,7 @@ begin
     if devCompiler.compilerType = ID_COMPILER_VC2005 then
     begin
       writeln(F, #9 + '$(GPROF) /nologo /manifest "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest" /outputresource:"' + ExtractRelativePath(Makefile,fProject.Executable) + '"');
-      writeln(F, #9 + '@rm ' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest');
+      writeln(F, #9 + '@rm "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest"');
     end;
 {$ELSE}
    if fProject.Options.useGPP then
@@ -2101,11 +2101,11 @@ begin
     // the progress reported is the index of the unit in the project
     prog := pb.Position;
     OK := False;
-    {$IFDEF VC_BUILD}
-    schk := Pos('/Fo nul ', Line) > 0;
-    {$ELSE}
+{$IFDEF VC_BUILD}
+    schk := Pos(devCompiler.CheckSyntaxFormat, Line) > 0;
+{$ELSE}
     schk := Pos('-o nul ', Line) > 0;
-    {$ENDIF}
+{$ENDIF}
     if schk then
       act := 'Syntax checking'
     else begin
@@ -2124,13 +2124,13 @@ begin
       fil := '';
 
       for i := Pos('/Yc', Line) + 3 to Length(Line) - Pos('/Yc', Line) + 3 do begin
-         if (Line[i] = '"') then
-           OK := not OK;
+       if (Line[i] = '"') then
+         OK := not OK;
 
-         if ((Line[i] = ' ') or ((Line[i] = '"') and (OK))) then
-           break
-         else
-           fil := fil + Line[i];
+       if ((Line[i] = ' ') or ((Line[i] = '"') and (OK))) then
+         break
+       else
+         fil := fil + Line[i];
       end;
     end
     else
@@ -2150,7 +2150,7 @@ begin
         end;
       end;
 {$Else}
-      srch := ' ' + GenMakePath(ExtractRelativePath(fProject.FileName, fProject.Units[I].FileName), True, True) + ' ';
+      srch := ' ' + GenMakePath(ExtractRelativePath(fProject.FileName, fProject.Units[I].FileName), False, True) + ' ';
       if Pos(srch, Line) > 0 then
       begin
         fil := ExtractFilename(fProject.Units[I].FileName);
@@ -2159,45 +2159,46 @@ begin
           act := 'Compiling';
         OK := True;
         Break;
-      end
-    end;
-{$EndIf}
-      if not OK then begin
-        srch := ExtractFileName(fProject.Options.PrivateResource);
-        if Pos(srch, Line) > 0 then begin
-          fil := srch;
-          prog := pb.Max - 1;
-          if not schk then
-            act := 'Compiling';
-          lblFile.Caption := srch;
-        end;
-        srch := ExtractFileName(fProject.Executable);
-        if (Pos(srch, Line) > 0) and (Pos('rm -f', Line) > 0) then begin
-          fil := srch;
-          prog := 1;
-          if not schk then
-            act := 'Cleaning';
-          lblFile.Caption := '';
-        end
-        else if (Pos(srch, Line) > 0) then begin
-          fil := srch;
-          prog := pb.Max;
-          if not schk then
-            act := 'Linking';
-          lblFile.Caption := srch;
-  {$IFDEF VC_BUILD}      end  {$ENDIF}
       end;
     end;
-    
-   {$IFDEF VC_BUILD} if act + ' ' + fil <> ' ' then {$ENDIF}
-      Memo1.Lines.Add(act + ' ' + fil);
-   {$IFDEF VC_BUILD} if trim(act) <> '' then  {$ENDIF}
-      lblStatus.Caption := act + '...';
-   {$IFDEF VC_BUILD} if trim(fil) <> '' then  {$ENDIF}
-      lblFile.Caption := fil;
-    if (fil <> '') and (pb.Position < pb.Max) then
-      pb.Position := prog;
+{$EndIf}
+    if not OK then begin
+      srch := ExtractFileName(fProject.Options.PrivateResource);
+      if Pos(srch, Line) > 0 then begin
+        fil := srch;
+        prog := pb.Max - 1;
+        if not schk then
+          act := 'Compiling';
+        lblFile.Caption := srch;
+      end;
+      srch := ExtractFileName(fProject.Executable);
+      if (Pos(srch, Line) > 0) and (Pos('rm -f', Line) > 0) then begin
+        fil := srch;
+        prog := 1;
+        if not schk then
+          act := 'Cleaning';
+        lblFile.Caption := '';
+      end
+      else if (Pos(srch, Line) > 0) then begin
+        fil := srch;
+        prog := pb.Max;
+        if not schk then
+          act := 'Linking';
+        lblFile.Caption := srch;
+      end;
+    end;
   end;
+
+  if act + ' ' + fil <> ' ' then
+    Memo1.Lines.Add(act + ' ' + fil);
+  if trim(act) <> '' then
+    lblStatus.Caption := act + '...';
+  if trim(fil) <> '' then
+    lblFile.Caption := fil;
+  if (fil <> '') and (pb.Position < pb.Max) then
+    pb.Position := prog;
+  end;
+  
   Application.ProcessMessages;
 end;
 
