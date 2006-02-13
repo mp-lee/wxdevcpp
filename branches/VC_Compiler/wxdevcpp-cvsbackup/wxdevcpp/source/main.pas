@@ -4889,7 +4889,6 @@ procedure TMainForm.actAboutExecute(Sender: TObject);
 begin
   with TAboutForm.Create(Self) do
   try
-    VersionLabel.Caption := VersionLabel.Caption + DEVCPP_VERSION;
     ShowModal;
   finally
     Free;
