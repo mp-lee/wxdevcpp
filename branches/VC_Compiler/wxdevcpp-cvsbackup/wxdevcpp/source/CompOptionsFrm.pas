@@ -70,8 +70,6 @@ type
     lblgprof: TLabel;
     GprofEdit: TEdit;
     XPMenu: TXPMenu;
-    grpMakefileGen: TGroupBox;
-    cbFastDep: TCheckBox;
     CompOptionsFrame1: TCompOptionsFrame;
     grpCompSet: TGroupBox;
     cmbCompilerSetComp: TComboBox;
@@ -96,6 +94,9 @@ type
     cbLinkerAdd: TLabel;
     CompilerTypes: TComboBox;
     CompilerTypeLbl: TLabel;
+    cbFastDep: TCheckBox;
+    cbMakeAdd: TLabel;
+    Make: TMemo;
     
     procedure btnCancelClick(Sender: TObject);
     procedure btnOkClick(Sender: TObject);
@@ -129,6 +130,9 @@ type
     fLibs: string;
     fC: string;
     fCpp: string;
+{$IfDef VC_BUILD}
+    fRC: string;
+{$EndIf}
     procedure SetOptions;
     procedure UpdateButtons;
     procedure LoadText;
@@ -174,9 +178,15 @@ begin
   devCompilerSet.CDir := fC;
   devCompilerSet.CppDir := fCpp;
   devCompilerSet.LibDir := fLibs;
+{$IfDef VC_BUILD}
+  devCompilerSet.RCDir  := fRC;
+{$EndIf}
 
-  devCompilerSet.CmdOpts:= Commands.Lines.Text;
-  devCompilerSet.LinkOpts:= Linker.Lines.Text;
+  devCompilerSet.CmdOpts  := Commands.Lines.Text;
+  devCompilerSet.LinkOpts := Linker.Lines.Text;
+{$IfDef VC_BUILD}
+  devCompilerSet.MakeOpts := Make.Lines.Text;
+{$EndIf}
   devCompilerSet.OptionsStr := devCompiler.OptionStr;
   devCompilerSet.SaveSet(currentSet);
   devCompilerSet.SaveSettings;
@@ -213,6 +223,9 @@ begin
     C := fC;
     Cpp := fCpp;
     Lib := fLibs;
+{$IfDef VC_BUILD}
+    RC := fRC;
+{$EndIf}
   end;
   // Set Path with New Bins
   SetPath(fBins);
@@ -231,10 +244,13 @@ procedure TCompForm.SetOptions;
 begin
   with devCompiler do
   begin
-    seCompDelay.Value := Delay;
-    cbFastDep.Checked := FastDep;
-    Commands.Lines.Text:= CmdOpts;
-    Linker.Lines.Text:= LinkOpts;
+    seCompDelay.Value   := Delay;
+    cbFastDep.Checked   := FastDep;
+    Commands.Lines.Text := CmdOpts;
+    Linker.Lines.Text   := LinkOpts;
+{$IfDef VC_BUILD}
+    Make.Lines.Text     := MakeOpts;
+{$EndIf}
 
     cmbCompilerSetComp.Items.Clear;
     cmbCompilerSetComp.Items.Assign(devCompilerSet.Sets);
@@ -270,6 +286,9 @@ begin
     1: StrtoList(fLibs, TStrings(lstDirs.Items));
     2: StrtoList(fC, TStrings(lstDirs.Items));
     3: StrtoList(fCpp, TStrings(lstDirs.Items));
+{$IfDef VC_BUILD}
+    4: StrtoList(fRC, TStrings(lstDirs.Items));
+{$EndIf}
   end;
   edEntry.Clear;
   UpdateButtons;
@@ -333,6 +352,9 @@ begin
     1: fLibs := ListtoStr(lstDirs.Items);
     2: fC := ListtoStr(lstDIrs.Items);
     3: fCpp := ListtoStr(lstDirs.Items);
+{$IfDef VC_BUILD}
+    4: fRC := ListtoStr(lstDirs.Items);
+{$EndIf}
   end;
   edEntry.SetFocus;
 end;
@@ -361,6 +383,9 @@ begin
     1: fLibs := ListtoStr(lstDirs.Items);
     2: fC := ListtoStr(lstDIrs.Items);
     3: fCpp := ListtoStr(lstDirs.Items);
+{$IfDef VC_BUILD}
+    4: fRC  := ListtoStr(lstDirs.Items);
+{$EndIf}
   end;
   UpdateButtons;
 end;
@@ -428,6 +453,9 @@ begin
   DirTabs.Tabs.Append(Lang[ID_COPT_LIB]);
   DirTabs.Tabs.Append(Lang[ID_COPT_INCC]);
   DirTabs.Tabs.Append(Lang[ID_COPT_INCCPP]);
+{$IfDef VC_BUILD}
+  DirTabs.Tabs.Append('Resource Includes');
+{$EndIf}
 
   //buttons
   btnReplace.Caption := Lang[ID_BTN_REPLACE];
@@ -444,9 +472,6 @@ begin
   lblDelay.Caption := Lang[ID_COPT_DELAY];
   lblDelayMsg.Caption := Lang[ID_COPT_DELAYMSG];
   cbLinkerAdd.Caption := Lang[ID_COPT_LINKADD];
-
-  //controls (code gen tab)
-  grpMakefileGen.Caption := '  ' + Lang[ID_COPT_MAKEFILEGEN] + '  ';
   cbFastDep.Caption := Lang[ID_COPT_FASTDEP];
 
   // conrols (Programs tab)
@@ -470,12 +495,16 @@ begin
     fC                      := CDir;
     fCpp                    := CppDir;
     fLibs                   := LibDir;
+{$IfDef VC_BUILD}
+    fRC                     := RCDir;
+{$EndIf}
 
     Commands.Lines.Text     := CmdOpts;
     Linker.Lines.Text       := LinkOpts;
-    {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
+    Make.Lines.Text         := MakeOpts;
     CompilerTypes.ItemIndex := CompilerType;
-    {$ENDIF}
+{$ENDIF}
     DirTabsChange(DirTabs);
 
     GccEdit.Text            := gccName;
@@ -572,9 +601,9 @@ end;
 
 procedure TCompForm.CompilerTypesClick(Sender: TObject);
 begin
-  {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
   devCompilerSet.CompilerType := CompilerTypes.ItemIndex;
-  {$ENDIF}
+{$ENDIF}
   devCompilerSet.SettoDefaults;
   devCompiler.AddDefaultOptions;
   devCompiler.OptionStr := devCompilerSet.OptionsStr;

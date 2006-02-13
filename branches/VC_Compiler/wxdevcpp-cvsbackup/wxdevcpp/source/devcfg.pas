@@ -88,6 +88,9 @@ type
     fCDir: string;
     fCppDir: string;
     fLibDir: string;
+{$IfDef VC_Build}
+    fRCDir: string;
+{$EndIf}
     fOptions: string;
 {$IfDef VC_BUILD}
     fCompilerType: integer;
@@ -105,6 +108,9 @@ type
 {$EndIf}
     fCmdOptions : string;
     fLinkOptions : string;
+{$IfDef VC_BUILD}
+    fMakeOptions: string;
+{$EndIf}
 
     //Private ctor and dtor, since we are singletons
     constructor Create;
@@ -155,9 +161,15 @@ type
     property CDir: string read fCDir write fCDir;
     property CppDir: string read fCppDir write fCppDir;
     property LibDir: string read fLibDir write fLibDir;
+{$IfDef VC_Build}
+    property RCDir: string read fRCDir write fRCDir; 
+{$EndIf}
     property OptionsStr: string read fOptions write fOptions; //0, 1, a-z list
     property CmdOpts: string read fCmdOptions write fCmdOptions; //Manual commands
     property LinkOpts: string read fLinkOptions write fLinkOptions; //Manual commands
+{$IfDef VC_BUILD}
+    property MakeOpts: string read fMakeOptions write fMakeOptions;
+{$EndIf}
   end;
 
   // compiler options
@@ -202,6 +214,9 @@ type
 
     fcmdOpts: string;  // command-line adds for compiler
     flinkopts: string; // command-line adds for linker
+{$IfDef VC_BUILD}
+    fMakeOpts: string;
+{$EndIf}
     fSaveLog: boolean; // Save Compiler Output
     fDelay: integer;   // delay in milliseconds -- for compiling
 
@@ -240,6 +255,9 @@ type
  published
     property CmdOpts: string read fcmdOpts write fcmdOpts;
     property LinkOpts: string read flinkOpts write flinkOpts;
+{$IfDef VC_BUILD}
+    property MakeOpts: string read fMakeOptions write fMakeOptions;
+{$EndIf}
     property FastDep: Boolean read fFastDep write fFastDep;
 {$IfDef VC_BUILD}
     property CompilerType: integer read fCompilerType write fCompilerType;
@@ -382,6 +400,9 @@ type
     fCDir: string; // c includes
     fCppDir: string; // c++ includes
     fLibDir: string; // Libraries
+{$IfDef VC_BUILD}
+    fRCDir: string; // Resource includes
+{$EndIf}
     fMingw: string; // Mingw root -- should be set in installer if mingw included
     fOldPath: string; // Enviroment Path at program start
     procedure FixPaths;
@@ -403,6 +424,9 @@ type
     property Icons: string read fIcons write fIcons;
     property Lang: string read fLang write fLang;
     property Lib: string read fLibDir write fLibDir;
+{$IfDef VC_BUILD}
+    property RC: string read fRCDir write fRCDir;
+{$EndIf}
     property Templates: string read fTemp write fTemp;
     property Themes: string read fThemes write fThemes;
   end;
@@ -1609,6 +1633,9 @@ begin
   fCppDir:= ValidatePaths(fDefault
     + StringReplace(CPP_INCLUDE_DIR, ';', ';' + fDefault, [rfReplaceAll]), tempstr);
   fLibDir:= ValidatePaths(fDefault + LIB_DIR, tempstr);
+{$IfDef VC_BUILD}
+  fRCDir := '';
+{$EndIf}
 
   fExec := ExtractFilePath(Application.ExeName);
   fConfig:= fExec;
@@ -1969,7 +1996,8 @@ begin
   //RNC
   devCompiler.fcmdOpts:=devCompilerSet.fCmdOptions;
   devCompiler.flinkopts:=devCompilerSet.fLinkOptions;
-  {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
+  devCompiler.fMakeOpts             :=devCompilerSet.fMakeOptions;
   devCompiler.compilerType          := devCompilerSet.compilerType;
   devCompiler.CheckSyntaxFormat     := devCompilerSet.CheckSyntaxFormat;
   devCompiler.OutputFormat          := devCompilerSet.OutputFormat;
@@ -1982,12 +2010,15 @@ begin
   devCompiler.LibFormat             := devCompilerSet.LibFormat;
   devCompiler.SingleCompile         := devCompilerSet.SingleCompile;
   devCompiler.PreprocDefines        := devCompilerSet.PreprocDefines;
-  {$ENDIF}
+{$ENDIF}
   // we have to set the devDirs too
   devDirs.Bins := devCompilerSet.BinDir;
   devDirs.C := devCompilerSet.CDir;
   devDirs.Cpp := devCompilerSet.CppDir;
   devDirs.Lib := devCompilerSet.LibDir;
+{$IfDef VC_BUILD}
+  devDirs.RC := devCompilerSet.RCDir;
+{$EndIf}
   devCompiler.OptionStr := devCompilerSet.OptionsStr;
 end;
 
@@ -2033,6 +2064,10 @@ begin
      if fCppDir='' then fCppDir:=devDirs.Cpp;
     fLibDir := LoadSetting(key, 'Lib');
      if fLibDir='' then fLibDir:=devDirs.Lib;
+{$IfDef VC_BUILD}
+    fRcDir := LoadSetting(key, 'RC');
+     if fRcDir ='' then fRcDir:=devDirs.RC;
+{$EndIf}
 
      //check for valid paths
      msg := '';
@@ -2080,6 +2115,9 @@ begin
          fCDir := goodCDir;
          fCppDir := goodCppDir;
          fLibDir := goodLibDir;
+{$IfDef VC_BUILD}
+         fRCDir := '';
+{$EndIf}
 
          //additionally insert default paths:
          maindir := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName));
@@ -2223,9 +2261,12 @@ begin
     fdllwrapName := LoadSetting(key, DLLWRAP_PROGRAM);
       if fdllwrapName='' then fdllwrapName:=DLLWRAP_PROGRAM;
 
-    fOptions := LoadSetting(key, 'Options');
-    fCmdOptions:= LoadSetting(key, 'cmdline');
-    fLinkOptions:=LoadSetting(key, 'LinkLine');
+    fOptions     := LoadSetting(key, 'Options');
+    fCmdOptions  := LoadSetting(key, 'cmdline');
+    fLinkOptions := LoadSetting(key, 'LinkLine');
+{$IfDef VC_BUILD}
+    fMakeOptions := LoadSetting(key, 'MakeLine');
+{$EndIf}
 
     {$IFDEF VC_BUILD}
     if LoadSetting(key, 'CheckSyntax') <> '' then
@@ -2279,6 +2320,9 @@ begin
     SaveSetting(key, 'C', fCDir);
     SaveSetting(key, 'Cpp', fCppDir);
     SaveSetting(key, 'Lib', fLibDir);
+{$IfDef VC_BUILD}
+    SaveSetting(key, 'RC', fRcDir);
+{$EndIf}
   end;
 end;
 
@@ -2301,9 +2345,10 @@ begin
     SaveSetting(key, 'Options', fOptions);
     SaveSetting(key, 'cmdline', fCmdOptions);
     SaveSetting(key, 'LinkLine', fLinkOptions);
-    {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
+    SaveSetting(key, 'MakeLine', fMakeOptions);
     SaveSetting(key, 'CompilerType', IntToStr(fCompilerType));
-    {$ENDIF}
+{$ENDIF}
 
 {$IfDef VC_BUILD}
     SaveSetting(key, 'CheckSyntax', fCheckSyntaxFormat);
@@ -2344,10 +2389,13 @@ begin
   fwindresName := WINDRES_PROGRAM;
   fgprofName   := GPROF_PROGRAM;
   fdllwrapName := DLLWRAP_PROGRAM;
-  fCmdOptions  :='';
-  fLinkOptions :='';
+  fCmdOptions  := '';
+  fLinkOptions := '';
+{$IFDEF VC_BUILD}
+  fMakeOptions := '';
+{$EndIf}
 
-  {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
   if (CompilerType = ID_COMPILER_VC) or (CompilerType = ID_COMPILER_VC2005) then
   begin
     fCheckSyntaxFormat      := '/Zs';
@@ -2376,13 +2424,16 @@ begin
     fSingleCompile          := '%s "%s" -o "%s" %s %s %s';
     fPreprocDefines         := '-D%s';
   end;
-  {$ENDIF}
+{$ENDIF}
 
   // dirs
   fBinDir  := devDirs.Bins;
   fCDir    := devDirs.C;
   fCppDir  := devDirs.Cpp;
   fLibDir  := devDirs.Lib;
+{$IfDef VC_BUILD}
+  fRCDir   := devDirs.RC;
+{$EndIf}
 end;
 
 procedure TdevCompilerSet.UpdateSets;

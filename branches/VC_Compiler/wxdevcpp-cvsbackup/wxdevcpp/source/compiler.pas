@@ -101,15 +101,18 @@ type
     property ErrorCount: integer read fErrCount;
     procedure OnAbortCompile(Sender: TObject);
     procedure AbortThread;
-    {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
     procedure ParseLine(Line: String);
-    {$ENDIF}
+{$ENDIF}
   protected
     fCompileParams: string;
     fCppCompileParams: string;
     fLibrariesParams: string;
     fIncludesParams: string;
     fCppIncludesParams: string;
+{$IfDef VC_BUILD}
+    fRcIncludesParams: string;
+{$EndIf}
     fBinDirs: string;
     fUserParams: string;
     fDevRun: TDevRun;
@@ -299,14 +302,14 @@ begin
   end;
   result := true;
   writeln(F, '# Project: ' + fProject.Name);
-  {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
     writeln(F, '# Makefile created by ' + DEVCPP + ' ' + DEVCPP_VERSION +
              ' on ' + FormatDateTime('dd/mm/yy hh:nn', Now));
     writeln(F, '# Compiler: ' + devCompiler.Name);
     writeln(F, '# CompilerType: ' + inttostr(devCompiler.CompilerType));
-  {$ELSE}
+{$ELSE}
   writeln(F, '# Makefile created by Dev-C++ ' + DEVCPP_VERSION);
-  {$ENDIF}
+{$ENDIF}
   if DoCheckSyntax then
   begin
     writeln(F, '# This Makefile is written for syntax check!');
@@ -326,6 +329,7 @@ begin
   writeln(F, 'LIBS      =' + StringReplace(fLibrariesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'INCS      =' + StringReplace(fIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'CXXINCS   =' + StringReplace(fCppIncludesParams, '\', '/', [rfReplaceAll]));
+  writeln(F, 'RCINCS    =' + StringReplace(fRcIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'BIN       = ' + GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)));
   writeln(F, 'DEFINES   = ' + PreprocDefines);
   writeln(F, 'CXXFLAGS  = $(CXXINCS) $(DEFINES) ' + fCppCompileParams);
@@ -345,7 +349,7 @@ begin
 {$EndIf}
   writeln(F, 'RM        = rm -f');
 
-  {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
   if (devCompiler.CompilerType = ID_COMPILER_VC) or (devCompiler.CompilerType = ID_COMPILER_VC2005) then
     writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo')
   else if devCompiler.CompilerType <> ID_COMPILER_MINGW then
@@ -448,8 +452,10 @@ end;
 procedure TCompiler.WriteMakeObjFilesRules(var F: TextFile);
 var
   i: integer;
+{$IfNDef VC_BUILD}
   ShortPath: string;
- ResIncludes: String;
+  ResIncludes: String;
+{$EndIf}
   tfile, ofile, ResFiles, tmp: string;
 begin
   for i := 0 to pred(fProject.Units.Count) do
@@ -531,8 +537,8 @@ begin
   if (Length(fProject.Options.PrivateResource) > 0) then
   begin
     ResFiles := '';
+{$IfNDef VC_BUILD}
     ResIncludes := ' ';
-
     // for some strange reason, lately, windres doesn't like long filenames
     // in "--include-dir"...
     for i := 0 to fProject.Options.ResourceIncludes.Count - 1 do
@@ -540,13 +546,10 @@ begin
       ShortPath := GetShortName(fProject.Options.ResourceIncludes[i]);
       // only add include-dir if it is existing dir...
       if ShortPath <> '' then
-      {$IFDEF VC_BUILD}
-	ResIncludes := ResIncludes + format(devCompiler.ResourceIncludeFormat, [GenMakePath(ShortPath)]) + ' ';
-	{$ELSE}
 	ResIncludes := ResIncludes + ' --include-dir ' +
           GenMakePath(ShortPath);
-	{$ENDIF}
-    end;
+      end;
+{$ENDIF}
 
     for i := 0 to fProject.Units.Count - 1 do
     begin
@@ -569,21 +572,21 @@ begin
     if DoCheckSyntax then
     begin
       writeln(F, ofile + ':');
-      {$IFDEF VC_BUILD}
-      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES)')]) + ResIncludes + tfile);
-      {$ELSE}
+{$IFDEF VC_BUILD}
+      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES)')]) + ' $(RCINCS) ' + tfile);
+{$ELSE}
        writeln(F, #9 + '$(WINDRES) -i ' + tfile +
             ' --input-format=rc -o nul -O coff' + ResIncludes)
-      {$ENDIF}
+{$ENDIF}
     end else
     begin
       writeln(F, ofile + ': ' + tfile + ' ' + ResFiles);
-      {$IFDEF VC_BUILD}
-      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES)')]) + ResIncludes + tfile);
-      {$ELSE}
+{$IFDEF VC_BUILD}
+      writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [string('$(RES)')]) + ' $(RCINCS) ' + tfile);
+{$ELSE}
         writeln(F, #9 + '$(WINDRES) -i ' + tfile +
             ' --input-format=rc -o ' + ofile + ' -O coff' + ResIncludes);
-      {$ENDIF}
+{$ENDIF}
     end;
   end;
 end;
@@ -845,13 +848,18 @@ begin
   cAppendStr := '%s ' + devCompiler.IncludeFormat;
   fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
   fCppIncludesParams := CommaStrToStr(devDirs.Cpp, cAppendStr);
-  
-  if (fTarget = ctProject) and assigned(fProject) then
+  fRcIncludesParams := CommaStrToStr(devDirs.RC, cAppendStr);
+
+  if (fTarget = ctProject) and assigned(fProject) then begin
     for i := 0 to pred(fProject.Options.Includes.Count) do
-      if directoryExists(fProject.Options.Includes[i]) then  begin
+      if directoryExists(fProject.Options.Includes[i]) then begin
         fIncludesParams := format(cAppendStr, [fIncludesParams, fProject.Options.Includes[i]]);
         fCppIncludesParams := format(cAppendStr, [fCppIncludesParams, fProject.Options.Includes[i]]);
       end;
+    for i := 0 to pred(fProject.Options.ResourceIncludes.Count) do
+      if directoryExists(fProject.Options.ResourceIncludes[i]) then
+        fRcIncludesParams := format(cAppendStr, [fRcIncludesParams, fProject.Options.ResourceIncludes[i]]);
+  end;
 {$ELSE}
 
   fIncludesParams := CommaStrToStr(devDirs.C, cAppendStr);
@@ -966,9 +974,9 @@ begin
     end
     else begin
       if (devCompiler.makeName <> '') then
-        cmdline := format(cMakeLine, [devCompiler.makeName, fMakeFile])
+        cmdline := format(cMakeLine, [devCompiler.makeName, fMakeFile]) + ' ' + devCompiler.makeopts
       else
-        cmdline := format(cMakeLine, [MAKE_PROGRAM, fMakeFile]);
+        cmdline := format(cMakeLine, [MAKE_PROGRAM, fMakeFile]) + ' ' + devCompiler.makeopts;
     end;
 
     DoLogEntry(format(Lang[ID_EXECUTING], [cMake + cDots]));
