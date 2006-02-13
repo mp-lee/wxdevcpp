@@ -161,7 +161,7 @@ type
     property CDir: string read fCDir write fCDir;
     property CppDir: string read fCppDir write fCppDir;
     property LibDir: string read fLibDir write fLibDir;
-{$IfDef VC_Build}
+{$IfDef VC_BUILD}
     property RCDir: string read fRCDir write fRCDir; 
 {$EndIf}
     property OptionsStr: string read fOptions write fOptions; //0, 1, a-z list
@@ -256,7 +256,7 @@ type
     property CmdOpts: string read fcmdOpts write fcmdOpts;
     property LinkOpts: string read flinkOpts write flinkOpts;
 {$IfDef VC_BUILD}
-    property MakeOpts: string read fMakeOptions write fMakeOptions;
+    property MakeOpts: string read fMakeOpts write fMakeOpts;
 {$EndIf}
     property FastDep: Boolean read fFastDep write fFastDep;
 {$IfDef VC_BUILD}
