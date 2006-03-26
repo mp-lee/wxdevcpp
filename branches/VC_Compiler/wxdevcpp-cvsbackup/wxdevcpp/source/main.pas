@@ -1128,7 +1128,7 @@ WxPropertyInspectorPopup:TPopupMenu;
   FileWatching:Boolean;
 {$ENDIF}
 
-	function SaveFileInternal(e: TEditor): Boolean;
+	function SaveFileInternal(e: TEditor ; bParseFile:Boolean = true): Boolean;
 
 {$IFDEF WX_BUILD}
     function CreateFormFile(strFName, strCName, strFTitle: string; dlgSStyle:TWxDlgStyleSet;dsgnType:TWxDesignerType): Boolean;
@@ -1182,6 +1182,7 @@ WxPropertyInspectorPopup:TPopupMenu;
     function GetClassNameLocationsInEditorFiles(var HppStrLst,CppStrLst:TStringList;FileName, FromClassName, ToClassName:string): Boolean;
 
     function LocateFunction(strFunctionName:String):boolean;
+    procedure SimulationOfSplitMove;
    {$ENDIF}
 
   end;
@@ -1217,7 +1218,7 @@ uses
   WxOpenFileDialog,WxSaveFileDialog,WxFontDialog,
   wxMessageDialog,WxProgressDialog,WxPrintDialog,WxFindReplaceDialog,WxDirDialog,
   WxColourDialog ,WxPageSetupDialog, wxTimer,WxNonVisibleBaseComponent,
-  WxSplitterWindow,
+  WxSplitterWindow,WxDatePickerCtrl,
   CreateOrderFm,
   ViewIDForm,
   WxToggleButton, wxRadioBox
@@ -1262,7 +1263,23 @@ const
   INT_SWITCH= 12;
   INT_CPP_COMMENT= 13;
 
+//Fixme Later for Resizing the browser
+procedure TMainForm.SimulationOfSplitMove;
+var
+  pntSplitPosition : TSmallPoint;
+begin
+  frmInspectorDock.ManualDock(pnlBrowsers,pnlBrowsers,alTop);
+  LeftPageControl.ManualDock(pnlBrowsers,pnlBrowsers,alTop);
 
+ pntSplitPosition.x := frmInspectorDock.Width + 2;
+ pntSplitPosition.y := 5;
+ pnlBrowsers.Perform (WM_LBUTTONDOWN,MK_LBUTTON ,Integer(pntSplitPosition));
+ pntSplitPosition.x := 280;
+ pnlBrowsers.Perform (WM_MOUSEMOVE, MK_LBUTTON ,Integer(pntSplitPosition));
+ pnlBrowsers.Perform (WM_LBUTTONUP,0 ,Integer(pntSplitPosition));
+ Application.ProcessMessages;
+
+end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
@@ -1717,9 +1734,9 @@ begin
   frmInspectorDock.Height:=500;
   //frmInspectorDock.Visible:=true;
   LeftPageControl.Height:=400;
-  frmInspectorDock.ManualDock(pnlBrowsers,pnlBrowsers,alTop);
+  frmInspectorDock.ManualDock(pnlBrowsers,nil,alTop);
   frmInspectorDock.Visible:=true;
-  LeftPageControl.ManualDock(pnlBrowsers,pnlBrowsers,alTop);
+  LeftPageControl.ManualDock(pnlBrowsers,nil,alTop);
   //frmInspectorDock.Height:=400;
   //pnlBrowsers.Height:=500;
   LeftPageControl.Height:=600;
@@ -2917,12 +2934,14 @@ end;
 
 function TMainForm.SaveFileAs(e: TEditor): Boolean;
 var
+  I: Integer;
   dext,
     flt,
     s: string;
   idx: integer;
   CFilter, CppFilter, HFilter: Integer;
   boolIsForm,boolIsRC,boolISXRC:Boolean;
+  ccFile,hfile:String;
 begin
   Result := True;
   boolIsForm := False; boolIsRC := False; boolISXRC := False;
@@ -3078,26 +3097,56 @@ begin
         MessageDlg(Lang[ID_ERR_SAVEFILE] + ' "' + s + '"', mtError, [mbOk], 0);
         Result := False;
       end;
+//Bug fix for 1337392 : This fix Parse the Cpp file when we save the header file provided
+//the Cpp file is already saved. 
+//Dont change the way steps by which the file is parsed.
 
       if assigned(fProject) then
         fProject.SaveUnitAs(idx, e.FileName)
       else
         e.TabSheet.Caption := ExtractFileName(e.FileName);
-
-      if ClassBrowser1.Enabled then begin
+      if ClassBrowser1.Enabled then
+      begin
+        CppParser1.GetSourcePair(ExtractFileName(e.FileName),ccFile,hfile);
         CppParser1.AddFileToScan(e.FileName); //new cc
         CppParser1.ParseList;
         ClassBrowser1.CurrentFile := e.FileName;
+        CppParser1.ReParseFile(e.FileName, true); //new cc
+        //if the source is in the caache and the heades file is not in the cache
+        //then we need to reparse the Cpp file to make sure the intialially
+        //parsed cpp file is reset
+        if  ( (GetFileTyp(e.FileName) = utHead)) then
+        begin 
+            CppParser1.GetSourcePair(ExtractFileName(e.FileName),ccFile,hfile);
+            if trim(ccFile) <> '' then
+            begin
+                idx := -1;
+                for I := CppParser1.ScannedFiles.Count - 1 downto 0 do    // Iterate
+                begin
+                    if AnsiSameText(ExtractFileName(ccFile),ExtractFileName(CppParser1.ScannedFiles[i])) then
+                    begin
+                        ccFile := CppParser1.ScannedFiles[i];
+                        idx:=i;
+                        break;
+                    end;
+                end;    // for
+                if idx <> -1 then
+                begin
+                    CppParser1.ReParseFile(ccFile, true); //new cc
+                end;
+            end;
+        end;
       end;
     end else
       Result := False;
   end;
 end;
 
-function TMainForm.SaveFileInternal(e: TEditor): Boolean;
+function TMainForm.SaveFileInternal(e: TEditor ; bParseFile:Boolean): Boolean;
 var
-  idx: Integer;
+  idx,index,I: Integer;
   wa: boolean;
+  ccFile,hFile:String;
 begin
   Result := True;
   if FileExists(e.FileName) and (FileGetAttr(e.FileName) and faReadOnly <> 0) then begin
@@ -3137,10 +3186,32 @@ begin
        end;
        try
 		if idx <> -1 then
-        if ClassBrowser1.Enabled then begin
+        if ClassBrowser1.Enabled  and bParseFile then
+        begin
           CppParser1.ReParseFile(fProject.units[idx].FileName, True); //new cc
           if e.TabSheet = PageControl.ActivePage then
             ClassBrowser1.CurrentFile := fProject.units[idx].FileName;
+          if  ( (GetFileTyp(e.FileName) = utHead)) then
+          begin
+              CppParser1.GetSourcePair(ExtractFileName(e.FileName),ccFile,hfile);
+              if (trim(ccFile) <> '') then
+              begin
+                  index := -1;
+                  for I := CppParser1.ScannedFiles.Count - 1 downto 0 do    // Iterate
+                  begin
+                      if AnsiSameText(ExtractFileName(ccFile),ExtractFileName(CppParser1.ScannedFiles[i])) then
+                      begin
+                          ccFile := CppParser1.ScannedFiles[i];
+                          index:=i;
+                          break;
+                      end;
+                  end;    // for
+                  if index <> -1 then
+                  begin
+                      CppParser1.ReParseFile(ccFile, true); //new cc
+                  end;
+              end;
+          end;
         end;
     except
          MessageDlg(Format('Error reparsing file %s', [e.FileName]),
@@ -3157,11 +3228,33 @@ begin
                 Lines.Add('');
       e.Text.Lines.SaveToFile(e.FileName);
       e.Modified := false;
-      if ClassBrowser1.Enabled then begin
+      if ClassBrowser1.Enabled   and bParseFile then
+      begin
         CppParser1.ReParseFile(e.FileName, False); //new cc
         if e.TabSheet = PageControl.ActivePage then
           ClassBrowser1.CurrentFile := e.FileName;
-      end;
+          if  ( (GetFileTyp(e.FileName) = utHead)) then
+          begin
+              CppParser1.GetSourcePair(ExtractFileName(e.FileName),ccFile,hfile);
+              if (trim(ccFile) <> '') then
+              begin
+                  index := -1;
+                  for I := CppParser1.ScannedFiles.Count - 1 downto 0 do    // Iterate
+                  begin
+                      if AnsiSameText(ExtractFileName(ccFile),ExtractFileName(CppParser1.ScannedFiles[i])) then
+                      begin
+                          ccFile := CppParser1.ScannedFiles[i];
+                          index:=i;
+                          break;
+                      end;
+                  end;    // for
+                  if index <> -1 then
+                  begin
+                      CppParser1.ReParseFile(ccFile, true); //new cc
+                  end;
+              end;
+          end;
+        end;
       //        CppParser1.AddFileToScan(e.FileName);
       //        CppParser1.ParseList;
     except
@@ -3179,16 +3272,23 @@ end;
 function TMainForm.SaveFile(e: TEditor): Boolean;
 {$IFDEF WX_BUILD}
 var
-    EditorFilename:String;
+    EditorFilename, hFile,cppFile:String;
     eX:TEditor;
+    bHModified,bCppModified:Boolean;
 {$ENDIF}
 begin
     Result:=false;
+    bHModified:=false;
+    bCppModified:=false;
+
     if not assigned(e) then
         exit;
 
-    result:=SaveFileInternal(e);
-
+//Bug fix for 1123460 : Save the files first and the do a re-parse.
+//If you dont save all the files first then cpp functions and header functions of save class 
+//will be added in the class browser and duplicates will be there.
+//Some times the functions will be not associated with the class and 
+//there by will not be shown in the function assignment drop down box of the events.
 
 {$IFDEF WX_BUILD}
     EditorFilename:=e.FileName;
@@ -3200,7 +3300,7 @@ begin
             if assigned(eX) then
             begin
                 if eX.Modified then
-                    SaveFileInternal(eX);
+                    SaveFileInternal(eX,false);
             end;
         end;
 
@@ -3212,17 +3312,7 @@ begin
             if assigned(eX) then
             begin
                 if eX.Modified then
-                    SaveFileInternal(eX);
-            end;
-        end;
-
-        if isFileOpenedinEditor(ChangeFileExt(EditorFilename, CPP_EXT)) then
-        begin
-            eX:=self.GetEditorFromFileName(ChangeFileExt(EditorFilename, CPP_EXT));
-            if assigned(eX) then
-            begin
-                if eX.Modified then
-                    SaveFileInternal(eX);
+                    SaveFileInternal(eX,false);
             end;
         end;
 
@@ -3232,11 +3322,43 @@ begin
             if assigned(eX) then
             begin
                 if eX.Modified then
-                    SaveFileInternal(eX);
+                begin
+                    bHModified:=true;
+                    SaveFileInternal(eX,false);
+                    hFile := eX.FileName;
+                end;
             end;
         end;
-    end;
+
+        if isFileOpenedinEditor(ChangeFileExt(EditorFilename, CPP_EXT)) then
+        begin
+            eX:=self.GetEditorFromFileName(ChangeFileExt(EditorFilename, CPP_EXT));
+            if assigned(eX) then
+            begin
+                if eX.Modified then
+                begin
+                    bCppModified:=true;
+                    SaveFileInternal(eX,false);
+                    cppFile := eX.FileName;
+                end;
+            end;
+        end;
+
+        if (bHModified =true ) then
+        begin
+            if ClassBrowser1.Enabled then
+                CppParser1.ReParseFile(hFile,true);
+        end;
+
+        if (bCppModified =true ) then
+        begin
+            if ClassBrowser1.Enabled then
+                CppParser1.ReParseFile(cppFile,true);
+        end;
+    end
+    else
    {$ENDIF}
+        result:=SaveFileInternal(e);
 
 end;
 
@@ -4343,9 +4465,27 @@ var
   idx: integer;
   wa: boolean;
   e: TEditor;
+  fileLstToParse:TStringList;
+  uType:TUnitType;
 begin
   wa := devFileMonitor1.Active;
   devFileMonitor1.Deactivate;
+  fileLstToParse:=TStringList.Create;
+  //When we save all, the files are not parsed and the class functions are not update.
+  //We collect the list of files that will be saved and then we reparse them later.
+  if ClassBrowser1.Enabled then
+  begin
+    for idx := 0 to pred(PageControl.PageCount) do
+    begin
+      e := GetEditor(idx);
+      uType := GetFileTyp(e.FileName);
+      if (e.Modified) and ( (uType = utsrc) or (uType = utHead) )then
+      begin
+          fileLstToParse.Add(e.FileName);
+      end;
+    end;
+  end;
+  
   if assigned(fProject) then begin
     fProject.Save;
     UpdateAppTitle;
@@ -4359,6 +4499,14 @@ begin
       if not SaveFile(GetEditor(idx)) then
         Break;
   end;
+  if ClassBrowser1.Enabled then
+  begin
+    for idx := 0 to fileLstToParse.Count-1 do
+    begin
+      CppParser1.ReParseFile(fileLstToParse[idx],true);
+    end;
+  end;
+  fileLstToParse.Destroy;
 
   if wa then
     devFileMonitor1.Activate;
@@ -4889,7 +5037,7 @@ procedure TMainForm.actAboutExecute(Sender: TObject);
 begin
   with TAboutForm.Create(Self) do
   try
-    ShowModal;
+     ShowModal;
   finally
     Free;
   end;
@@ -7681,15 +7829,15 @@ begin
   //LeftPageControl.Visible := false;
   pnlBrowsers.Visible := False;
 
-  (Sender as TForm).RemoveControl(LeftPageControl);
-  if LeftPageControl.visible = false then
-  	LeftPageControl.visible :=true;
-  LeftPageControl.Left := 0;
-  LeftPageControl.Top := ControlBar1.Height;
-  LeftPageControl.Align := alLeft;
+  (Sender as TForm).RemoveControl(pnlBrowsers);
+  if pnlBrowsers.visible = false then
+  	pnlBrowsers.visible :=true;
+  pnlBrowsers.Left := 0;
+  pnlBrowsers.Top := ControlBar1.Height;
+  pnlBrowsers.Align := alLeft;
   pnlBrowsers.Visible := True;
   //LeftPageControl.Visible := true;
-  InsertControl(LeftPageControl);
+  InsertControl(pnlBrowsers);
   ProjectToolWindow.Free;
   ProjectToolWindow := nil;
 
@@ -7729,24 +7877,24 @@ begin
     ProjectToolWindow := TForm.Create(self);
     with ProjectToolWindow do begin
       Caption := Lang.Strings[ID_TB_PROJECT];
-      Top := self.Top + LeftPageControl.Top;
-      Left := self.Left + LeftPageControl.Left;
-      Height := LeftPageControl.Height;
-      Width := LeftPageControl.Width;
+      Top := self.Top + pnlBrowsers.Top;
+      Left := self.Left + pnlBrowsers.Left;
+      Height := pnlBrowsers.Height;
+      Width := pnlBrowsers.Width;
       FormStyle := fsStayOnTop;
       OnClose := ProjectWindowClose;
       BorderStyle := bsSizeable;
       BorderIcons := [biSystemMenu];
       pnlBrowsers.Visible := False;
       //LeftPageControl.Visible := false;
-      self.RemoveControl(LeftPageControl);
+      self.RemoveControl(pnlBrowsers);
 
-      LeftPageControl.Left := 0;
-      LeftPageControl.Top := 0;
-      LeftPageControl.Align := alClient;
+      pnlBrowsers.Left := 0;
+      pnlBrowsers.Top := 0;
+      pnlBrowsers.Align := alClient;
       pnlBrowsers.Visible := True;
       //LeftPageControl.Visible := true;
-      ProjectToolWindow.InsertControl(LeftPageControl);
+      ProjectToolWindow.InsertControl(pnlBrowsers);
 
       ProjectToolWindow.Show;
       if assigned(fProject) then
@@ -8652,7 +8800,6 @@ begin
         begin
             CppParser1.AddFileToScan(strFileName,true);
         end;
-        //CppParser1.ReParseFile(strFileName, True); //new cc
     end;
 
     // Open the .cpp file generated by CreateAppSourceCodes and add it to the project
@@ -8683,7 +8830,6 @@ begin
         begin
             CppParser1.AddFileToScan(strAppFileName,true);
         end;
-        //CppParser1.ReParseFile(strAppFileName, True); //new cc
     end;
 
 
@@ -8697,8 +8843,9 @@ begin
         if ClassBrowser1.Enabled then
         begin
             CppParser1.AddFileToScan(strAppFileName,true);
+            CppParser1.ReParseFile(strAppFileName, True); //new cc
+            ClassBrowser1.UpdateView;
         end;
-        //CppParser1.ReParseFile(strAppFileName, True); //new cc
     end;
 
     // Add resource file to the project
@@ -9118,7 +9265,7 @@ end;
 procedure TMainForm.ReadClass;
 begin
   RegisterClasses([TWxBoxSizer, TWxStaticBoxSizer,TWxGridSizer,TWxFlexGridSizer,TWxStaticText, TWxEdit, TWxButton, TWxBitmapButton, TWxToggleButton,TWxCheckBox,TWxRadioButton, TWxChoice, TWxComboBox, TWxGauge, TWxGrid,TWxListBox, TWXListCtrl, TWxMemo, TWxScrollBar, TWxSpinButton, TWxTreeCtrl, TWxRadioBox]);
-  RegisterClasses([TWXStaticBitmap, TWxstaticbox, TWxslider, TWxStaticLine]);
+  RegisterClasses([TWXStaticBitmap, TWxstaticbox, TWxslider, TWxStaticLine,TWxDatePickerCtrl]);
   RegisterClasses([TWxPanel,TWXListBook, TWxNoteBook, TWxStatusBar, TWxToolBar]);
   RegisterClasses([TWxNoteBookPage,TWxchecklistbox,TWxSplitterWindow]);
   RegisterClasses([TWxSpinCtrl,TWxScrolledWindow,TWxHtmlWindow,TWxToolButton,TWxSeparator]);
@@ -9126,6 +9273,8 @@ begin
   RegisterClasses([TWxOpenFileDialog,TWxSaveFileDialog,TWxFontDialog, TwxMessageDialog,TWxProgressDialog,TWxPrintDialog,TWxFindReplaceDialog,TWxDirDialog,TWxColourDialog]);
   RegisterClasses([TWxPageSetupDialog]);
   RegisterClasses([TwxTimer]);
+
+  RegisterClasses([TMainMenu]);
 
 end;
 {$ENDIF}
@@ -9157,7 +9306,7 @@ begin
   begin
     //Dont forget to add semicolon at the end of the string
     WriteString('Palette', 'Sizers','TWxBoxSizer;TWxStaticBoxSizer;TWxGridSizer;TWxFlexGridSizer;');
-    strTemp:='TWxStaticText;TWxButton;TWxBitmapButton;TWxToggleButton;TWxEdit;TWxMemo;TWxCheckBox;TWxChoice;TWxRadioButton;TWxComboBox;TWxListBox;TWXListCtrl;TWxTreeCtrl;TWxGauge;TWxScrollBar;TWxSpinButton;TWxstaticbox;TWxRadioBox;';
+    strTemp:='TWxStaticText;TWxButton;TWxBitmapButton;TWxToggleButton;TWxEdit;TWxMemo;TWxCheckBox;TWxChoice;TWxRadioButton;TWxComboBox;TWxListBox;TWXListCtrl;TWxTreeCtrl;TWxGauge;TWxScrollBar;TWxSpinButton;TWxstaticbox;TWxRadioBox;TWxDatePickerCtrl;';
     strTemp:=strTemp+'TWxSlider;TWxStaticLine;TWxStaticBitmap;TWxStatusBar;TWxChecklistbox;TWxSpinCtrl;';
     WriteString('Palette', 'Controls',strTemp);
     WriteString('Palette', 'Window','TWxPanel;TWxNoteBook;TWxNoteBookPage;TWxGrid;TWxScrolledWindow;TWxHtmlWindow;TWxSplitterWindow;');
@@ -9946,6 +10095,51 @@ begin
             exit;
         end;
     end;
+
+    /// Fix for Bug Report #1060562
+    if TWinControl(AControlClass.NewInstance) is TWxToolButton then
+    begin
+        if ELDesigner1.SelectedControls.count = 0 then
+        begin
+               ShowErrorAndReset('Please select the Toolbar FIRST and then drop this control into the Toolbar.');
+               exit;
+        end;
+        //AControlClass.
+        PreviousComponent:=ELDesigner1.SelectedControls[0];
+        if (ELDesigner1.SelectedControls[0] is TWxToolBar) then
+        begin
+            PreviousComponent:=ELDesigner1.SelectedControls[0].Parent;
+            exit;
+        end;
+
+        if not (ELDesigner1.SelectedControls[0] is TWxToolBar) then
+        begin
+            ShowErrorAndReset('Please select the Toolbar FIRST and then drop this control into the Toolbar.');
+            exit;
+        end;
+    end;
+
+    if TControl(AControlClass.NewInstance) is TWxSeparator then
+    begin
+        if ELDesigner1.SelectedControls.count = 0 then
+        begin
+               ShowErrorAndReset('Please select the Toolbar FIRST and then drop this control into the Toolbar.');
+               exit;
+        end;
+        //AControlClass.
+        PreviousComponent:=ELDesigner1.SelectedControls[0];
+        if (ELDesigner1.SelectedControls[0] is TWxToolBar) then
+        begin
+            PreviousComponent:=ELDesigner1.SelectedControls[0].Parent;
+            exit;
+        end;
+
+        if not (ELDesigner1.SelectedControls[0] is TWxToolBar) then
+        begin
+            ShowErrorAndReset('Please select the Toolbar FIRST and then drop this control into the Toolbar.');
+            exit;
+        end;
+    end;
 end;
 {$ENDIF}
 
@@ -9984,6 +10178,7 @@ end;
 {$IFDEF WX_BUILD}
 procedure TMainForm.BuildProperties(Comp: TControl;boolForce:Boolean);
 var
+  I,JK: Integer;
     strValue:String;
     strSelName,strCompName:String;
 begin
@@ -10037,17 +10232,38 @@ end;
 
   if strValue = '1*NoData' then
     exit;
+
+  JvInspProperties.BeginUpdate;
+  JK:= JvInspProperties.Root.Count - 1;
   try
-    JvInspProperties.Root.Clear;
+    for I := JK  downto 0 do    // Iterate
+    begin
+        try
+        JvInspProperties.Root.Delete(I);
+        except
+        end;
+    end;    // for
     TJvInspectorPropData.New(JvInspProperties.Root, Comp);
   except
   end;
+  JvInspProperties.EndUpdate;
 
+  JvInspEvents.BeginUpdate;
+  JK := JvInspEvents.Root.Count - 1;
   try
+    for I := JK downto 0 do    // Iterate
+    begin
+        try
+        JvInspEvents.Root.Delete(I);
+        except
+        end;
+    end;    // for
     JvInspEvents.Root.Clear;
     TJvInspectorPropData.New(JvInspEvents.Root, Comp);
   except
   end;
+  JvInspEvents.EndUpdate;
+  
 end;
 {$ENDIF}
 
@@ -10248,7 +10464,7 @@ begin
                     if UpperCase(SelectedComponent.ClassName) = UpperCase('TFrmNewForm') then
                         GenerateXPMDirectly(TFrmNewForm(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_ICON.Bitmap,e.GetDesigner.Wx_Name,e.FileName);
 
-                    if UpperCase(SelectedComponent.ClassName) = UpperCase('TStaticBitmap') then
+                    if UpperCase(SelectedComponent.ClassName) = UpperCase('TWxStaticBitmap') then
                         GenerateXPMDirectly(TWxStaticBitmap(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Picture.Bitmap,SelectedComponent.Name,e.FileName);
 
                     if UpperCase(SelectedComponent.ClassName) = UpperCase('TWxBitmapButton') then
