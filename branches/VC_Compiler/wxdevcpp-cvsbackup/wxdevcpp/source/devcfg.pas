@@ -2406,7 +2406,7 @@ begin
     fLinkerPaths            := '/libpath:"%s"';
     fIncludeFormat          := '/I"%s"';
     fDllFormat              := '/dll /implib:"%s" /out:"%s"';
-    fLibFormat              := '/lib /out:"%s"';
+    fLibFormat              := '/lib /nologo /out:"%s"';
     fSingleCompile          := '%s "%s" %s %s /link %s';
     fPreprocDefines         := '/D%s';
   end

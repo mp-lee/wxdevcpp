@@ -351,7 +351,10 @@ begin
 
 {$IFDEF VC_BUILD}
   if (devCompiler.CompilerType = ID_COMPILER_VC) or (devCompiler.CompilerType = ID_COMPILER_VC2005) then
-    writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo')
+    if (assigned(fProject) and (fProject.Options.typ = dptStat)) then
+      writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
+    else
+      writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo')
   else if devCompiler.CompilerType <> ID_COMPILER_MINGW then
     writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
   else
