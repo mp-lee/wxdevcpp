@@ -2413,7 +2413,10 @@ begin
   while idx <= intParamCount do
   begin
     if (strLst[idx] = CONFIG_PARAM) then
+    begin
       idx := idx + 2;
+      continue;
+    end;
     if FileExists(strLst[idx]) then begin
       if GetFileTyp(strLst[idx]) = utPrj then
       begin
