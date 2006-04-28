@@ -9509,7 +9509,7 @@ begin
       DrawText(Handle, 'Selector', -1, Rect,
         DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS);
 
-    { draw seperator }
+    { draw separator }
     Pen.Color := clSilver;
     MoveTo(0, Rect.Bottom - 1);
     LineTo(ClientWidth, Rect.Bottom - 1);
