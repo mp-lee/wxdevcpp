@@ -202,12 +202,12 @@ resourcestring
   cAppendStr = '%s %s';
 
 var
-  ObjResFile, Objects, LinkObjects, Comp_ProgCpp, Comp_Prog, ofile, tfile {$IFNDEF VC_BUILD},tmp{$ENDIF}: string;
+  ObjResFile, Objects, LinkObjects, Comp_ProgCpp, Comp_Prog, ofile, tfile , tmp: string;
   i: integer;
-  {$IFNDEF VC_BUILD}
+{$IFNDEF VC_BUILD}
   opt: TCompilerOption;
   idx: integer;
-  {$ENDIF}
+{$EndIf}
 begin
   Objects := '';
 
@@ -225,10 +225,12 @@ begin
     begin
       if fProject.Options.ObjectOutput <> '' then
       begin
+{$IfNDef VC_BUILD}
         if not DirectoryExists(fProject.Options.ObjectOutput) then
           MkDir(fProject.Options.ObjectOutput);
+{$EndIf}
         ofile := IncludeTrailingPathDelimiter(fProject.Options.ObjectOutput) + ExtractFileName(fProject.Units[i].FileName);
-         ofile := GenMakePath(ExtractRelativePath(fProject.FileName, ChangeFileExt(ofile, OBJ_EXT)), True, True);
+        ofile := GenMakePath(ExtractRelativePath(fProject.FileName, ChangeFileExt(ofile, OBJ_EXT)), True, True);
         Objects := Format(cAppendStr, [Objects, ofile]);
         if fProject.Units[i].Link then
           LinkObjects := Format(cAppendStr, [LinkObjects, ofile]);
@@ -246,8 +248,10 @@ begin
     ObjResFile := ''
   else begin
     if fProject.Options.ObjectOutput<>'' then begin
+{$IfNDef VC_BUILD}
       if not DirectoryExists(fProject.Options.ObjectOutput) then
         MkDir(fProject.Options.ObjectOutput);
+{$EndIf}
       ObjResFile := IncludeTrailingPathDelimiter(fProject.Options.ObjectOutput)+ChangeFileExt(fProject.Options.PrivateResource, RES_EXT);
       ObjResFile := GenMakePath(ExtractRelativePath(fProject.FileName, ObjResFile));
     end
@@ -358,22 +362,23 @@ begin
   else if devCompiler.CompilerType <> ID_COMPILER_MINGW then
     writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
   else
-  
     if fProject.Options.useGPP then
       writeln(F, 'LINK      = ' + Comp_ProgCpp)
     else
       writeln(F, 'LINK      = ' + Comp_Prog);
+
+  if (fProject <> nil) and (fProject.Options.ObjectOutput <> '') then
+    tmp := 'directories '
+  else
+    tmp := '';
 {$ENDIF}
+
   Writeln(F, '');
   if DoCheckSyntax then
     Writeln(F,'.PHONY: all all-before all-after clean clean-custom $(OBJ) $(BIN)')
   else
-  Writeln(F, '.PHONY: all all-before all-after clean clean-custom');
-  Writeln(F, '');
-
- Writeln(F, 'all: all-before ' +
-    GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)) +
-    ' all-after');
+    Writeln(F, '.PHONY: all all-before all-after clean clean-custom');
+  Writeln(F, 'all: all-before ' + tmp + GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)) + ' all-after');
   Writeln(F, '');
 
   for i := 0 to fProject.Options.MakeIncludes.Count - 1 do
@@ -384,6 +389,16 @@ begin
 
   WriteMakeClean(F);
   writeln(F);
+
+{$IFDEF VC_BUILD}
+  //Write the directory creation thing
+  if (fProject <> nil) and (fProject.Options.ObjectOutput <> '') then
+  begin
+    Writeln(F, 'directories:');
+    Writeln(F, #9 + '@if not exist "' + fProject.Options.ObjectOutput + '" mkdir "' + fProject.Options.ObjectOutput + '"');
+    Writeln(F);
+  end;
+{$EndIF}
 end;
 
 function TCompiler.FindDeps(TheFile: String): String;
@@ -481,8 +496,10 @@ begin
       writeln(F);
       if fProject.Options.ObjectOutput <> '' then
       begin
+{$IfNDef VC_BUILD}
         if not DirectoryExists(fProject.Options.ObjectOutput) then
           MkDir(fProject.Options.ObjectOutput);
+{$EndIf}
         ofile := IncludeTrailingPathDelimiter(fProject.Options.ObjectOutput) + ExtractFileName(fProject.Units[i].FileName);
         ofile := GenMakePath(ExtractRelativePath(fProject.FileName, ChangeFileExt(ofile, OBJ_EXT)));
       end
@@ -596,9 +613,7 @@ end;
 
 procedure TCompiler.WriteMakeClean(var F: TextFile);
 begin
-  Writeln(F);
   Writeln(F, 'clean: clean-custom');
-  Writeln(F, 'clean: ');
   Writeln(F, #9 + '$(RM) $(OBJ) $(BIN)');
 end;
 
@@ -625,7 +640,6 @@ begin
         writeln(F, #9 + '$(CPP) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)')
       else
         writeln(F, #9 + '$(CC) $(LINKOBJ) -o "' + ExtractRelativePath(Makefile,fProject.Executable) + '" $(LIBS)');
-
 {$ENDIF}
 
   WriteMakeObjFilesRules(F);
@@ -963,8 +977,10 @@ begin
     if SingleFile <> '' then   begin
       if fProject.Options.ObjectOutput <> '' then
       begin
+{$IfNDef VC_BUILD}
         if not DirectoryExists(fProject.Options.ObjectOutput) then
           MkDir(fProject.Options.ObjectOutput);
+{$EndIf}
         ofile := IncludeTrailingPathDelimiter(fProject.Options.ObjectOutput) + ExtractFileName(SingleFile);
         ofile := GenMakePath(ExtractRelativePath(fProject.FileName,ChangeFileExt(ofile, OBJ_EXT)));
       end

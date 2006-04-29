@@ -1986,18 +1986,18 @@ end;
 
 procedure TdevCompilerSet.AssignToCompiler;
 begin
-  devCompiler.gccName := devCompilerSet.gccName;
-  devCompiler.gppName := devCompilerSet.gppName;
-  devCompiler.gdbName := devCompilerSet.gdbName;
-  devCompiler.makeName := devCompilerSet.makeName;
-  devCompiler.windresName := devCompilerSet.windresName;
-  devCompiler.dllwrapName := devCompilerSet.dllwrapName;
-  devCompiler.gprofName := devCompilerSet.gprofName;
-  //RNC
-  devCompiler.fcmdOpts:=devCompilerSet.fCmdOptions;
-  devCompiler.flinkopts:=devCompilerSet.fLinkOptions;
+  devCompiler.Name                  := devCompilerSet.Name;
+  devCompiler.gccName               := devCompilerSet.gccName;
+  devCompiler.gppName               := devCompilerSet.gppName;
+  devCompiler.gdbName               := devCompilerSet.gdbName;
+  devCompiler.makeName              := devCompilerSet.makeName;
+  devCompiler.windresName           := devCompilerSet.windresName;
+  devCompiler.dllwrapName           := devCompilerSet.dllwrapName;
+  devCompiler.gprofName             := devCompilerSet.gprofName;
+  devCompiler.fcmdOpts              :=devCompilerSet.fCmdOptions;
+  devCompiler.flinkopts             :=devCompilerSet.fLinkOptions;
 {$IFDEF VC_BUILD}
-  devCompiler.fMakeOpts             :=devCompilerSet.fMakeOptions;
+  devCompiler.fMakeOpts             := devCompilerSet.fMakeOptions;
   devCompiler.compilerType          := devCompilerSet.compilerType;
   devCompiler.CheckSyntaxFormat     := devCompilerSet.CheckSyntaxFormat;
   devCompiler.OutputFormat          := devCompilerSet.OutputFormat;
