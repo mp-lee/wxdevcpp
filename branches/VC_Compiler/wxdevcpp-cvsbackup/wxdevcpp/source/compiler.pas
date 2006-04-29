@@ -971,9 +971,9 @@ begin
       else
         ofile := GenMakePath(ExtractRelativePath(fProject.FileName,ChangeFileExt(SingleFile, OBJ_EXT)));
       if (devCompiler.makeName <> '') then
-        cmdline := format(cSingleFileMakeLine, [devCompiler.makeName, fMakeFile,ofile])
+        cmdline := format(cSingleFileMakeLine, [devCompiler.makeName, fMakeFile,ofile]) + ' ' + devCompiler.makeopts
       else
-        cmdline := format(cSingleFileMakeLine, [MAKE_PROGRAM, fMakeFile, ofile]);
+        cmdline := format(cSingleFileMakeLine, [MAKE_PROGRAM, fMakeFile, ofile]) + ' ' + devCompiler.makeopts;
     end
     else begin
       if (devCompiler.makeName <> '') then
@@ -1181,7 +1181,8 @@ begin
       s := devCompiler.makeName
     else
       s := MAKE_PROGRAM;
-    cmdLine := Format(cCleanLine, [s, fMakeFile]);
+    
+    cmdLine := Format(cCleanLine, [s, fMakeFile]) + ' ' + devCompiler.makeopts;;
     LaunchThread(cmdLine, fProject.Directory);
   end  else  begin
     Compile;
