@@ -323,16 +323,16 @@ object CompForm: TCompForm
         object cbLinkerAdd: TLabel
           Left = 10
           Top = 81
-          Width = 228
+          Width = 231
           Height = 13
-          Caption = 'Add these commands to the linker command line'
+          Caption = 'Add these commands to the linker command line:'
         end
         object cbMakeAdd: TLabel
           Left = 10
           Top = 146
-          Width = 228
+          Width = 232
           Height = 13
-          Caption = 'Add these commands to the linker command line'
+          Caption = 'Add these commands to the make command line:'
         end
         object Commands: TMemo
           Left = 10
