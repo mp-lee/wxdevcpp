@@ -602,8 +602,8 @@ end;
 procedure TCompForm.CompilerTypesClick(Sender: TObject);
 begin
 {$IFDEF VC_BUILD}
+  cbFastDep.Enabled := CompilerTypes.ItemIndex = ID_COMPILER_MINGW;
   devCompilerSet.CompilerType := CompilerTypes.ItemIndex;
-{$ENDIF}
   devCompilerSet.SettoDefaults;
   devCompiler.AddDefaultOptions;
   devCompiler.OptionStr := devCompilerSet.OptionsStr;
@@ -628,6 +628,7 @@ begin
         lblgprof.Enabled := false;
         gprofEdit.Enabled := false;
         btnbrowse8.Enabled := false;
+        cbFastDep.Checked := true;
       end;
     ID_COMPILER_VC2005:
       begin
@@ -637,8 +638,10 @@ begin
         lblgprof.Enabled := true;
         gprofEdit.Enabled := true;
         btnbrowse8.Enabled := true;
+        cbFastDep.Checked := true;
       end;
   end;
+{$ENDIF}
 end;
 
 end.
