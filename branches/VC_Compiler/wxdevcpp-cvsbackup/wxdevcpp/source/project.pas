@@ -1408,6 +1408,7 @@ var
   layIni: TIniFile;
   filepath: string;
 begin
+{$WARN SYMBOL_PLATFORM OFF}
   //Get the path of the layout file
   filepath := ChangeFileExt(Filename, '.layout');
 
