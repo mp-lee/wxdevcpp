@@ -1419,7 +1419,7 @@ begin
       Exit;
     if FileSetAttr(filepath, FileGetAttr(filepath) - faReadOnly) <> 0 then begin
       MessageDlg(Format(Lang[ID_MSG_FILEREADONLYERROR], [filepath]), mtError, [mbOk], 0);
-      Exit;
+      //NinjaNL Exit;
     end;
   end;
 
