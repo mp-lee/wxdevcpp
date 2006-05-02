@@ -962,6 +962,7 @@ PBreakPointEntry = ^TBreakPointEntry;
     procedure AlignToBottomClick(Sender: TObject);
     procedure DesignerOptionsClick(Sender: TObject);
     procedure ChangeCreationOrder1Click(Sender: TObject);
+    procedure SelectParentClick(Sender: TObject);
     procedure ELDesigner1Notification(Sender: TObject;AnObject: TPersistent; Operation: TOperation);
     procedure OnPropertyItemSelected(Sender: TObject);
     function IsFromScrollBarShowing:boolean;
@@ -1090,6 +1091,7 @@ WxPropertyInspectorPopup:TPopupMenu;
   DesignerMenuSep1 : TMenuItem;
   DesignerMenuCopyWidgetName : TMenuItem;
   DesignerMenuChangeCreationOrder :TMenuItem;
+  DesignerMenuSelectParent: TMenuItem;
   DesignerMenuViewIDs:TMenuItem;
   DesignerMenuSep2:TMenuItem;
   DesignerMenuAlign : TMenuItem;
@@ -1319,6 +1321,7 @@ begin
   DesignerMenuSep1 := TMenuItem.Create(Self);
   DesignerMenuCopyWidgetName := TMenuItem.Create(Self);
   DesignerMenuChangeCreationOrder := TMenuItem.Create(Self);
+  DesignerMenuSelectParent := TMenuItem.Create(Self);
   DesignerMenuViewIDs:= TMenuItem.Create(Self);
   DesignerMenuSep2:= TMenuItem.Create(Self);
   DesignerMenuAlign := TMenuItem.Create(Self);
@@ -1410,6 +1413,11 @@ begin
     Name := 'DesignerMenuChangeCreationOrder';
     Caption := 'Change Creation Order';
     OnClick := ChangeCreationOrder1Click;
+  end;
+  with DesignerMenuSelectParent do
+  begin
+    Name := 'DesignerMenuSelectParent';
+    Caption := 'Select Parent';
   end;
 
   with DesignerMenuSep2 do
@@ -1523,6 +1531,7 @@ begin
   DesignerPopup.Items.Add(DesignerMenuCopyWidgetName);
   DesignerPopup.Items.Add(DesignerMenuChangeCreationOrder);
   DesignerPopup.Items.Add(DesignerMenuViewIDs);
+  DesignerPopup.Items.Add(DesignerMenuSelectParent);
   DesignerPopup.Items.Add(DesignerMenuSep2);
   DesignerPopup.Items.Add(DesignerMenuAlign);
   
@@ -1691,8 +1700,7 @@ begin
     WantTabs := true;
 
     // Add popup menu for Wx property inspector
-     OnContextPopup :=WxPropertyInspectorContextPopup;
-  
+    OnEditorContextPopup := WxPropertyInspectorContextPopup;
     AfterItemCreate := JvInspPropertiesAfterItemCreate;
     BeforeSelection := JvInspPropertiesBeforeSelection;
     OnDataValueChanged := JvInspPropertiesDataValueChanged;
@@ -9554,15 +9562,46 @@ end;
 
 {$IFDEF WX_BUILD}
 procedure TMainForm.ELDesigner1ContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
+var
+CurrentControl: TControl;
+NewMenuItem: TMenuItem;
 begin
+    //Create the selected control's "inheritence" tree
+    if ELDesigner1.SelectedControls.Count > 0 then
+    begin
+        DesignerMenuSelectParent.Clear;
+        DesignerMenuSelectParent.Enabled := true;
+        
+        CurrentControl := ELDesigner1.SelectedControls.Items[0];
+        while CurrentControl.Parent <> nil do
+        begin
+            CurrentControl := CurrentControl.Parent;
+            NewMenuItem := TMenuItem.Create(Self);
+            NewMenuItem.Caption := CurrentControl.Name;
+            NewMenuItem.OnClick := SelectParentClick;
+            DesignerMenuSelectParent.Add(NewMenuItem);
+        end;
+    end
+    else
+        DesignerMenuSelectParent.Enabled := false;
+
     Handled:=true;
     DesignerPopup.Popup(MousePos.X,MousePos.Y);
 end;
 
 procedure TMainForm.WxPropertyInspectorContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
+var
+    Pos: TPoint;
 begin
-    Handled:=true;
-    WxPropertyInspectorPopup.Popup(MousePos.X,MousePos.Y);
+    //Create a temporary var variable
+    Pos := MousePos;
+    Handled := true;
+
+    //Convert to screen coordinates
+    Windows.ClientToScreen(GetFocus, Pos);
+
+    //Pop the menu up
+    WxPropertyInspectorPopup.Popup(Pos.X, Pos.Y);
 end;
 
 procedure TMainForm.ELDesigner1ChangeSelection(Sender: TObject);
@@ -12444,9 +12483,30 @@ begin
     ELDesigner1.Active:=true;
 
 end;
-{$ENDIF}
 
-{$IFDEF WX_BUILD}
+procedure TMainForm.SelectParentClick(Sender: TObject);
+var
+    ActiveControl: TControl;
+    SelectedItem: TMenuItem;
+    SelectedLevel: integer;
+begin
+    //Get all the information we need
+    SelectedItem := TMenuItem(Sender);
+    SelectedLevel := SelectedItem.Parent.IndexOf(SelectedItem) + 1;
+    ActiveControl := ELDesigner1.SelectedControls.Items[0];
+
+    //Select the control we want
+    while SelectedLevel > 0 do
+    begin
+        ActiveControl := ActiveControl.Parent;
+        SelectedLevel := SelectedLevel - 1;
+    end;
+
+    //Set set the active control
+    ELDesigner1.SelectedControls.Clear;
+    ELDesigner1.SelectedControls.Add(ActiveControl);
+end;
+
 procedure TMainForm.ELDesigner1Notification(Sender: TObject;
   AnObject: TPersistent; Operation: TOperation);
 var
