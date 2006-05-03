@@ -189,7 +189,7 @@ begin
     dptStat: CreateStaticMakeFile;
     dptDyn: CreateDynamicMakeFile;
   else
-    CreateMakeFile;
+    CreateMakeFile;    
   end;
   if FileExists(fMakeFile) then
     FileSetDate(fMakefile, DateTimeToFileDate(Now)); // fix the "Clock skew detected" warning ;)
@@ -362,7 +362,9 @@ begin
   else if devCompiler.CompilerType <> ID_COMPILER_MINGW then
     writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
   else
-    if fProject.Options.useGPP then
+    if (assigned(fProject) and (fProject.Options.typ = dptStat)) then
+        writeln(F, 'LINK      = ar')
+    else if fProject.Options.useGPP then
       writeln(F, 'LINK      = ' + Comp_ProgCpp)
     else
       writeln(F, 'LINK      = ' + Comp_Prog);
@@ -657,7 +659,10 @@ begin
   if not DoCheckSyntax then
   begin
 {$IFDEF VC_BUILD}
-    writeln(F, #9 + '$(LINK) ' + format(devCompiler.LibFormat, ['$(BIN)']) + ' $(LINKOBJ) $(LIBS)');
+    if devCompiler.CompilerType <> ID_COMPILER_MINGW then
+      writeln(F, #9 + '$(LINK) ' + format(devCompiler.LibFormat, ['$(BIN)']) + ' $(LINKOBJ) $(LIBS)')
+    else
+      writeln(F, #9 + '$(LINK) ' + format(devCompiler.LibFormat, ['$(BIN)']) + ' $(LINKOBJ)');
 {$ELSE}
      writeln(F, #9 + 'ar r $(BIN) $(LINKOBJ)');
       writeln(F, #9 + 'ranlib $(BIN)');

@@ -235,6 +235,11 @@ begin
 {$IFDEF MEM_DEBUG}
   MemChk;
 {$ENDIF MEM_DEBUG}
+
+  //initialize our global variables
+  LIB_EXT := '.lib';
+  OBJ_EXT := '.o';
+
   strIniFile := ChangeFileExt(ExtractFileName(Application.EXEName), INI_EXT);
   
   if (ParamCount > 0) and (ParamStr(1) = CONFIG_PARAM) then  begin

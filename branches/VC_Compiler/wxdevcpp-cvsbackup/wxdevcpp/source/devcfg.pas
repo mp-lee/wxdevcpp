@@ -2018,6 +2018,17 @@ begin
   devDirs.Lib := devCompilerSet.LibDir;
 {$IfDef VC_BUILD}
   devDirs.RC := devCompilerSet.RCDir;
+
+  if devCompiler.CompilerType = ID_COMPILER_MINGW then
+  begin
+    OBJ_EXT := '.o';
+    LIB_EXT := '.a';
+  end
+  else
+    OBJ_EXT := '.obj';
+    LIB_EXT := '.lib';
+  begin
+  end;
 {$EndIf}
   devCompiler.OptionStr := devCompilerSet.OptionsStr;
 end;
@@ -2419,8 +2430,8 @@ begin
     fLinkerFormat           := '-o "%s"';
     fLinkerPaths            := '-L"%s"';
     fIncludeFormat          := '-I"%s"';
-    fDllFormat              := '--implib "%s" -o %s';
-    fLibFormat              := '=ar' + #10#13 + 'OUT=%s' + #10#13 + '$(LINK) r $(OUT) %s' + #10#13 + 'ranlib $(OUT)';
+    fDllFormat              := '--out-implib "%s" -o %s';
+    fLibFormat              := 'rcu "%s"';
     fSingleCompile          := '%s "%s" -o "%s" %s %s %s';
     fPreprocDefines         := '-D%s';
   end;
