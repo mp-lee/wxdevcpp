@@ -355,7 +355,7 @@ begin
 
 {$IFDEF WX_BUILD}
     if fEditorType = etForm then
-      ReloadForm();
+      ReloadForm;
 {$ENDIF}
 
   except
@@ -2500,7 +2500,7 @@ begin
 end;
 {$ENDIF}
 
-  {$IFDEF WX_BUILD}
+{$IFDEF WX_BUILD}
 function TEditor.GetDesignerHPPEditor: TEditor;
 var
   e: TEditor;
@@ -2550,17 +2550,8 @@ end;
 {$IFDEF WX_BUILD}
 
 procedure TEditor.ReloadForm;
-var
-    I:Integer;
 begin
-    if not self.isForm then
-        exit;
-    //Delete all the Components and
-    for I := self.fDesigner.ComponentCount -1  downto 0 do    // Iterate
-    begin
-        self.fDesigner.Components[i].Destroy;
-    end;    // for
-    ReadComponentFromFile(self.fDesigner, self.FileName);
+    ReloadFormFromFile(self.FileName);
 end;
 
 procedure TEditor.ReloadFormFromFile(strFilename:String);
@@ -2569,12 +2560,21 @@ var
 begin
     if not self.isForm then
         exit;
-    //Delete all the Components and
-    for I := self.fDesigner.ComponentCount -1  downto 0 do    // Iterate
-    begin
-        self.fDesigner.Components[i].Destroy;
-    end;    // for
-    ReadComponentFromFile(self.fDesigner, strFilename);
+
+    try
+        //Delete all the Components and
+        for I := self.fDesigner.ComponentCount -1  downto 0 do    // Iterate
+        begin
+            self.fDesigner.Components[i].Destroy;
+        end;    // for
+
+        ReadComponentFromFile(self.fDesigner, strFilename);
+    except
+        on e: Exception do
+        begin
+            MessageBox(0, PChar(e.Message), 'wxDev-C++', MB_ICONHAND or MB_OK or MB_TASKMODAL);
+        end;
+    end;
 end;
 
 
