@@ -3846,7 +3846,8 @@ begin
   if s[length(s)] = '.' then // correct filename if the user gives an alone dot to force the no extension
     s[length(s)] := #0;
   idx := FileIsOpen(s);
-  if (idx <> -1) then begin
+  if (idx <> -1) then
+  begin
     if not withoutActivation then
       GetEditor(idx).Activate;
     exit;
@@ -6294,9 +6295,15 @@ procedure TMainForm.CppParser1TotalProgress(Sender: TObject;
   FileName: String; Total, Current: Integer);
 begin
   if FileName <> '' then
-    StatusBar.Panels[3].Text := 'Parsing ' + Filename
+  begin
+    StatusBar.Panels[3].Text := 'Parsing ' + Filename;
+    StatusBar.Panels[2].Text := FormatFloat('0.00%', Current / Total * 100);
+  end
   else
+  begin
     StatusBar.Panels[3].Text := 'Done parsing.';
+    StatusBar.Panels[2].Text := '';
+  end;
   StatusBar.Refresh;
 end;
 
@@ -8502,9 +8509,7 @@ begin
   InProject := false;
   if Assigned(fProject) then
   begin
-    InProject := Application.MessageBox(PChar(
-      Lang[ID_MSG_NEWRES]), 'New wxWidgets Form', MB_ICONQUESTION +
-      MB_YESNO) = 6
+    InProject := Application.MessageBox(PChar(Lang[ID_MSG_NEWRES]), 'wxDev-C++', MB_ICONQUESTION or MB_YESNO) = 6
   end;
 
   FCreateFormPropObj := TfrmCreateFormProp.Create(self);
@@ -8572,7 +8577,7 @@ begin
   if not CreateStatus then
   begin
     //Add localization here
-    Application.MessageBox(PChar('Unable to Create wxForm'),'New wxWidgets Form', MB_ICONQUESTION + MB_OK);
+    Application.MessageBox(PChar('Unable to Create wxForm'),'wxDev-C++', MB_ICONHAND + MB_OK);
     Exit;
   end;
 
@@ -8793,8 +8798,7 @@ begin
   if not CreateStatus then  // if false, then CreateAppSourceCodes had some problem creating the project files
   begin
     //Add localization here
-    Application.MessageBox(PChar('Unable to Create wxForm'),
-      'New wxWidgets Form', MB_ICONQUESTION + MB_OK);
+    Application.MessageBox(PChar('Unable to Create wxForm'), 'wxDev-C++', MB_ICONHAND + MB_OK);
     Exit;
   end;
 
