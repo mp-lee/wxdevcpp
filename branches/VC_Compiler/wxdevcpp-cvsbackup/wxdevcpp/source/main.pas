@@ -1731,6 +1731,9 @@ begin
     ReadOnly := False;
     UseBands := False;
     WantTabs := False;
+
+    // Add popup menu for Wx property inspector
+    OnEditorContextPopup := WxPropertyInspectorContextPopup;
     AfterItemCreate := JvInspEventsAfterItemCreate;
     OnDataValueChanged := JvInspEventsDataValueChanged;
     OnItemValueChanged := JvInspEventsItemValueChanged;
