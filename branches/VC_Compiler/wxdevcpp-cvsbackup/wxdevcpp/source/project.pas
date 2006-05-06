@@ -1499,22 +1499,22 @@ begin
 
   with fUnits[index] do
   begin
-     fEditor := TEditor.Create;
+    fEditor := TEditor.Create;
     if FileName <> '' then
-    try
-      chdir(Directory);
-       fEditor.Init(TRUE, ExtractFileName(FileName), ExpandFileName(FileName), not New);
-	  if New then
-      	if devEditor.DefaulttoPrj then
-           fEditor.InsertDefaultText;
-       LoadUnitLayout(fEditor, index);
-       result:= fEditor;
-    except
-      MessageDlg(format(Lang[ID_ERR_OPENFILE], [Filename]), mtError, [mbOK], 0);
-      fEditor.Close;
-      fEditor:=nil; //because closing the editor will destroy it
-      //FreeAndNil(fEditor);
-    end
+      try
+        chdir(Directory);
+         fEditor.Init(TRUE, ExtractFileName(FileName), ExpandFileName(FileName), not New);
+           if New then
+      	     if devEditor.DefaulttoPrj then
+               fEditor.InsertDefaultText;
+         LoadUnitLayout(fEditor, index);
+         result:= fEditor;
+      except
+        MessageDlg(format(Lang[ID_ERR_OPENFILE], [Filename]), mtError, [mbOK], 0);
+        fEditor.Close;
+        fEditor:=nil; //because closing the editor will destroy it
+        //FreeAndNil(fEditor);
+      end
     else
     begin
       fEditor.Close;

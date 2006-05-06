@@ -969,8 +969,8 @@ PBreakPointEntry = ^TBreakPointEntry;
     procedure actNewWxFrameExecute(Sender: TObject);
     procedure actNewwxDialogExecute(Sender: TObject);
     procedure ApplicationEvents1Activate(Sender: TObject);
-    procedure ProjectViewKeyDown(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
+    procedure ProjectViewKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure WndProc(var Message: TMessage); override;
    {$ENDIF}
 
   private
@@ -8391,13 +8391,9 @@ var
 begin
   CurrentEditor := GetEditor(PageControl.ActivePageIndex);
 
-  if Assigned(CurrentEditor)  AND Assigned(CurrentEditor.CodeToolTip) then
+  if Assigned(CurrentEditor) and Assigned(CurrentEditor.CodeToolTip) then
   begin
-  	//Added for wx Problems
-    try
-      CurrentEditor.CodeToolTip.ReleaseHandle;
-    except
-    end;
+    CurrentEditor.CodeToolTip.ReleaseHandle;
   end;
 end;
 
@@ -12656,6 +12652,18 @@ if (Key = VK_DELETE) and Assigned(ProjectView.Selected) then
       end;
     end;
   end;
+end;
+
+procedure TMainForm.WndProc(var Message: TMessage);
+begin
+  if (Message.Msg = WM_ACTIVATE) then
+  begin
+    if (Message.WParam = WA_INACTIVE) then
+      HideCodeToolTip;
+  end;
+
+  //Call the default event handlers
+  inherited;
 end;
 
 initialization

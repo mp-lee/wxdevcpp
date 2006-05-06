@@ -479,7 +479,6 @@ begin
   FCodeToolTip := TDevCodeToolTip.Create(Application);
   FCodeToolTip.Editor := FText;
   FCodeToolTip.Parser := MainForm.CppParser1;
-
   
   {** Modified by Peter **}
   // The Editor must have 'Auto Indent' activated  to use FAutoIndent.
@@ -2235,43 +2234,19 @@ begin
   end;
 end;
 
-{** Modified by Peter **}
-// added on 25th march 2004
+//this event is triggered whenever the codecompletion box is going to do the actual
+//code completion
 procedure TEditor.DoOnCodeCompletion(Sender: TObject; const AStatement: TStatement; const AIndex: Integer);
-//
-//  this event is triggered whenever the codecompletion box is going to make its work,
-//  or in other words, when it did a codecompletion ...
-//
-var
-    bUnIntialisedToolTip:Boolean;
 begin
   // disable the tooltip here, becasue we check against Enabled
   // in the 'EditorStatusChange' event to prevent it's redrawing there
-  if FCodeToolTip <> nil then
+
+  //FCodeToolTip may not be initialized under some
+  //circumstances when create TEditor
+  //I suspect it's in TProject.OpenUnit --specu
+  if assigned(FCodeToolTip) then
   begin
-
-    //FCodeToolTip may not be initialized under some
-    //circumstances when create TEditor
-    //I suspect it's in TProject.OpenUnit --specu
-
-    //fixme - Guru: I'm checking if the tooltip is created if not
-    // I create a new one on the fly
-    bUnIntialisedToolTip:=false;
-    try
-        FCodeToolTip.Enabled := False;
-    except
-        bUnIntialisedToolTip:=true;
-    end;
-    if bUnIntialisedToolTip then
-    begin
-        FCodeToolTip:=nil;
-        FCodeToolTip := TDevCodeToolTip.Create(Application);
-        FCodeToolTip.Editor := FText;
-        FCodeToolTip.Parser := MainForm.CppParser1;
-    end;
     FCodeToolTip.Enabled := False;
-    FCodeToolTip.ReleaseHandle;
-    FCodeToolTip.Show;
     FCodeToolTip.Select(AStatement._FullText);
     FCodeToolTip.Enabled := True;
   end;
@@ -2293,8 +2268,6 @@ begin
 fText.InvalidateGutter;
 end;
 
-////
-
 {$IFDEF WX_BUILD}
 function TEditor.isForm: Boolean;
 begin
@@ -2303,9 +2276,7 @@ begin
   else
     Result := false;
 end;
-{$ENDIF}
 
-{$IFDEF WX_BUILD}
 procedure TEditor.ActivateDesigner;
 begin
   if isForm then
@@ -2328,18 +2299,16 @@ begin
     end;
   end;
 end;
-{$ENDIF}
 
-function GetElapsedTimeStr(StartTime : LongWord):String;
-begin
-  Result := Format('%.3f seconds', [(GetTickCount - StartTime) / 1000]);
-end;
-
-{$IFDEF WX_BUILD}
 procedure TEditor.UpdateDesignerData;
 var
   e: TEditor;
   STartTimeX: longword;
+
+  function GetElapsedTimeStr(StartTime : LongWord):String;
+  begin
+    Result := Format('%.3f seconds', [(GetTickCount - StartTime) / 1000]);
+  end;
 begin
   if isForm then
   begin
@@ -2390,9 +2359,7 @@ begin
   if MainForm.ELDesigner1.GenerateXRC then
      UpdateXRC;
 end;
-{$ENDIF}
 
-{$IFDEF WX_BUILD}
 function TEditor.GetDesigner: TfrmNewForm;
 begin
   if isForm then
@@ -2400,9 +2367,7 @@ begin
   else
     Result := nil;
 end;
-{$ENDIF}
 
-{$IFDEF WX_BUILD}
 procedure TEditor.InitDesignerData(strFName, strCName, strFTitle: string;
   dlgSStyle: TWxDlgStyleSet);
 begin
@@ -2411,9 +2376,7 @@ begin
   fDesignerStyle := dlgSStyle;
   fDesignerDefaultData := True;
 end;
-{$ENDIF}
 
-{$IFDEF WX_BUILD}
 function TEditor.GetDesignerHPPFileName: string;
 begin
   if not isForm then
@@ -2422,9 +2385,7 @@ begin
   if FileExists(ChangeFileExt(FileName, H_EXT)) then
     Result := ChangeFileExt(FileName, H_EXT);
 end;
-{$ENDIF}
 
-  {$IFDEF WX_BUILD}
 function TEditor.GetDesignerCPPFileName: string;
 begin
   if not isForm then
@@ -2433,9 +2394,7 @@ begin
   if FileExists(ChangeFileExt(FileName, CPP_EXT)) then
     Result := ChangeFileExt(FileName, CPP_EXT);
 end;
-{$ENDIF}
 
-{$IFDEF WX_BUILD}
 function TEditor.GetDesignerHPPText: TSynEdit;
 var
   e: TEditor;
@@ -2458,10 +2417,6 @@ begin
   end;
 end;
 
-{$ENDIF}
-
-{$IFDEF WX_BUILD}
-
 function TEditor.GetDesignerCPPText: TSynEdit;
 var
   e: TEditor;
@@ -2483,24 +2438,17 @@ begin
     end;
   end;
 end;
-  {$ENDIF}
 
-  {$IFDEF WX_BUILD}
 function TEditor.IsDesignerHPPOpened: Boolean;
 begin
     Result := MainForm.isFileOpenedinEditor(ChangeFileExt(FileName, H_EXT));
 end;
-{$ENDIF}
-
-{$IFDEF WX_BUILD}
 
 function TEditor.IsDesignerCPPOpened: Boolean;
 begin
     Result := MainForm.isFileOpenedinEditor(ChangeFileExt(FileName, CPP_EXT));
 end;
-{$ENDIF}
 
-{$IFDEF WX_BUILD}
 function TEditor.GetDesignerHPPEditor: TEditor;
 var
   e: TEditor;
@@ -2521,9 +2469,7 @@ begin
     end;
   end;
 end;
-{$ENDIF}
 
-{$IFDEF WX_BUILD}
 function TEditor.GetDesignerCPPEditor: TEditor;
 var
   e: TEditor;
@@ -2545,9 +2491,6 @@ begin
     end;
   end;
 end;
-{$ENDIF}
-
-{$IFDEF WX_BUILD}
 
 procedure TEditor.ReloadForm;
 begin
@@ -2577,10 +2520,6 @@ begin
     end;
 end;
 
-
-{$ENDIF}
-
-{$IFDEF WX_BUILD}
 procedure TEditor.UpdateXRC;
 var
   e: TEditor;
