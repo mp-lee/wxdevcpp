@@ -754,7 +754,8 @@ begin
         not (fProject.Options.typ in devCompiler.Options[I].optExcludeFromTypes)
         ) or
         // else global compiler options
-      (not Assigned(fProject) and (devCompiler.Options[I].optValue > 0)) then begin
+      (not Assigned(fProject) and (devCompiler.Options[I].optValue > 0)) then
+      begin
         if devCompiler.Options[I].optIsC then begin
           if Assigned(devCompiler.Options[I].optChoices) then begin
             if Assigned(fProject) then
@@ -1033,18 +1034,19 @@ begin
           [s, fSourceFile, 'nul', fCppCompileParams,
           fCppIncludesParams, fLibrariesParams])
       else
-      {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
       begin
         if (devCompiler.CompilerType = ID_COMPILER_VC) or (devCompiler.CompilerType = ID_COMPILER_VC2005) then
           cmdline := format(cCmdLine,
             [s, fSourceFile, fCppCompileParams, fCppIncludesParams, fLibrariesParams])
         else
-       {$ENDIF}
+{$ENDIF}
           cmdline := format(cCmdLine,
             [s, fSourceFile, ChangeFileExt(fSourceFile, EXE_EXT),
       	    fCppCompileParams, fCppIncludesParams, fLibrariesParams]);
-
-      {$IFDEF VC_BUILD}end;{$ENDIF}
+{$IFDEF VC_BUILD}
+      end;
+{$ENDIF}
       DoLogEntry(format(Lang[ID_EXECUTING], [' ' + s + cDots]));
       DoLogEntry(cmdline);
     end
@@ -1564,7 +1566,9 @@ begin
 	(Pos('*** [', Line) > 0) or
 	(((Pos('.c', Line) > 0) or (Pos('.cpp', Line) > 0)) and (Pos('(', Line) = 0)) or
 	(Pos('Nothing to be done for', Line) > 0) or
-	(Pos('while trying to match the argument list', Line) > 0)
+	(Pos('while trying to match the argument list', Line) > 0) or
+        (Line = 'Generating code') or
+        (Line = 'Finished generating code')
       then
 	continue;
 
@@ -2149,7 +2153,7 @@ begin
         act := '';
     end;
 
-    {$IFDEF VC_BUILD}
+{$IFDEF VC_BUILD}
     if Pos('/Yc', Line) > 0 then
     begin
       OK := false;
@@ -2168,7 +2172,7 @@ begin
     end
     else
     begin
-    {$ENDIF}
+{$ENDIF}
       fil := '';
       for I := 0 to fProject.Units.Count - 1 do begin
 {$IfNDef VC_BUILD}
@@ -2195,7 +2199,8 @@ begin
       end;
     end;
 {$EndIf}
-    if not OK then begin
+    if not OK then
+    begin
       srch := ExtractFileName(fProject.Options.PrivateResource);
       if Pos(srch, Line) > 0 then begin
         fil := srch;
@@ -2204,6 +2209,7 @@ begin
           act := 'Compiling';
         lblFile.Caption := srch;
       end;
+
       srch := ExtractFileName(fProject.Executable);
       if (Pos(srch, Line) > 0) and (Pos('rm -f', Line) > 0) then begin
         fil := srch;
@@ -2219,11 +2225,32 @@ begin
           act := 'Linking';
         lblFile.Caption := srch;
       end;
+
+{$IfDef VC_BUILD}
+      if (devCompiler.CompilerType = ID_COMPILER_VC) or (devCompiler.CompilerType = ID_COMPILER_VC2005) then
+      begin
+        //Check for the manifest tool
+        srch := devCompiler.gprofName;
+        if (devCompiler.CompilerType = ID_COMPILER_VC2005) and (Pos(UpperCase(srch), UpperCase(Trim(Line))) = 1) then
+        begin
+          act := 'Embedding manifest';
+          fil := Copy(Line, Pos(UpperCase('/outputresource:'), UpperCase(Line)) + 17, Length(Line));
+          fil := Copy(fil, 0, Pos(Line, '"'));
+        end;
+
+        //Link-time code generation?
+        srch := 'Generating code';
+        if (Pos(UpperCase(srch), UpperCase(Trim(Line)))) = 1 then
+        begin
+          act := 'Generating code';
+        end;
+      end;
+{$Endif}
     end;
   end;
 
   if act + ' ' + fil <> ' ' then
-    Memo1.Lines.Add(act + ' ' + fil);
+    Memo1.Lines.Add(Trim(act + ' ' + fil));
   if trim(act) <> '' then
     lblStatus.Caption := act + '...';
   if trim(fil) <> '' then
