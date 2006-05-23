@@ -333,15 +333,11 @@ begin
     if boolCanStart = false then
         exit;
   end;
-
   devTheme := TdevTheme.Create;
-
-
   Application.Initialize;
   Application.Title := 'wxDev-C++';
   Application.CreateForm(TMainForm, MainForm);
   MainForm.Hide; // hide it
-
 
   if not devData.NoSplashScreen then
   begin
@@ -354,8 +350,6 @@ begin
   // make the creation when the splashscreen is displayed
   // because it takes quite a while ...
   TMainFormHack(MainForm).DoCreateEverything;
-
-
   Application.CreateForm(TfrmIncremental, frmIncremental);
   Application.CreateForm(TfrmFind, frmFind);
   Application.CreateForm(TfrmReplace, frmReplace);
@@ -365,7 +359,6 @@ begin
   // apply the window placement. this method forced
   // the form to show,
   TMainFormHack(MainForm).DoApplyWindowPlacement;
-
   if not devData.NoSplashScreen then
     SplashForm.Free;
 

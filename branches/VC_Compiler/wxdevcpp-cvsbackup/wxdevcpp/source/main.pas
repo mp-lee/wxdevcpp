@@ -43,11 +43,11 @@ uses
   devShortcuts, StrUtils, devFileMonitor, devMonitorTypes, DdeMan, XPMenu,
   CVSFm, ImageTheme
 
-  {$IFDEF WX_BUILD}
+{$IFDEF WX_BUILD}
   , JclStrings, JvExControls, JvComponent, TypInfo, JclRTTI, JvStringHolder,
   ELDsgnr, JvInspector, xprocs, dmCreateNewProp, wxUtils, DbugIntf,
   wxSizerpanel, Designerfrm, ELPropInsp, uFileWatch, ThemeMgr, ExceptionFilterUnit,
-  DesignerOptions, JvExStdCtrls, JvEdit
+  DesignerOptions, JvExStdCtrls, JvEdit, ShlObj, ActiveX
   {$ENDIF}
   ;
 {$ENDIF}
@@ -1189,6 +1189,10 @@ WxPropertyInspectorPopup:TPopupMenu;
 
   end;
 
+{$IfDef WX_BUILD}
+function GetLongPath(const ShortPathName: String): String;
+{$EndIf}
+
 var
   MainForm: TMainForm;
       { *** RNC Declare global breakpoint list *** }
@@ -1572,8 +1576,6 @@ begin
     PopupMenu := DesignerPopup;
     SnapToGrid:=false;
     GenerateXRC :=false;
-    //Grid.XStep:=4;
-    //Grid.YStep:=4;
     OnContextPopup :=ELDesigner1ContextPopup;
     OnChangeSelection := ELDesigner1ChangeSelection;
     OnControlDeleted := ELDesigner1ControlDeleted;
@@ -1906,7 +1908,6 @@ begin
 {$IFDEF WX_BUILD}
   DoCreateWxSpecificItems;
 {$ENDIF}
-
   fFirstShow := TRUE;
   DDETopic := DevCppDDEServer.Name;
   CheckAssociations; // register file associations and DDE services <-- !!!
@@ -1942,7 +1943,6 @@ begin
   fCompiler.OnSuccess := CompSuccessProc;
 
   fDebugger := TDebugger.Create;
-
   fDebugger.DebugTree := DebugTree;
 
   SearchCenter.SearchProc := MainSearchProc;
@@ -2431,18 +2431,18 @@ begin
     if FileExists(strLst[idx]) then begin
       if GetFileTyp(strLst[idx]) = utPrj then
       begin
-        OpenProject(strLst[idx]);
+        OpenProject(GetLongPath(strLst[idx]));
         break; // only open 1 project
       end
       else begin
-        {$IFDEF WX_BUILD}
+{$IFDEF WX_BUILD}
         if iswxForm(strLst[idx]) then
         begin
-          OpenFile(ChangeFileExt(strLst[idx], H_EXT), True);
-          OpenFile(ChangeFileExt(strLst[idx], CPP_EXT), true);
+          OpenFile(GetLongPath(ChangeFileExt(strLst[idx], H_EXT)), True);
+          OpenFile(GetLongPath(ChangeFileExt(strLst[idx], CPP_EXT)), true);
         end;
-        {$ENDIF}
-        OpenFile(strLst[idx]);
+{$ENDIF}
+        OpenFile(GetLongPath(strLst[idx]));
       end;
     end;
     inc(idx);
@@ -2924,7 +2924,6 @@ actNewWxFrame.Caption := Strings[ID_TB_NEW] + ' wxFrame';
   end;
   BuildBookMarkMenus;
   SetHints;
-  devCompiler.ChangeOptionsLang;
 end;
 
 function TMainForm.FileIsOpen(const s: string; inPrj: boolean = FALSE): integer;
@@ -4158,48 +4157,50 @@ begin
     if (Node.Level >= 1) then
     begin
       i := integer(Node.Data);
-      //Added for wx.
+{$IFDEF WX_BUILD}
       //This will allow DevC++ to open custom program
       //as assigned by the user like VC++
       if OpenWithAssignedProgram(fProject.Units[i].FileName) = true then
         Exit;
+{$ENDIF}
       FileIsOpen(fProject.Units[i].FileName, TRUE);
-      //Added By wx
+{$IFDEF WX_BUILD}
+
       if isFileOpenedinEditor(fProject.Units[i].FileName) then
         e :=GetEditorFromFileName(fProject.Units[i].FileName)
       else
+{$ENDIF}
         e := fProject.OpenUnit(i);
       if assigned(e) then
       begin
-        //Guru : My Code Starts Here
-        {$IFDEF WX_BUILD}
+{$IFDEF WX_BUILD}
         EditorFilename:=e.FileName;
         if FileExists(ChangeFileExt(EditorFilename,WXFORM_EXT)) then
         begin
-          if FileExists(ChangeFileExt(EditorFilename, WXFORM_EXT)) then
-          begin
-            if not isFileOpenedinEditor(ChangeFileExt(EditorFilename, WXFORM_EXT)) then
-                MainForm.OpenFile(ChangeFileExt(EditorFilename, WXFORM_EXT), true);
-          end;
+          if FileExists(ChangeFileExt(EditorFilename, WXFORM_EXT)) and (not isFileOpenedinEditor(ChangeFileExt(EditorFilename, WXFORM_EXT))) then
+            if fProject.Units.Indexof(ChangeFileExt(EditorFilename, WXFORM_EXT)) <> -1 then
+              fProject.OpenUnit(fProject.Units.Indexof(ChangeFileExt(EditorFilename, WXFORM_EXT)))
+            else
+              MainForm.OpenFile(ChangeFileExt(EditorFilename, WXFORM_EXT), true);
 
-          if (MainForm.ELDesigner1.GenerateXRC) then
-           if FileExists(ChangeFileExt(EditorFilename, XRC_EXT)) then
-          begin
-            if not isFileOpenedinEditor(ChangeFileExt(EditorFilename, XRC_EXT)) then
-                MainForm.OpenFile(ChangeFileExt(EditorFilename, XRC_EXT), true);
-          end;
+          if (MainForm.ELDesigner1.GenerateXRC) and FileExists(ChangeFileExt(EditorFilename, XRC_EXT))
+          and (not isFileOpenedinEditor(ChangeFileExt(EditorFilename, XRC_EXT))) then
+            if fProject.Units.Indexof(ChangeFileExt(EditorFilename, XRC_EXT)) <> -1 then
+              fProject.OpenUnit(fProject.Units.Indexof(ChangeFileExt(EditorFilename, XRC_EXT)))
+            else
+              MainForm.OpenFile(ChangeFileExt(EditorFilename, XRC_EXT), true);
 
-          if FileExists(ChangeFileExt(EditorFilename, H_EXT)) then
-          begin
-            if not isFileOpenedinEditor(ChangeFileExt(EditorFilename, H_EXT)) then
-                MainForm.OpenFile(ChangeFileExt(EditorFilename, H_EXT), true);
-          end;
+          if FileExists(ChangeFileExt(EditorFilename, H_EXT)) and (not isFileOpenedinEditor(ChangeFileExt(EditorFilename, H_EXT))) then
+            if fProject.Units.Indexof(ChangeFileExt(EditorFilename, H_EXT)) <> -1 then
+              fProject.OpenUnit(fProject.Units.Indexof(ChangeFileExt(EditorFilename, H_EXT)))
+            else
+              MainForm.OpenFile(ChangeFileExt(EditorFilename, H_EXT), true);
 
-          if FileExists(ChangeFileExt(EditorFilename, CPP_EXT)) then
-          begin
-            if not isFileOpenedinEditor(ChangeFileExt(EditorFilename, CPP_EXT)) then
-                MainForm.OpenFile(ChangeFileExt(EditorFilename, CPP_EXT), true);
-          end;
+          if FileExists(ChangeFileExt(EditorFilename, CPP_EXT)) and (not isFileOpenedinEditor(ChangeFileExt(EditorFilename, CPP_EXT))) then
+            if fProject.Units.Indexof(ChangeFileExt(EditorFilename, CPP_EXT)) <> -1 then
+              fProject.OpenUnit(fProject.Units.Indexof(ChangeFileExt(EditorFilename, CPP_EXT)))
+            else
+              MainForm.OpenFile(ChangeFileExt(EditorFilename, CPP_EXT), true);
 
           //Reactivate the editor;
           if FileExists(EditorFilename) then
@@ -4211,12 +4212,9 @@ begin
                 GetEditorFromFileName(EditorFilename).Activate;
             end;
           end;
-
         end;
-    // Guru : My Code Ends here
-    {$ENDIF}
+{$ENDIF}
         e.Activate;
-        //        ClassBrowser1.CurrentFile:=e.FileName;
       end;
     end;
 end;
@@ -4428,7 +4426,7 @@ begin
             if (fProject.Name = '') or (fProject.FileName ='') then
                 flt := FLT_PROJECTS;
     end;
-
+  
   with dmMain.OpenDialog do
   begin
     Filter := flt;
@@ -6950,15 +6948,19 @@ var
   idx: integer;
   current: integer;
   e: TEditor;
+  curFilename: string;
 begin
+  idx := 0;
   current := PageControl.ActivePageIndex;
-  for idx := 0 to current - 1 do
-    if not CloseEditor(0, True) then
-      Break;
-
-  // our editor is now first
-  for idx := 1 to PageControl.PageCount - 1 do
-    if not CloseEditor(PageControl.PageCount - 1, True) then
+  curFilename := GetEditor(current).FileName;
+  while idx < PageControl.PageCount do
+    if (idx = current) or
+       (ChangeFileExt(GetEditor(idx).FileName, WXFORM_EXT) = curFilename) or
+       (ChangeFileExt(GetEditor(idx).FileName, H_EXT) = curFilename) or
+       (ChangeFileExt(GetEditor(idx).FileName, CPP_EXT) = curFilename) or
+       (ChangeFileExt(GetEditor(idx).FileName, XRC_EXT) = curFilename) then
+      idx := idx + 1
+    else if not CloseEditor(idx, True) then
       Break;
 
   e := GetEditor;
@@ -6967,14 +6969,12 @@ begin
     // if we shift the focus to another control and back to the editor,
     // everything is fine. (I smell another SynEdit bug?)
     e.TabSheet.SetFocus;
-   {$IFDEF WX_BUILD}
+{$IFDEF WX_BUILD}
     if not e.isForm then
-        e.Text.SetFocus;
-   {$ENDIF}
-   {$IFNDEF WX_BUILD}
+      e.Text.SetFocus;
+{$ELSE}
     e.Text.SetFocus;
-   {$ENDIF}
-
+{$ENDIF}
   end;
 end;
 
@@ -12665,6 +12665,58 @@ begin
   //Call the default event handlers
   inherited;
 end;
+
+{$IfDef WX_BUILD}
+//Takes a 8.3 filename and makes it into a Long filename.
+//Courtesy of http://www.martinstoeckli.ch/delphi/delphi.html
+function GetLongPath(const ShortPathName: String): String;
+var
+  hKernel32Dll: THandle;
+  fncGetLongPathName: function (lpszShortPath: LPCTSTR; lpszLongPath: LPTSTR;
+    cchBuffer: DWORD): DWORD stdcall;
+  bSuccess: Boolean;
+  szBuffer: array[0..MAX_PATH] of Char;
+  pDesktop: IShellFolder;
+  swShortPath: WideString;
+  iEaten: ULONG;
+  pItemList: PItemIDList;
+  iAttributes: ULONG;
+begin
+  // try to find the function "GetLongPathNameA" (Windows 98/2000)
+  hKernel32Dll := GetModuleHandle('Kernel32.dll');
+  if (hKernel32Dll <> 0) then
+    @fncGetLongPathName := GetProcAddress(hKernel32Dll, 'GetLongPathNameA')
+  else
+    @fncGetLongPathName := nil;
+  // use the function "GetLongPathNameA" if available
+  bSuccess := False;
+  if (Assigned(fncGetLongPathName)) then
+  begin
+    bSuccess := fncGetLongPathName(PChar(ShortPathName), szBuffer,
+      SizeOf(szBuffer)) > 0;
+    if bSuccess then
+      Result := szBuffer;
+  end;
+  // use an alternative way of getting the path (Windows 95/NT)
+  if (not bSuccess) and Succeeded(SHGetDesktopFolder(pDesktop)) then
+  begin
+    swShortPath := ShortPathName;
+    iAttributes := 0;
+    if Succeeded(pDesktop.ParseDisplayName(0, nil, POLESTR(swShortPath),
+      iEaten, pItemList, iAttributes)) then
+    begin
+      bSuccess := SHGetPathFromIDList(pItemList, szBuffer);
+      if bSuccess then
+        Result := szBuffer;
+      // release ItemIdList (SHGetMalloc is superseded)
+      CoTaskMemFree(pItemList);
+    end;
+  end;
+  // give back the original path if unsuccessful
+  if (not bSuccess) then
+    Result := ShortPathName;
+end;
+{$EndIf}
 
 initialization
 {$IFDEF WX_BUILD}
