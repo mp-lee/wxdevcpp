@@ -1840,11 +1840,10 @@ begin
         CopyFile(PChar(fOptions.Icon), PChar(ExpandFileto(IconFileName,
           Directory)), False);
         fOptions.Icon := IconFileName;
-        // force save of private resource to force rebuild, since icon has changed...
-        BuildPrivateResource(True);
-      end
-      else
-        BuildPrivateResource;
+      end;
+
+      // rebuild the resource file
+      BuildPrivateResource;
 
       // update the projects main node caption
       if edProjectName.Text <> '' then

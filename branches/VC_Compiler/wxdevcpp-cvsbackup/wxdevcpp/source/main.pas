@@ -5279,7 +5279,10 @@ begin
       fProject.Options.VersionInfo.AutoIncBuildNrOnCompile or
       (fProject.Options.VersionInfo.AutoIncBuildNrOnRebuild and rebuild)
     ) then
+    begin
       fProject.IncrementBuildNumber;
+      fProject.BuildPrivateResource;
+    end;
   end;
 
   Result := True;
