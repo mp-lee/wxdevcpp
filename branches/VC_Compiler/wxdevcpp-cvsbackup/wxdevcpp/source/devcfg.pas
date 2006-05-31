@@ -41,7 +41,7 @@ interface
 
 uses
 {$IFDEF WIN32}
-Dialogs, Windows, Classes, Graphics, SynEdit, CFGData, CFGTypes, IniFiles, prjtypes;
+Dialogs, Windows, Classes, Graphics, SynEdit, CFGData, CFGTypes, IniFiles, prjtypes, DbugIntf;
 {$ENDIF}
 {$IFDEF LINUX}
   QDialogs, Classes, QGraphics, QSynEdit, CFGData, CFGTypes, IniFiles, prjtypes;
@@ -239,7 +239,6 @@ type
     function OptionsCount: integer;
     function FindOption(Setting: string; var opt: TCompilerOption; var Index: integer): boolean; // returns the option with setting=<Setting>
     function ConvertCharToValue(c: char): integer;
-    procedure ChangeOptionsLang;
     procedure AddOption(_Name: string; _IsGroup, _IsC, _IsCpp, IsLinker: boolean; _Value: integer; _Setting, _Section: string; ExcludeFromTypes: TProjTypeSet; Choices: TStringList);
     procedure SettoDefaults; override;
     procedure SaveSettings; override;
@@ -885,8 +884,10 @@ begin
     devCompilerSet.SaveSet(0);
   end;
   devCompilerSet.LoadSet(devCompiler.CompilerSet);
+  devCompiler.AddDefaultOptions;
   devCompilerSet.AssignToCompiler;
   devCompilerSet.SaveSet(devCompiler.CompilerSet);
+  devCompiler.SaveSettings;
 end;
 
 procedure SaveOptions;
@@ -1376,13 +1377,6 @@ begin
     optChoices := Choices;
   end;
   fOptions.Add(P);
-end;
-
-procedure TdevCompiler.ChangeOptionsLang;
-begin
-  ClearOptions;
-  AddDefaultOptions;
-  LoadSettings;
 end;
 
 procedure TdevCompiler.ClearOptions;
@@ -2418,7 +2412,7 @@ begin
     fIncludeFormat          := '/I"%s"';
     fDllFormat              := '/dll /implib:"%s" /out:"%s"';
     fLibFormat              := '/lib /nologo /out:"%s"';
-    fSingleCompile          := '%s "%s" %s %s /link %s';
+    fSingleCompile          := '%s /nologo "%s" %s %s /link %s';
     fPreprocDefines         := '/D%s';
   end
   else if CompilerType = ID_COMPILER_MINGW then

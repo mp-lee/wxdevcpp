@@ -58,7 +58,8 @@ type
     OriginalFilename: string;
     ProductName: string;
     ProductVersion: string;
-    AutoIncBuildNr: boolean;
+    AutoIncBuildNrOnCompile: boolean;
+    AutoIncBuildNrOnRebuild: boolean;
   end;
 
   TProjOptions = record
@@ -136,14 +137,15 @@ begin
     VersionInfo.CharsetID := $04E4; // Windows multilingual
     VersionInfo.CompanyName := '';
     VersionInfo.FileVersion := '';
-    VersionInfo.FileDescription := 'Developed using the Dev-C++ IDE';
+    VersionInfo.FileDescription := '';
     VersionInfo.InternalName := '';
     VersionInfo.LegalCopyright := '';
     VersionInfo.LegalTrademarks := '';
     VersionInfo.OriginalFilename := '';
     VersionInfo.ProductName := '';
     VersionInfo.ProductVersion := '';
-    VersionInfo.AutoIncBuildNr := False;
+    VersionInfo.AutoIncBuildNrOnCompile := False;
+    VersionInfo.AutoIncBuildNrOnRebuild := False;
   end;
 end;
 

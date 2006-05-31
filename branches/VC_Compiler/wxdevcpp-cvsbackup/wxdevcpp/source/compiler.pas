@@ -202,7 +202,7 @@ resourcestring
   cAppendStr = '%s %s';
 
 var
-  ObjResFile, Objects, LinkObjects, Comp_ProgCpp, Comp_Prog, ofile, tfile , tmp: string;
+  ObjResFile, Objects, LinkObjects, Comp_ProgCpp, Comp_Prog, ofile, tfile: string;
   i: integer;
 {$IFNDEF VC_BUILD}
   opt: TCompilerOption;
@@ -210,6 +210,12 @@ var
 {$EndIf}
 begin
   Objects := '';
+
+{$IfDef VC_BUILD}
+  // create the object output directory if we have to
+  if (fProject.Options.ObjectOutput <> '') and (not DirectoryExists(fProject.Options.ObjectOutput)) then
+    ForceDirectories(GetRealPath(SubstituteMakeParams(fProject.Options.ObjectOutput), fProject.Directory));
+{$EndIf}
 
   for i := 0 to Pred(fProject.Units.Count) do
   begin
@@ -247,12 +253,12 @@ begin
   if Length(fProject.Options.PrivateResource) = 0 then
     ObjResFile := ''
   else begin
-    if fProject.Options.ObjectOutput<>'' then begin
+    if fProject.Options.ObjectOutput <> '' then begin
 {$IfNDef VC_BUILD}
       if not DirectoryExists(fProject.Options.ObjectOutput) then
         MkDir(fProject.Options.ObjectOutput);
 {$EndIf}
-      ObjResFile := IncludeTrailingPathDelimiter(fProject.Options.ObjectOutput)+ChangeFileExt(fProject.Options.PrivateResource, RES_EXT);
+      ObjResFile := ChangeFileExt(fProject.Options.PrivateResource, RES_EXT);
       ObjResFile := GenMakePath(ExtractRelativePath(fProject.FileName, ObjResFile));
     end
   else
@@ -368,11 +374,6 @@ begin
       writeln(F, 'LINK      = ' + Comp_ProgCpp)
     else
       writeln(F, 'LINK      = ' + Comp_Prog);
-
-  if (fProject <> nil) and (fProject.Options.ObjectOutput <> '') then
-    tmp := 'directories '
-  else
-    tmp := '';
 {$ENDIF}
 
   Writeln(F, '');
@@ -380,7 +381,7 @@ begin
     Writeln(F,'.PHONY: all all-before all-after clean clean-custom $(OBJ) $(BIN)')
   else
     Writeln(F, '.PHONY: all all-before all-after clean clean-custom');
-  Writeln(F, 'all: all-before ' + tmp + GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)) + ' all-after');
+  Writeln(F, 'all: all-before ' + GenMakePath(ExtractRelativePath(Makefile, fProject.Executable)) + ' all-after');
   Writeln(F, '');
 
   for i := 0 to fProject.Options.MakeIncludes.Count - 1 do
@@ -391,16 +392,6 @@ begin
 
   WriteMakeClean(F);
   writeln(F);
-
-{$IFDEF VC_BUILD}
-  //Write the directory creation thing
-  if (fProject <> nil) and (fProject.Options.ObjectOutput <> '') then
-  begin
-    Writeln(F, 'directories:');
-    Writeln(F, #9 + '@if not exist "' + fProject.Options.ObjectOutput + '" mkdir "' + fProject.Options.ObjectOutput + '"');
-    Writeln(F);
-  end;
-{$EndIF}
 end;
 
 function TCompiler.FindDeps(TheFile: String): String;
@@ -475,6 +466,8 @@ var
 {$IfNDef VC_BUILD}
   ShortPath: string;
   ResIncludes: String;
+{$Else}
+  RCDir: String;
 {$EndIf}
   tfile, ofile, ResFiles, tmp: string;
 begin
@@ -580,16 +573,20 @@ begin
       tfile := ExtractRelativePath(fProject.Executable,
         fProject.Units[i].FileName);
       if FileExists(GetRealPath(tfile, fProject.Directory)) then
-              ResFiles := ResFiles + GenMakePath2(tfile) + ' ';
+        ResFiles := ResFiles + GenMakePath2(tfile) + ' ';
     end;
     writeln(F);
-    
-    if fProject.Options.ObjectOutput<>'' then
-      ofile := IncludeTrailingPathDelimiter(fProject.Options.ObjectOutput)+ChangeFileExt(fProject.Options.PrivateResource, RES_EXT)
-    else
-      ofile := ChangeFileExt(fProject.Options.PrivateResource, RES_EXT);
 
-    ofile := GenMakePath(ExtractRelativePath(fProject.FileName, ofile));
+    //Get the path of the resource
+    ofile := ChangeFileExt(fProject.Options.PrivateResource, RES_EXT);
+    if (fProject.Options.ObjectOutput <> '') then
+      RCDir := fProject.Options.ObjectOutput
+    else
+      RCDir := fProject.Directory;
+    RCDir := IncludeTrailingPathDelimiter(GetRealPath(RCDir, fProject.Directory));
+
+    //Then get the path to the resource object relative to our project directory
+    ofile := GenMakePath(ExtractRelativePath(fProject.Directory, ofile));
     tfile := GenMakePath(ExtractRelativePath(fProject.FileName, fProject.Options.PrivateResource));
     if DoCheckSyntax then
     begin
@@ -937,9 +934,6 @@ end;
 
 procedure TCompiler.Compile(SingleFile: string);
 resourcestring
-{$IfNDef VC_BUILD}
-  cCmdLine = '%s "%s" /Fo "%s" %s %s %s';
-{$EndIf}
   cMakeLine = '%s -f "%s" all';
   cSingleFileMakeLine = '%s -f "%s" %s';
   cMake = ' make';
@@ -948,12 +942,12 @@ var
   cmdline: string;
   s: string;
   ofile: string;
-{$IfDef VC_BUILD}
   cCmdLine: string;
-{$EndIf}
 begin
 {$IfDef VC_BUILD}
   cCmdLine := devCompiler.SingleCompile;
+{$Else}
+  cCmdLine = '%s "%s" /Fo "%s" %s %s %s';
 {$EndIf}
   fSingleFile := SingleFile <> '';
   fRunAfterCompileFinish := FALSE;
@@ -2201,7 +2195,7 @@ begin
 {$EndIf}
     if not OK then
     begin
-      srch := ExtractFileName(fProject.Options.PrivateResource);
+      srch := ExtractFileName(SubstituteMakeParams(fProject.Options.PrivateResource));
       if Pos(srch, Line) > 0 then begin
         fil := srch;
         prog := pb.Max - 1;

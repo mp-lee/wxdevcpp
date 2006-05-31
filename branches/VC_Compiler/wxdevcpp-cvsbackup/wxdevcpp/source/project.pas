@@ -21,7 +21,8 @@ unit project;
 
 interface
 
-uses 
+uses
+  Utils, StrUtils,
 {$IFDEF WIN32}
   IniFiles, SysUtils, Dialogs, ComCtrls, Editor, Contnrs,
   Classes, Controls, version, prjtypes, Templates, Forms,
@@ -229,7 +230,7 @@ type
 
 implementation
 uses
-  main, MultiLangSupport, devcfg, ProjectOptionsFrm, datamod, utils,
+  main, MultiLangSupport, devcfg, ProjectOptionsFrm, datamod,
   RemoveUnitFrm, ResourceSelector;
 
 { TProjUnit }
@@ -531,7 +532,7 @@ end;
 procedure TProject.BuildPrivateResource(ForceSave: boolean = False);
 var
   ResFile, Original: TStringList;
-  Res, Def, Icon: String;
+  Res, Def, Icon, RCDir, ResDir: String;
   comp, i: Integer;
 begin
   comp := 0;
@@ -540,6 +541,12 @@ begin
       if Units[i].Compile then
         Inc(comp);
 
+  // if the project has a custom object directory, put the file in there
+  if (Options.ObjectOutput <> '') then
+    RCDir := IncludeTrailingPathDelimiter(GetRealPath(Options.ObjectOutput, Directory))
+  else
+    RCDir := Directory;
+  
   // if project has no other resources included
   // and does not have an icon
   // and does not include the XP style manifest
@@ -557,13 +564,7 @@ begin
   // in many cases (like in importing a MSVC project)
   // the project's resource file has already the
   // <project_filename>.res filename.
-  if Length(Options.PrivateResource) > 0 then begin
-    Res := GetRealPath(Options.PrivateResource, Directory);
-    if ChangeFileExt(Res, DEV_EXT) = FileName then
-      Res := ChangeFileExt(FileName, '_private' + RC_EXT);
-  end
-  else
-    Res := ChangeFileExt(FileName, '_private' + RC_EXT);
+  Res := ChangeFileExt(FileName, '_private' + RC_EXT);
   Res := StringReplace(ExtractRelativePath(FileName, Res), ' ', '_', [rfReplaceAll]);
 
   // don't run the private resource file and header if not modified,
@@ -608,7 +609,7 @@ begin
     ResFile.Add('// LIBRARY VERSION 6.0 (IF IT IS AVAILABLE)');
     ResFile.Add('//');
     if (Options.ExeOutput <> '') then
-      ResFile.Add('1 24 "' + GenMakePath2(IncludeTrailingPathDelimiter(Options.ExeOutput) + ExtractFileName(Executable)) + '.Manifest"')
+      ResFile.Add('1 24 "' + GenMakePath2(IncludeTrailingPathDelimiter(SubstituteMakeParams(Options.ExeOutput)) + ExtractFileName(SubstituteMakeParams(Executable))) + '.Manifest"')
     else
       ResFile.Add('1 24 "' + ExtractFileName(Executable) + '.Manifest"');
   end;
@@ -653,22 +654,23 @@ begin
     ResFile.Add('}');
   end;
 
-  Res := GetRealPath(Res, Directory);
+  //Get the real path (after substituting in the make variables)
+  ResDir := SubstituteMakeParams(RCDir + Res);
   if ResFile.Count > 3 then
   begin
-    if FileExists(Res) and not ForceSave then
+    if FileExists(ResDir) and not ForceSave then
     begin
       Original := TStringList.Create;
-      Original.LoadFromFile(Res);
+      Original.LoadFromFile(ResDir);
       if CompareStr(Original.Text, ResFile.Text) <> 0 then
-          begin
-            if devEditor.AppendNewline then
-              if ResFile.Count > 0 then
-                if ResFile[ResFile.Count -1] <> '' then
-                  ResFile.Add('');
-        ResFile.SaveToFile(Res);
-          end;
-      Original.Free;
+        begin
+          if devEditor.AppendNewline then
+            if ResFile.Count > 0 then
+              if ResFile[ResFile.Count -1] <> '' then
+                ResFile.Add('');
+          ResFile.SaveToFile(ResDir);
+        end;
+        Original.Free;
       end
       else
       begin
@@ -676,21 +678,23 @@ begin
           if ResFile.Count > 0 then
             if ResFile[ResFile.Count -1] <> '' then
               ResFile.Add('');
-      ResFile.SaveToFile(Res);
+        if not DirectoryExists(SubstituteMakeParams(RCDir)) then
+          MkDir(SubstituteMakeParams(RCDir));
+        ResFile.SaveToFile(ResDir);
       end;
-    fOptions.PrivateResource := ExtractRelativePath(Directory, Res);
-  end
-  else
-  begin
+      fOptions.PrivateResource := RCDir + Res;
+    end
+    else
+    begin
+      if FileExists(Res) then
+        DeleteFile(PChar(Res));
+      Res := ChangeFileExt(Res, RES_EXT);
+      if FileExists(Res) then
+        DeleteFile(PChar(Res));
+      fOptions.PrivateResource := '';
+    end;
     if FileExists(Res) then
-      DeleteFile(PChar(Res));
-    Res := ChangeFileExt(Res, RES_EXT);
-    if FileExists(Res) then
-      DeleteFile(PChar(Res));
-    fOptions.PrivateResource := '';
-  end;
-  if FileExists(Res) then
-    FileSetDate(Res, DateTimeToFileDate(Now));// fix the "Clock skew detected" warning ;)
+      FileSetDate(Res, DateTimeToFileDate(Now));// fix the "Clock skew detected" warning ;)
 
   // create XP manifest
   if fOptions.SupportXPThemes then begin
@@ -700,7 +704,7 @@ begin
     ResFile.Add('  xmlns="urn:schemas-microsoft-com:asm.v1"');
     ResFile.Add('  manifestVersion="1.0">');
     ResFile.Add('<assemblyIdentity');
-    ResFile.Add('    name="DevCpp.Apps.' + StringReplace(Name, ' ', '_', [rfReplaceAll]) + '"');
+    ResFile.Add('    name="' + StringReplace(Name, ' ', '_', [rfReplaceAll]) + '"');
     ResFile.Add('    processorArchitecture="x86"');
     ResFile.Add('    version="1.0.0.0"');
     ResFile.Add('    type="win32"/>');
@@ -721,9 +725,8 @@ begin
     ResFile.SaveToFile(Executable + '.Manifest');
     FileSetDate(Executable + '.Manifest', DateTimeToFileDate(Now));// fix the "Clock skew detected" warning ;)
   end
-  else 
-  	if FileExists(Executable + '.Manifest') then
-   		DeleteFile(PChar(Executable + '.Manifest'));
+  else if FileExists(Executable + '.Manifest') then
+    DeleteFile(PChar(Executable + '.Manifest'));
 
   // create private header file
   Res := ChangeFileExt(Res, H_EXT);
@@ -795,13 +798,13 @@ begin
     result := fUnits.Add(NewUnit);
     CurNode.Data := pointer(result);
     Dirty := TRUE;
-    {$IFDEF WX_BUILD}
+{$IFDEF WX_BUILD}
     if iswxForm(FileName) then begin
         Compile := false;
         Link := false;
     end
     else
-    {$ENDIF}
+ {$ENDIF}
     begin
         Compile := True;
     	CompileCpp:=Self.Options.useGPP;
@@ -892,8 +895,9 @@ begin
   begin
     Section := 'Project';
     fName := Read('name', '');
+    fOptions.Ver := Read('Ver', -1);
     fOptions.Icon := Read('icon', '');
-    if (Read('Ver', 0) > 0) then //ver> 0 is at least a v5 project
+    if (fOptions.Ver > 0) then //ver > 0 is at least a v5 project
     begin
       fOptions.typ := Read('type', 0);
 
@@ -976,18 +980,25 @@ begin
       fOptions.VersionInfo.CharsetID := Read('CharsetID', $04E4);
       fOptions.VersionInfo.CompanyName := Read('CompanyName', '');
       fOptions.VersionInfo.FileVersion := Read('FileVersion', '0.1');
-      fOptions.VersionInfo.FileDescription := Read('FileDescription','Developed using the Dev-C++ IDE');
+      fOptions.VersionInfo.FileDescription := Read('FileDescription','');
       fOptions.VersionInfo.InternalName := Read('InternalName', '');
       fOptions.VersionInfo.LegalCopyright := Read('LegalCopyright', '');
       fOptions.VersionInfo.LegalTrademarks := Read('LegalTrademarks', '');
       fOptions.VersionInfo.OriginalFilename := Read('OriginalFilename',ExtractFilename(Executable));
       fOptions.VersionInfo.ProductName := Read('ProductName', Name);
       fOptions.VersionInfo.ProductVersion := Read('ProductVersion', '0.1');
-      fOptions.VersionInfo.AutoIncBuildNr := Read('AutoIncBuildNr', False);
+
+      // increment the build number if the version is 2
+      if fOptions.Ver >= 2 then
+      begin
+        fOptions.VersionInfo.AutoIncBuildNrOnRebuild := Read('AutoIncBuildNrOnRebuild', False);
+        fOptions.VersionInfo.AutoIncBuildNrOnCompile := Read('AutoIncBuildNrOnCompile', False);
+      end
+      else
+        fOptions.VersionInfo.AutoIncBuildNrOnCompile := Read('AutoIncBuildNr', False);
     end
     else
     begin // dev-c < 4
-      fOptions.Ver := -1;
       if not Read('NoConsole', TRUE) then
         fOptions.typ := dptCon
       else 
@@ -1020,7 +1031,7 @@ begin
     Write('FileName', ExtractRelativePath(Directory, fFileName));
     Write('Name', fName);
     Write('Type', fOptions.typ);
-    Write('Ver', 1);
+    Write('Ver', 2);
     Write('ObjFiles', fOptions.ObjFiles.DelimitedText);
     Write('Includes', fOptions.Includes.DelimitedText);
     Write('Libs', fOptions.Libs.DelimitedText);
@@ -1068,7 +1079,9 @@ begin
     Write('OriginalFilename', fOptions.VersionInfo.OriginalFilename);
     Write('ProductName', fOptions.VersionInfo.ProductName);
     Write('ProductVersion', fOptions.VersionInfo.ProductVersion);
-    Write('AutoIncBuildNr', fOptions.VersionInfo.AutoIncBuildNr);
+    Write('AutoIncBuildNrOnRebuild', fOptions.VersionInfo.AutoIncBuildNrOnRebuild);
+    Write('AutoIncBuildNrOnCompile', fOptions.VersionInfo.AutoIncBuildNrOnCompile);
+    DeleteKey('AutoIncBuildNr');
 
     Section := 'Project';
 
@@ -1599,17 +1612,20 @@ begin
     result := Base;
 
   if Length(Options.ExeOutput) > 0 then begin
-    if not DirectoryExists(GetRealPath(Options.ExeOutput)) then
+    if not DirectoryExists(GetRealPath(SubstituteMakeParams(Options.ExeOutput))) then
         try
-          SysUtils.ForceDirectories(GetRealPath(Options.ExeOutput));
+          SysUtils.ForceDirectories(GetRealPath(SubstituteMakeParams(Options.ExeOutput)));
         except
-          //MessageDlg('Could not create executable output directory: "'
-          //  + Options.ExeOutput + '". Please check your settings', mtWarning, [mbOK], 0);
-          //exit;
+          MessageDlg('Could not create executable output directory: "'
+            + Options.ExeOutput + '". Please check your settings', mtWarning, [mbOK], 0);
+          exit;
         end;
     Result := GetRealPath(IncludeTrailingPathDelimiter(Options.ExeOutput) +
       ExtractFileName(Result));
   end;
+
+  //Replace the MAKE command parameters
+  Result := SubstituteMakeParams(Result);
 end;
 
 function TProject.GetFullUnitFileName(const index: integer): string;

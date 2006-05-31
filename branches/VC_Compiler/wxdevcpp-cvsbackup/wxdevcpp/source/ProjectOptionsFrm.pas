@@ -89,14 +89,10 @@ type
     lblVerMinor: TLabel;
     lblVerRel: TLabel;
     lblVerBuild: TLabel;
-    lblVerAdditional: TLabel;
-    lblVerLang: TLabel;
     spnMajor: TSpinEdit;
     spnMinor: TSpinEdit;
     spnRelease: TSpinEdit;
     spnBuild: TSpinEdit;
-    vleVersion: TValueListEditor;
-    cmbLangID: TComboBox;
     tabCompiler: TTabSheet;
     chkSupportXP: TCheckBox;
     OpenLibDialog: TOpenDialog;
@@ -111,13 +107,11 @@ type
     chkLink: TCheckBox;
     lblPriority: TLabel;
     spnPriority: TSpinEdit;
-    chkAutoIncBuild: TCheckBox;
     tabCompOpts: TTabSheet;
     CompOptionsFrame1: TCompOptionsFrame;
     cmbCompiler: TComboBox;
     lblCompilerSet: TLabel;
     lblCompileInfo: TLabel;
-    lblAdditions: TLabel;
     lblCompiler: TLabel;
     edCompiler: TMemo;
     lblCppCompiler: TLabel;
@@ -131,20 +125,29 @@ type
     btnObjOutDir: TSpeedButton;
     cbUseCustomMakefile: TCheckBox;
     edCustomMakefile: TEdit;
-    InfoMakeBtn: TSpeedButton;
     btnCustomMakeBrowse: TSpeedButton;
-    IncMakeLabel: TLabel;
-    MakeIncludes: TListBox;
-    edMakeInclude: TEdit;
-    btnMakReplace: TButton;
-    btnMakAdd: TButton;
-    btnMakDelete: TButton;
-    btnMakDelInval: TButton;
-    btnMakeBrowse: TSpeedButton;
-    btnMakDown: TSpeedButton;
-    btnMakUp: TSpeedButton;
     lbldefines: TLabel;
     edDefines: TMemo;
+    grpAdditional: TGroupBox;
+    vleVersion: TValueListEditor;
+    grpAutoInc: TGroupBox;
+    radAutoIncBuildOnCompile: TRadioButton;
+    radAutoIncBuildOnRebuild: TRadioButton;
+    radNoAutoIncBuild: TRadioButton;
+    lblLanguage: TLabel;
+    cmbLangID: TComboBox;
+    grpMakefileCustomize: TGroupBox;
+    lblMakefileCustomize: TLabel;
+    grpIncMake: TGroupBox;
+    MakeIncludes: TListBox;
+    edMakeInclude: TEdit;
+    btnMakDown: TSpeedButton;
+    btnMakUp: TSpeedButton;
+    btnMakeBrowse: TSpeedButton;
+    btnMakDelInval: TButton;
+    btnMakDelete: TButton;
+    btnMakAdd: TButton;
+    btnMakReplace: TButton;
     procedure ListClick(Sender: TObject);
     procedure EditChange(SEnder: TObject);
     procedure ButtonClick(Sender: TObject);
@@ -165,7 +168,6 @@ type
     procedure MakButtonClick(Sender: TObject);
     procedure edMakeIncludeChange(Sender: TObject);
     procedure MakeIncludesClick(Sender: TObject);
-    procedure InfoMakeBtnClick(Sender: TObject);
     procedure btnHelpClick(Sender: TObject);
     procedure chkOverrideOutputClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -420,41 +422,43 @@ begin
       fProject.UseCustomMakefile := true
     else
       fProject.UseCustomMakefile := false;
-     fProject.CustomMakefile:=edCustomMakefile.Text;
+
+    fProject.CustomMakefile:=edCustomMakefile.Text;
     MakeIncludes.Clear;
     MakeIncludes.AddStrings(Self.MakeIncludes.Items);
 
-     fOptions.SupportXPThemes:=chkSupportXP.Checked;
-     fOptions.CompilerSet:=cmbCompiler.ItemIndex;
+    fOptions.SupportXPThemes:=chkSupportXP.Checked;
+    fOptions.CompilerSet:=cmbCompiler.ItemIndex;
+    fOptions.IncludeVersionInfo:=chkVersionInfo.Checked;
 
-     fOptions.IncludeVersionInfo:=chkVersionInfo.Checked;
+    fOptions.VersionInfo.Major                   :=spnMajor.Value;
+    fOptions.VersionInfo.Minor                   :=spnMinor.Value;
+    fOptions.VersionInfo.Release                 :=spnRelease.Value;
+    fOptions.VersionInfo.Build                   :=spnBuild.Value;
+    fOptions.VersionInfo.AutoIncBuildNrOnCompile :=radAutoIncBuildOnCompile.Checked;
+    fOptions.VersionInfo.AutoIncBuildNrOnRebuild :=radAutoIncBuildOnRebuild.Checked;
 
-     fOptions.VersionInfo.Major:=spnMajor.Value;
-     fOptions.VersionInfo.Minor:=spnMinor.Value;
-     fOptions.VersionInfo.Release:=spnRelease.Value;
-     fOptions.VersionInfo.Build:=spnBuild.Value;
-     fOptions.VersionInfo.AutoIncBuildNr:=chkAutoIncBuild.Checked;
+    fOptions.VersionInfo.FileDescription:=   vleVersion.Cells[1, 0];
+    fOptions.VersionInfo.FileVersion:=       vleVersion.Cells[1, 1];
+    fOptions.VersionInfo.ProductName:=       vleVersion.Cells[1, 2];
+    fOptions.VersionInfo.ProductVersion:=    vleVersion.Cells[1, 3];
+    fOptions.VersionInfo.OriginalFilename:=  vleVersion.Cells[1, 4];
+    fOptions.VersionInfo.InternalName:=      vleVersion.Cells[1, 5];
+    fOptions.VersionInfo.CompanyName:=       vleVersion.Cells[1, 6];
+    fOptions.VersionInfo.LegalCopyright:=    vleVersion.Cells[1, 7];
+    fOptions.VersionInfo.LegalTrademarks:=   vleVersion.Cells[1, 8];
 
-     fOptions.VersionInfo.FileDescription:=   vleVersion.Cells[1, 0];
-     fOptions.VersionInfo.FileVersion:=       vleVersion.Cells[1, 1];
-     fOptions.VersionInfo.ProductName:=       vleVersion.Cells[1, 2];
-     fOptions.VersionInfo.ProductVersion:=    vleVersion.Cells[1, 3];
-     fOptions.VersionInfo.OriginalFilename:=  vleVersion.Cells[1, 4];
-     fOptions.VersionInfo.InternalName:=      vleVersion.Cells[1, 5];
-     fOptions.VersionInfo.CompanyName:=       vleVersion.Cells[1, 6];
-     fOptions.VersionInfo.LegalCopyright:=    vleVersion.Cells[1, 7];
-     fOptions.VersionInfo.LegalTrademarks:=   vleVersion.Cells[1, 8];
-
-     if cmbLangID.ItemIndex>-1 then
+    if cmbLangID.ItemIndex>-1 then
     begin
       for I := 0 to Languages.Count-1 do
-        if SameText(Languages.Name[I], cmbLangID.Text) then
-        begin
-          FOptions.VersionInfo.LanguageID := Languages.LocaleID[I];
-          Break;
+      begin
+          if SameText(Languages.Name[I], cmbLangID.Text) then
+          begin
+            FOptions.VersionInfo.LanguageID := Languages.LocaleID[I];
+            Break;
+          end;
         end;
     end;
-
   end;
   result:= fOptions;
 end;
@@ -609,6 +613,7 @@ end;
 procedure TfrmProjectOptions.FormCreate(Sender: TObject);
 begin
   cmbLangID.Sorted := True;
+  InitVersionInfo;
   LoadText;
 end;
 
@@ -620,35 +625,34 @@ begin
     XPMenu.Active := false;
   Caption:= Lang[ID_POPT];
   //tabs
-  tabGeneral.Caption:=   Lang[ID_POPT_GENTAB];
-  tabFilesDir.Caption:=  Lang[ID_POPT_DIRTAB];
-  tabCompiler.Caption:=  Lang[ID_SHEET_COMP];
-  tabOutputDir.Caption:= Lang[ID_POPT_OUTTAB];
-  tabMakefile.Caption := Lang[ID_POPT_MAKTAB];
+  tabGeneral.Caption:=                Lang[ID_POPT_GENTAB];
+  tabFilesDir.Caption:=               Lang[ID_POPT_DIRTAB];
+  tabCompiler.Caption:=               Lang[ID_SHEET_COMP];
+  tabOutputDir.Caption:=              Lang[ID_POPT_OUTTAB];
+  tabMakefile.Caption :=              Lang[ID_POPT_MAKTAB];
 
   //controls (general tab)
-  lblPrjName.Caption:=    Lang[ID_POPT_PRJNAME];
-  lblFname.Caption:=      Lang[ID_PROPS_FILENAME]+':';
-  lblPrjOutput.Caption:=  Lang[ID_POPT_OUTPUTFILENAME]+':';
-  lblUnits.Caption:=      Lang[ID_POPT_FILESTAB]+':';
-  grpIcon.Caption:=       Lang[ID_POPT_GRP_ICON];
-  btnIconLib.Caption:=    Lang[ID_POPT_ICOLIB];
-  grpType.Caption:=       Lang[ID_POPT_GRP_TYPE];
+  lblPrjName.Caption:=                Lang[ID_POPT_PRJNAME];
+  lblFname.Caption:=                  Lang[ID_PROPS_FILENAME]+':';
+  lblPrjOutput.Caption:=              Lang[ID_POPT_OUTPUTFILENAME]+':';
+  lblUnits.Caption:=                  Lang[ID_POPT_FILESTAB]+':';
+  grpIcon.Caption:=                   Lang[ID_POPT_GRP_ICON];
+  btnIconLib.Caption:=                Lang[ID_POPT_ICOLIB];
+  grpType.Caption:=                   Lang[ID_POPT_GRP_TYPE];
   lstType.Clear;
   lstType.Items.Append(Lang[ID_POPT_TYPE1]);
   lstType.Items.Append(Lang[ID_POPT_TYPE2]);
   lstType.Items.Append(Lang[ID_POPT_TYPE3]);
   lstType.Items.Append(Lang[ID_POPT_TYPE4]);
-  chkSupportXP.Caption:=      Lang[ID_POPT_SUPPORTXP];
+  chkSupportXP.Caption:=              Lang[ID_POPT_SUPPORTXP];
 
   // compiler tab
-  //tabCompSet.Caption:=  Lang[ID_POPT_COMPTAB];
-  tabCompOpts.Caption:=  Lang[ID_PARAM_CAPTION];
-  lblAdditions.Caption:=  '  '+Lang[ID_POPT_ADDITIONAL]+'  ';
-  lblCompiler.Caption:=   Lang[ID_POPT_COMP];
-  lblCppCompiler.Caption:=Lang[ID_COPT_GRP_CPP];
-  lblLinker.Caption:=     Lang[ID_COPT_LINKERTAB];
-  AddLibBtn.Caption:=      Lang[ID_POPT_ADDLIBRARY];
+  tabCompOpts.Caption:=               Lang[ID_PARAM_CAPTION];
+  PageControl.Pages[3].Caption:=      Lang[ID_POPT_ADDITIONAL];
+  lblCompiler.Caption:=               Lang[ID_POPT_COMP];
+  lblCppCompiler.Caption:=            Lang[ID_COPT_GRP_CPP];
+  lblLinker.Caption:=                 Lang[ID_COPT_LINKERTAB];
+  AddLibBtn.Caption:=                 Lang[ID_POPT_ADDLIBRARY];
 
   //dir tab
   SubTabs.Tabs.Clear;
@@ -657,58 +661,68 @@ begin
   SubTabs.Tabs.Append(Lang[ID_POPT_RESDIRS]);
 
   //output tab
-  grpOutDirectories.Caption:=Lang[ID_POPT_OUTDIRGRP];
-  lblExeOutput.Caption:=     Lang[ID_POPT_EXEOUT];
-  lblObjOutput.Caption:=     Lang[ID_POPT_OBJOUT];
-  chkOverrideOutput.Caption:=Lang[ID_POPT_OVERRIDEOUT];
+  grpOutDirectories.Caption:=         Lang[ID_POPT_OUTDIRGRP];
+  lblExeOutput.Caption:=              Lang[ID_POPT_EXEOUT];
+  lblObjOutput.Caption:=              Lang[ID_POPT_OBJOUT];
+  chkOverrideOutput.Caption:=         Lang[ID_POPT_OVERRIDEOUT];
 
   //dialogs
-  dlgPic.Title:=        Lang[ID_POPT_OPENICO];
-  dlgOpen.Title:=       Lang[ID_POPT_OPENOBJ];
+  dlgPic.Title:=                      Lang[ID_POPT_OPENICO];
+  dlgOpen.Title:=                     Lang[ID_POPT_OPENOBJ];
 
   //buttons
-  btnReplace.Caption:=    Lang[ID_BTN_REPLACE];
-  btnAdd.Caption:=        Lang[ID_BTN_ADD];
-  btnDelete.Caption:=     Lang[ID_BTN_DELETE];
-  btnDelInval.Caption:=   Lang[ID_BTN_DELINVAL];
-  btnOk.Caption:=         Lang[ID_BTN_OK];
-  btnCancel.Caption:=     Lang[ID_BTN_CANCEL];
-  btnHelp.Caption:=       Lang[ID_BTN_HELP];
-  btnIconBrwse.Caption:=  Lang[ID_BTN_BROWSE];
-  btnRemoveIcon.Caption:= Lang[ID_BTN_REMOVEICON];
+  btnReplace.Caption:=                Lang[ID_BTN_REPLACE];
+  btnAdd.Caption:=                    Lang[ID_BTN_ADD];
+  btnDelete.Caption:=                 Lang[ID_BTN_DELETE];
+  btnDelInval.Caption:=               Lang[ID_BTN_DELINVAL];
+  btnOk.Caption:=                     Lang[ID_BTN_OK];
+  btnCancel.Caption:=                 Lang[ID_BTN_CANCEL];
+  btnHelp.Caption:=                   Lang[ID_BTN_HELP];
+  btnIconBrwse.Caption:=              Lang[ID_BTN_BROWSE];
+  btnRemoveIcon.Caption:=             Lang[ID_BTN_REMOVEICON];
 
-  cbUseCustomMakefile.Caption := Lang[ID_POPT_USECUSTOMMAKEFILE];
-  InfoMakeBtn.Caption := Lang[ID_POPT_INFOCUSTOMMAKEFILE];
-  IncMakeLabel.Caption := Lang[ID_POPT_INCFILEMAKEFILE];
+  cbUseCustomMakefile.Caption :=      Lang[ID_POPT_USECUSTOMMAKEFILE];
+  grpIncMake.Caption :=               Lang[ID_POPT_INCFILEMAKEFILE];
 
-  btnMakReplace.Caption:=    Lang[ID_BTN_REPLACE];
-  btnMakAdd.Caption:=        Lang[ID_BTN_ADD];
-  btnMakDelete.Caption:=     Lang[ID_BTN_DELETE];
-  btnMakDelInval.Caption:=   Lang[ID_BTN_DELINVAL];
+  btnMakReplace.Caption:=             Lang[ID_BTN_REPLACE];
+  btnMakAdd.Caption:=                 Lang[ID_BTN_ADD];
+  btnMakDelete.Caption:=              Lang[ID_BTN_DELETE];
+  btnMakDelInval.Caption:=            Lang[ID_BTN_DELINVAL];
+  lblMakefileCustomize.Caption:=      'The makefile has two main targets, '#13#10+
+                                      '''all'' and ''clean''.'#13#10#13#10+
+                                      '''all'' depends on all-before and all-after.'#13#10+
+                                      'all-before and all-after gets called'#13#10+
+                                      'before and after the compilation'#13#10+
+                                      'process respectively.'#13#10#13#10+
+                                      '''clean'' depends on the target clean-'#13#10+
+                                      'custom, which gets called before the'#13#10+
+                                      'cleaning process.' + #13#10 + #13#10 +
+                                      'Alter the Makefile''s behavior by'#13#10 +
+                                      'defining the targets mentioned.';
 
   // files tab
-  tabFiles.Caption:=          Lang[ID_POPT_FILESTAB];
-  lblProjectFiles.Caption:=   Lang[ID_POPT_PROJFILES];
-  lblCompilerSet.Caption:=    Lang[ID_POPT_COMP];
-  lblCompileInfo.Caption:=    Lang[ID_POPT_COMPINFO];
-  grpUnitOptions.Caption:=    Lang[ID_POPT_UNITOPTS];
-  lblPriority.Caption:=       Lang[ID_POPT_BUILDPRIORITY];
-  chkCompile.Caption:=        Lang[ID_POPT_COMPUNIT];
-  chkCompileCpp.Caption:=     Lang[ID_POPT_UNITUSEGPP];
-  chkOverrideBuildCmd.Caption:=Lang[ID_POPT_OVERRIDEBUILDCMD];
-  chkLink.Caption:=           Lang[ID_POPT_LINKUNIT];
+  tabFiles.Caption:=                  Lang[ID_POPT_FILESTAB];
+  lblProjectFiles.Caption:=           Lang[ID_POPT_PROJFILES];
+  lblCompilerSet.Caption:=            Lang[ID_POPT_COMP];
+  lblCompileInfo.Caption:=            Lang[ID_POPT_COMPINFO];
+  grpUnitOptions.Caption:=            Lang[ID_POPT_UNITOPTS];
+  lblPriority.Caption:=               Lang[ID_POPT_BUILDPRIORITY];
+  chkCompile.Caption:=                Lang[ID_POPT_COMPUNIT];
+  chkCompileCpp.Caption:=             Lang[ID_POPT_UNITUSEGPP];
+  chkOverrideBuildCmd.Caption:=       Lang[ID_POPT_OVERRIDEBUILDCMD];
+  chkLink.Caption:=                   Lang[ID_POPT_LINKUNIT];
 
   // version info tab
-  tabVersion.Caption:=        Lang[ID_POPT_VERTAB];
-  chkVersionInfo.Caption:=    Lang[ID_POPT_INCLUDEVERSION];
-  grpVersion.Caption:=        Lang[ID_POPT_VDETAILS];
-  lblVerMajor.Caption:=       Lang[ID_POPT_VMAJOR];
-  lblVerMinor.Caption:=       Lang[ID_POPT_VMINOR];
-  lblVerRel.Caption:=         Lang[ID_POPT_VRELEASE];
-  lblVerBuild.Caption:=       Lang[ID_POPT_VBUILD];
-  lblVerLang.Caption:=        Lang[ID_POPT_VLANG];
-  lblVerAdditional.Caption:=  Lang[ID_POPT_VADDITIONAL];
-  chkAutoIncBuild.Caption:=   Lang[ID_POPT_VAUTOINCBUILDNR];
+  tabVersion.Caption:=                Lang[ID_POPT_VERTAB];
+  chkVersionInfo.Caption:=            Lang[ID_POPT_INCLUDEVERSION];
+  grpVersion.Caption:=                Lang[ID_POPT_VDETAILS];
+  lblVerMajor.Caption:=               Lang[ID_POPT_VMAJOR];
+  lblVerMinor.Caption:=               Lang[ID_POPT_VMINOR];
+  lblVerRel.Caption:=                 Lang[ID_POPT_VRELEASE];
+  lblVerBuild.Caption:=               Lang[ID_POPT_VBUILD];
+  lblLanguage.Caption:=               Lang[ID_POPT_VLANG];
+  grpAdditional.Caption:=             Lang[ID_POPT_VADDITIONAL];
+  radAutoIncBuildOnCompile.Caption := Lang[ID_POPT_VAUTOINCBUILDNR];
 end;
 
 procedure TfrmProjectOptions.btnRemoveIconClick(Sender: TObject);
@@ -821,27 +835,6 @@ procedure TfrmProjectOptions.MakeIncludesClick(Sender: TObject);
 begin
   UpdateMakButtons;
   edMakeInclude.Text := MakeIncludes.Items[MakeIncludes.Itemindex];
-end;
-
-procedure TfrmProjectOptions.InfoMakeBtnClick(Sender: TObject);
-begin
-  Application.MessageBox(
-    'Dev-C++''s Makefile has two important targets:' + #13#10 +
-    '- all (which builds the executable)' + #13#10 +
-    '- clean (which cleans up object files)' + #13#10 + #13#10 +
-      '''all'' depends on 2 targets: all-before and all-after. All-before' + #13#10 +
-    'gets called before the compilation process, and all-after gets' + #13#10 +
-    'called after the compilation process.' + #13#10 +
-    '''clean'' depends on the target clean-custom, which gets called' + #13#10 +
-    'before the cleaning process.' + #13#10 + #13#10 +
-    'You can change the Makefile''s behavior by defining the targets' + #13#10 +
-    'that ''all'' and ''clean'' depend on.',
-{$IFDEF WIN32}
-    'Information', MB_ICONINFORMATION);
-{$ENDIF}
-{$IFDEF LINUX}
-      'Information', [smbOK], smsInformation);
-{$ENDIF}
 end;
 
 procedure TfrmProjectOptions.btnHelpClick(Sender: TObject);
@@ -1015,7 +1008,8 @@ begin
   spnMinor.Value := fOptions.VersionInfo.Minor;
   spnRelease.Value := fOptions.VersionInfo.Release;
   spnBuild.Value := fOptions.VersionInfo.Build;
-  chkAutoIncBuild.Checked := fOptions.VersionInfo.AutoIncBuildNr;
+  radAutoIncBuildOnCompile.Checked := fOptions.VersionInfo.AutoIncBuildNrOnCompile;
+  radAutoIncBuildOnRebuild.Checked := fOptions.VersionInfo.AutoIncBuildNrOnRebuild;
 
   vleVersion.Strings.Clear;
   vleVersion.InsertRow('File Description',  fOptions.VersionInfo.FileDescription,   True);
@@ -1031,10 +1025,10 @@ begin
   cmbLangID.Items.Clear;
   for I := 0 to Languages.Count - 1 do
     cmbLangID.Items.Add(Languages.Name[I]);
-  if Languages.Count > fOptions.VersionInfo.LanguageID then begin
+
   S := Languages.NameFromLocaleID[fOptions.VersionInfo.LanguageID];
-  cmbLangID.ItemIndex := cmbLangID.Items.IndexOf(S);
-end;
+  if S <> '' then
+    cmbLangID.ItemIndex := cmbLangID.Items.IndexOf(S);
 end;
 
 procedure TfrmProjectOptions.chkVersionInfoClick(Sender: TObject);
@@ -1045,7 +1039,9 @@ begin
   spnBuild.Enabled := chkVersionInfo.Checked;
   cmbLangID.Enabled := chkVersionInfo.Checked;
   vleVersion.Enabled := chkVersionInfo.Checked;
-  chkAutoIncBuild.Enabled := chkVersionInfo.Checked;
+  radNoAutoIncBuild.Enabled := chkVersionInfo.Checked;
+  radAutoIncBuildOnCompile.Enabled := chkVersionInfo.Checked;
+  radAutoIncBuildOnRebuild.Enabled := chkVersionInfo.Checked;
 end;
 
 procedure TfrmProjectOptions.cmbCompilerChange(Sender: TObject);
@@ -1171,7 +1167,7 @@ procedure TfrmProjectOptions.cbUseCustomMakefileClick(Sender: TObject);
 begin
   edCustomMakefile.Enabled := cbUseCustomMakefile.Checked;
   btnCustomMakeBrowse.Enabled := cbUseCustomMakefile.Checked;
-  InfoMakeBtn.Enabled := not cbUseCustomMakefile.Checked;
+  lblMakefileCustomize.Enabled := not cbUseCustomMakefile.Checked;
   MakeIncludes.Enabled := not cbUseCustomMakefile.Checked;
   edMakeInclude.Enabled := not cbUseCustomMakefile.Checked;
   btnMakUp.Enabled := not cbUseCustomMakefile.Checked;

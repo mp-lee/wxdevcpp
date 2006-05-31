@@ -1012,7 +1012,7 @@ PBreakPointEntry = ^TBreakPointEntry;
     procedure OpenCloseMessageSheet(const _Show: boolean);
     procedure OpenUnit;
     procedure ClearMessageControl;
-    function PrepareForCompile: Boolean;
+    function PrepareForCompile(rebuild: Boolean): Boolean;
     procedure LoadTheme;
     procedure ShowDebug;
     procedure InitClassBrowser(Full: boolean = False);
@@ -1698,8 +1698,8 @@ begin
     ItemHeight := 16;
     Painter := JvInspectorDotNETPainter1;
     ReadOnly := False;
-    UseBands := false;
-    WantTabs := true;
+    UseBands := False;
+    WantTabs := False;
 
     // Add popup menu for Wx property inspector
     OnEditorContextPopup := WxPropertyInspectorContextPopup;
@@ -5204,7 +5204,7 @@ begin
   if Assigned(e) then e.GotoLine;
 end;
 
-function TMainForm.PrepareForCompile: Boolean;
+function TMainForm.PrepareForCompile(rebuild: Boolean): Boolean;
 var
   e: TEditor;
   i: Integer;
@@ -5272,10 +5272,14 @@ begin
 
   fCompiler.PerfectDepCheck := not devCompiler.FastDep;
 
-  if Assigned(fProject) then begin
-    if fProject.Options.VersionInfo.AutoIncBuildNr then
+  // increment the build number
+  if Assigned(fProject) then
+  begin
+    if (
+      fProject.Options.VersionInfo.AutoIncBuildNrOnCompile or
+      (fProject.Options.VersionInfo.AutoIncBuildNrOnRebuild and rebuild)
+    ) then
       fProject.IncrementBuildNumber;
-    fProject.BuildPrivateResource;
   end;
 
   Result := True;
@@ -5288,7 +5292,7 @@ begin
     MessageDlg(Lang[ID_MSG_ALREADYCOMP], mtInformation, [mbOK], 0);
     Exit;
   end;
-  if not PrepareForCompile then
+  if not PrepareForCompile(false) then
     Exit;
   if fCompiler.Target = ctProject then
     DeleteFile(fProject.Executable);
@@ -5327,7 +5331,7 @@ begin
     MessageDlg(Lang[ID_MSG_ALREADYCOMP], mtInformation, [mbOK], 0);
     Exit;
   end;
-  if not PrepareForCompile then
+  if not PrepareForCompile(false) then
     Exit;
   fCompiler.CompileAndRun;
 end;
@@ -5339,7 +5343,7 @@ begin
     MessageDlg(Lang[ID_MSG_ALREADYCOMP], mtInformation, [mbOK], 0);
     Exit;
   end;
-  if not PrepareForCompile then
+  if not PrepareForCompile(true) then
     Exit;
   fCompiler.RebuildAll;
   Application.ProcessMessages;
@@ -6459,7 +6463,7 @@ begin
     MessageDlg(Lang[ID_MSG_ALREADYCOMP], mtInformation, [mbOK], 0);
     Exit;
   end;
-  if not PrepareForCompile then
+  if not PrepareForCompile(false) then
     Exit;
   fCompiler.CheckSyntax;
 end;
@@ -6952,13 +6956,13 @@ var
 begin
   idx := 0;
   current := PageControl.ActivePageIndex;
-  curFilename := GetEditor(current).FileName;
+  curFilename := AnsiLowerCase(GetEditor(current).FileName);
   while idx < PageControl.PageCount do
     if (idx = current) or
-       (ChangeFileExt(GetEditor(idx).FileName, WXFORM_EXT) = curFilename) or
-       (ChangeFileExt(GetEditor(idx).FileName, H_EXT) = curFilename) or
-       (ChangeFileExt(GetEditor(idx).FileName, CPP_EXT) = curFilename) or
-       (ChangeFileExt(GetEditor(idx).FileName, XRC_EXT) = curFilename) then
+       (AnsiLowerCase(ChangeFileExt(GetEditor(idx).FileName, WXFORM_EXT)) = curFilename) or
+       (AnsiLowerCase(ChangeFileExt(GetEditor(idx).FileName, H_EXT)) = curFilename) or
+       (AnsiLowerCase(ChangeFileExt(GetEditor(idx).FileName, CPP_EXT)) = curFilename) or
+       (AnsiLowerCase(ChangeFileExt(GetEditor(idx).FileName, XRC_EXT)) = curFilename) then
       idx := idx + 1
     else if not CloseEditor(idx, True) then
       Break;
@@ -7965,7 +7969,7 @@ begin
   e := GetEditor;
   if not Assigned(e) then
     Exit;
-  if not PrepareForCompile then
+  if not PrepareForCompile(false) then
     Exit;
   fCompiler.Compile(e.FileName);
   Application.ProcessMessages;
