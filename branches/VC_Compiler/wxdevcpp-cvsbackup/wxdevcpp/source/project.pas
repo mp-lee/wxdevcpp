@@ -179,7 +179,7 @@ type
     destructor Destroy; override;
     function NewUnit(NewProject: boolean; CustomFileName: string = ''): integer;
     { begin XXXKF changed }
-    function AddUnit(s: string; var pFolder: TTreeNode; Rebuild: Boolean): TProjUnit;
+    function AddUnit(s: string; pFolder: TTreeNode; Rebuild: Boolean): TProjUnit;
     { end XXXKF changed }
     function GetFolderPath(Node: TTreeNode): string;
     procedure UpdateFolders;
@@ -729,7 +729,7 @@ begin
     DeleteFile(PChar(Executable + '.Manifest'));
 
   // create private header file
-  Res := ChangeFileExt(Res, H_EXT);
+  Res := SubstituteMakeParams(RCDir) + ChangeFileExt(Res, H_EXT);
   ResFile.Clear;
   Def := StringReplace(ExtractFilename(UpperCase(Res)), '.', '_', [rfReplaceAll]);
   ResFile.Add('/* THIS FILE WILL BE OVERWRITTEN BY DEV-C++ */');
@@ -821,7 +821,7 @@ begin
 end;
 
 { begin XXXKF changed }
-function TProject.AddUnit(s: string; var pFolder: TTreeNode; Rebuild: Boolean): TProjUnit;
+function TProject.AddUnit(s: string; pFolder: TTreeNode; Rebuild: Boolean): TProjUnit;
 var
   NewUnit: TProjUnit;
   s2: string;
@@ -1523,10 +1523,18 @@ begin
          LoadUnitLayout(fEditor, index);
          result:= fEditor;
       except
-        MessageDlg(format(Lang[ID_ERR_OPENFILE], [Filename]), mtError, [mbOK], 0);
-        fEditor.Close;
-        fEditor:=nil; //because closing the editor will destroy it
-        //FreeAndNil(fEditor);
+        on E: Exception do
+        begin
+          MessageDlg(format(Lang[ID_ERR_OPENFILE] + #13 + 'Reason: %s', [Filename, E.Message]), mtError, [mbOK], 0);
+          fEditor.Close;
+          fEditor := nil; //because closing the editor will destroy it
+        end;
+        else
+        begin
+          MessageDlg(format(Lang[ID_ERR_OPENFILE], [Filename]), mtError, [mbOK], 0);
+          fEditor.Close;
+          fEditor := nil; //because closing the editor will destroy it
+        end;
       end
     else
     begin
