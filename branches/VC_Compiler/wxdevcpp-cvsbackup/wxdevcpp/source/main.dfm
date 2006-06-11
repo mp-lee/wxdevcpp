@@ -1933,6 +1933,7 @@ object MainForm: TMainForm
       object FullscreenmodeItem: TMenuItem
         Action = actFullScreen
         AutoCheck = True
+        Enabled = False
       end
       object N36: TMenuItem
         Caption = '-'
