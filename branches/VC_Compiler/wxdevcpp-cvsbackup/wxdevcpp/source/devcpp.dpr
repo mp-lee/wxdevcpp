@@ -135,6 +135,7 @@ uses
   UPicEdit in 'propedit\UPicEdit.pas' {PictureEdit},
   UColorEdit in 'propedit\UColorEdit.pas' {ColorEdit},
   UMenuitem in 'propedit\UMenuitem.pas' {MenuItemForm},
+  UValidator in 'propedit\UValidator.pas' {wxValidator},
   
   //UI components
   WxUtils in 'components\wxUtils.pas',
