@@ -1,8 +1,8 @@
 [Template]
 ver=1
 Name=wxWidgets Dialog
-IconIndex=0
-Description=A basic Dialog for wxWidgets applications.
+Icon=wxWidgets.ico
+Description=Creates a wxWidgets dialog application.
 Catagory=Basic
 
 [Project]
@@ -12,8 +12,8 @@ Cpp=1
 ResourceIncludes=
 Compiler=
 CppCompiler=
-Linker=wxmsw27u.lib_@@_wxtiff.lib_@@_wxjpeg.lib_@@_wxpng.lib_@@_wxzlib.lib_@@_wxregexu.lib_@@_wxexpat.lib_@@_kernel32.lib_@@_user32.lib_@@_gdi32.lib_@@_comdlg32.lib_@@_winspool.lib_@@_winmm.lib_@@_shell32.lib_@@_comctl32.lib_@@_ole32.lib_@@_oleaut32.lib_@@_uuid.lib_@@_rpcrt4.lib_@@_advapi32.lib_@@_wsock32.lib_@@_odbc32.lib_@@_opengl32.lib_@@_
-PreprocDefines=_UNICODE_@@___WXMSW___@@_WIN32_@@_WXUSINGDLL_@@__WIN32_IE=0x0600_@@_wxUSE_UNICODE_MSLU=1_@@_
+Linker=wxmsw27u$(DEBUG).lib_@@_wxtiff$(DEBUG).lib_@@_wxjpeg$(DEBUG).lib_@@_wxpng$(DEBUG).lib_@@_wxzlib$(DEBUG).lib_@@_wxregexu$(DEBUG).lib_@@_wxexpat$(DEBUG).lib_@@_kernel32.lib_@@_user32.lib_@@_gdi32.lib_@@_comdlg32.lib_@@_winspool.lib_@@_winmm.lib_@@_shell32.lib_@@_comctl32.lib_@@_ole32.lib_@@_oleaut32.lib_@@_uuid.lib_@@_rpcrt4.lib_@@_advapi32.lib_@@_wsock32.lib_@@_odbc32.lib_@@_opengl32.lib_@@_
+PreprocDefines=WXUSINGDLL_@@_
 IsCpp=1
 IncludeVersionInfo=0
 SupportXPThemes=0
