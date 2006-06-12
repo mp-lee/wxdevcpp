@@ -570,10 +570,9 @@ begin
     begin
       if GetFileTyp(fProject.Units[i].FileName) <> utRes then
         Continue;
-      tfile := ExtractRelativePath(fProject.Executable,
-        fProject.Units[i].FileName);
-      if FileExists(GetRealPath(tfile, fProject.Directory)) then
-        ResFiles := ResFiles + GenMakePath2(tfile) + ' ';
+      if FileExists(GetRealPath(fProject.Units[i].FileName, fProject.Directory)) then
+        ResFiles := ResFiles + GenMakePath2(ExtractRelativePath(fProject.Directory,
+                                            fProject.Units[i].FileName)) + ' ';
     end;
     writeln(F);
 
@@ -1008,10 +1007,10 @@ begin
       s := devCompiler.windresName
     else
       s := WINDRES_PROGRAM;
-   {$IFNDEF VC_BUILD}
+{$IFNDEF VC_BUILD}
    cmdline := s + ' --input-format=rc -i ' + fSourceFile + ' -o ' +
       ChangeFileExt(fSourceFile, OBJ_EXT);
-   {$ENDIF}
+{$ENDIF}
     DoLogEntry(format(Lang[ID_EXECUTING], [' ' + s + cDots]));
     DoLogEntry(cmdline);
   end
@@ -1125,7 +1124,7 @@ end;
 
 function TCompiler.Clean: Boolean;
 const
-  cCleanLine = '%s clean -f "%s"';
+  cCleanLine = '%s clean -f "%s" %s';
   cmsg = ' make clean';
 var
   cmdLine: string;
@@ -1157,7 +1156,7 @@ begin
       s := devCompiler.makeName
     else
       s := MAKE_PROGRAM;
-    cmdLine := Format(cCleanLine, [s, fMakeFile]);
+    cmdLine := Format(cCleanLine, [s, fMakeFile, devCompiler.MakeOpts]);
     LaunchThread(cmdLine, fProject.Directory);
   end else
     Result := False;
