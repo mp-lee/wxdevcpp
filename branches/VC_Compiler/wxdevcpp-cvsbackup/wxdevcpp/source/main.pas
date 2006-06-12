@@ -12031,21 +12031,33 @@ begin
 end;
 procedure TMainForm.ChangeCreationOrder1Click(Sender: TObject);
 var
+    Control: TWinControl;
     CreationOrderForm:TCreationOrderForm;
     e,hppEditor,cppEditor:TEditor;
 begin
-    if ELDesigner1.SelectedControls.Count = 0 then
-        exit;
-    if TWinControl(ELDesigner1.SelectedControls.Items[0]).ControlCount = 0 then
-    begin
-        MessageDlg('You cannot do anything with this control. '+#13+'Select its parent Dialog or Sizer.', mtError, [mbOK], 0);
-        exit;
-    end;
-
     if PageControl.ActivePageIndex = -1 then
         exit;
 
-    if  MessageDlg('All Designer related Files will be saved before proceeding.'+#13+#10+''+#13+#10+'Do you want to continue ?', mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
+    if ELDesigner1.SelectedControls.Count = 0 then
+        exit;
+
+    //Attempt to get a control that has sub-controls
+    Control := TWinControl(ELDesigner1.SelectedControls.Items[0]);
+    while Control.Parent <> nil do
+    begin
+        if Control.ControlCount > 1 then
+            Break;
+        Control := Control.Parent;
+    end;
+
+    //We give up - there isn't one to use
+    if Control.ControlCount = 0 then
+    begin
+        //MessageDlg('You cannot do anything with this control. '+#13+'Select its parent Dialog or Sizer.', mtError, [mbOK], 0);
+        Exit;
+    end;
+
+    if MessageDlg('All Designer related Files will be saved before proceeding.'+#13+#10+''+#13+#10+'Do you want to continue ?', mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
         exit;
 
     e:=GetEditor(PageControl.ActivePageIndex);
@@ -12078,21 +12090,23 @@ begin
         SaveFile(e);
     end;
 
-    CreationOrderForm:=TCreationOrderForm.Create(self);
-    CreationOrderForm.SetMainControl(TWinControl(ELDesigner1.SelectedControls.Items[0]));
-    CreationOrderForm.PopulateControlList;
-    CreationOrderForm.showModal;
-    CreationOrderForm.destroy;
+    CreationOrderForm := TCreationOrderForm.Create(self);
+    try
+        CreationOrderForm.SetMainControl(Control);
+        CreationOrderForm.PopulateControlList;
+        CreationOrderForm.ShowModal;
+    finally
+        CreationOrderForm.Destroy;
+    end;
 
-    ELDesigner1.Active:=false;
-    ELDesigner1.DesignControl:=nil;
+    ELDesigner1.Active := false;
+    ELDesigner1.DesignControl := nil;
 
     //This should copy the Form's content to the Text Editor
     e.InsertDefaultText;
 
     //Save form file
     e.Modified:=true;
-
     SaveFile(e);
     e.ReloadForm;
     e.UpdateDesignerData;
@@ -12374,6 +12388,7 @@ initialization
     TJvInspectorColorEditItem.RegisterAsDefaultItem;
     TJvInspectorFileNameEditItem.RegisterAsDefaultItem;
     TJvInspectorStatusBarItem.RegisterAsDefaultItem;
+    TJvInspectorValidatorItem.RegisterAsDefaultItem;
 {$ENDIF}
 
 finalization
