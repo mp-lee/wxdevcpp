@@ -336,8 +336,8 @@ type
   published
     property Enabled: boolean read fEnabled write fEnabled;
     property ViewStyle: integer read fCBViewStyle write fCBViewStyle;
-   property ParseLocalHeaders: boolean read fParseLocalHeaders write fParseLocalHeaders;
-   property ParseGlobalHeaders: boolean read fParseGlobalHeaders write fParseGlobalHeaders;
+    property ParseLocalHeaders: boolean read fParseLocalHeaders write fParseLocalHeaders;
+    property ParseGlobalHeaders: boolean read fParseGlobalHeaders write fParseGlobalHeaders;
     property ShowFilter: integer read fShowFilter write fShowFilter;
     property UseColors: boolean read fUseColors write fUseColors;
    property ShowInheritedMembers: boolean read fShowInheritedMembers write fShowInheritedMembers;
@@ -469,7 +469,7 @@ type
     fSmartTabs: boolean; // Tab to next no whitespace char
     fSmartUnindent: boolean; // on backspace move to prev non-whitespace char
     fSpecialChar: boolean; // special line characters visible
-   fAppendNewline: boolean;    // append newline character to the end of line
+    fAppendNewline: boolean;    // append newline character to the end of line
     fTabtoSpaces: boolean; // convert tabs to spaces
     fAutoCloseBrace: boolean; // insert closing braces
     fMarginColor: TColor; // Color of right margin
@@ -477,8 +477,8 @@ type
     fDefaultIntoPrj: boolean; // Insert Default Source Code into "empty" project
     fParserHints: boolean; // Show parser's hint for the word under the cursor
     fMatch: boolean; // Highlight matching parenthesis
-   fHighCurrLine: boolean;     // Highlight current line
-   fHighColor: TColor;         // Color of current line when highlighted
+    fHighCurrLine: boolean;     // Highlight current line
+    fHighColor: TColor;         // Color of current line when highlighted
 
   public
     constructor Create;
@@ -538,8 +538,8 @@ type
 
     property ParserHints: boolean read fParserHints write fParserHints;
     property Match: boolean read fMatch write fMatch;
-   property HighCurrLine: boolean read fHighCurrLine write fHighCurrLine;
-   property HighColor: TColor read fHighColor write fHighColor;
+    property HighCurrLine: boolean read fHighCurrLine write fHighCurrLine;
+    property HighColor: TColor read fHighColor write fHighColor;
 
   end;
 
