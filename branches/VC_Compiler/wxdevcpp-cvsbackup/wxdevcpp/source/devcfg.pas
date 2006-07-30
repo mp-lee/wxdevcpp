@@ -103,6 +103,9 @@ type
     fIncludeFormat: string;
     fDllFormat: string;
     fLibFormat: string;
+    fPchCreateFormat: string;
+    fPchUseFormat: string;
+    fPchFileFormat: string;
     fSingleCompile: string;
     fPreprocDefines: string;
 {$EndIf}
@@ -139,6 +142,9 @@ type
     property CompilerType: integer read fCompilerType write fCompilerType;
     property CheckSyntaxFormat: string read fCheckSyntaxFormat write fCheckSyntaxFormat;
     property OutputFormat: string read fOutputFormat write fOutputFormat;
+    property PchCreateFormat: string read fPchCreateFormat write fPchCreateFormat;
+    property PchUseFormat: string read fPchUseFormat write fPchUseFormat;
+    property PchFileFormat: string read fPchFileFormat write fPchFileFormat;
     property ResourceIncludeFormat: string read fResourceIncludeFormat write fResourceIncludeFormat;
     property ResourceFormat: string read fResourceFormat write fResourceFormat;
     property LinkerFormat: string read fLinkerFormat write fLinkerFormat;
@@ -200,6 +206,9 @@ type
     fIncludeFormat: string;
     fDllFormat: string;
     fLibFormat: string;
+    fPchCreateFormat: string;
+    fPchUseFormat: string;
+    fPchFileFormat: string;
     fSingleCompile: string;
     fPreprocDefines: string;
 {$EndIf}
@@ -262,6 +271,9 @@ type
     property CompilerType: integer read fCompilerType write fCompilerType;
     property CheckSyntaxFormat: string read fCheckSyntaxFormat write fCheckSyntaxFormat;
     property OutputFormat: string read fOutputFormat write fOutputFormat;
+    property PchCreateFormat: string read fPchCreateFormat write fPchCreateFormat;
+    property PchUseFormat: string read fPchUseFormat write fPchUseFormat;
+    property PchFileFormat: string read fPchFileFormat write fPchFileFormat;
     property ResourceIncludeFormat: string read fResourceIncludeFormat write fResourceIncludeFormat;
     property ResourceFormat: string read fResourceFormat write fResourceFormat;
     property LinkerFormat: string read fLinkerFormat write fLinkerFormat;
@@ -2002,6 +2014,9 @@ begin
   devCompiler.IncludeFormat         := devCompilerSet.IncludeFormat;
   devCompiler.DllFormat             := devCompilerSet.DllFormat;
   devCompiler.LibFormat             := devCompilerSet.LibFormat;
+  devCompiler.PchCreateFormat       := devCompilerSet.PchCreateFormat;
+  devCompiler.PchUseFormat          := devCompilerSet.PchUseFormat;
+  devCompiler.PchFileFormat         := devCompilerSet.PchFileFormat; 
   devCompiler.SingleCompile         := devCompilerSet.SingleCompile;
   devCompiler.PreprocDefines        := devCompilerSet.PreprocDefines;
 {$ENDIF}
@@ -2296,6 +2311,12 @@ begin
       fSingleCompile         := LoadSetting(key, 'SingleCompile');
     if LoadSetting(key, 'PreprocDefines') <> '' then
       fPreprocDefines        := LoadSetting(key, 'PreprocDefines');
+    if LoadSetting(key, 'PchCreateFormat') <> '' then
+      fPchCreateFormat       := LoadSetting(key, 'PchCreateFormat');
+    if LoadSetting(key, 'PchUseFormat') <> '' then
+      fPchUseFormat          := LoadSetting(key, 'PchUseFormat');
+    if LoadSetting(key, 'PchFileFormat') <> '' then
+      fPchFileFormat         := LoadSetting(key, 'PchFileFormat');
     {$ENDIF}
   end;
 end;
@@ -2365,6 +2386,9 @@ begin
     SaveSetting(key, 'IncludeFormat', fIncludeFormat);
     SaveSetting(key, 'DllFormat', fDllFormat);
     SaveSetting(key, 'LibFormat', fLibFormat);
+    SaveSetting(key, 'PchCreateFormat', PchCreateFormat);
+    SaveSetting(key, 'PchUseFormat', PchUseFormat);
+    SaveSetting(key, 'PchFileFormat', PchFileFormat);
     SaveSetting(key, 'SingleCompile', fSingleCompile);
     SaveSetting(key, 'PreprocDefines', fPreprocDefines);
 {$EndIf}
@@ -2406,12 +2430,15 @@ begin
     fCheckSyntaxFormat      := '/Zs';
     fOutputFormat           := '/c %s /Fo%s';
     fResourceIncludeFormat  := '/I%s';
-    fResourceFormat         := '/r /fo"%s"';
+    fResourceFormat         := '/r /fo%s';
     fLinkerFormat           := '/out:"%s"';
     fLinkerPaths            := '/libpath:"%s"';
     fIncludeFormat          := '/I"%s"';
     fDllFormat              := '/dll /implib:"%s" /out:"%s"';
     fLibFormat              := '/lib /nologo /out:"%s"';
+    fPchCreateFormat        := '/Yc%s';
+    fPchUseFormat           := '/Yu%s';
+    fPchFileFormat          := '/Fp%s';
     fSingleCompile          := '%s /nologo "%s" %s %s /link %s';
     fPreprocDefines         := '/D%s';
   end
@@ -2426,6 +2453,9 @@ begin
     fIncludeFormat          := '-I"%s"';
     fDllFormat              := '--out-implib "%s" -o %s';
     fLibFormat              := 'rcu "%s"';
+    fPchCreateFormat        := '';
+    fPchUseFormat           := '';
+    fPchFileFormat          := '';
     fSingleCompile          := '%s "%s" -o "%s" %s %s %s';
     fPreprocDefines         := '-D%s';
   end;

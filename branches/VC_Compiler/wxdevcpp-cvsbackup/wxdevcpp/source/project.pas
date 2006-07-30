@@ -146,6 +146,8 @@ type
     fCmdLineArgs: string;
     fUseCustomMakefile: boolean;
     fCustomMakefile: string;
+    fPchHead: integer;
+    fPchSource: integer;
     function GetDirectory: string;
     function GetExecutableName: string;
     procedure SetFileName(value: string);
@@ -170,7 +172,8 @@ type
     property Modified: boolean read GetModified write SetModified;
 
     property CmdLineArgs: string read fCmdLineArgs write SetCmdLineArgs;
-
+    property PchHead: integer read fPchHead write fPchHead;
+    property PchSource: integer read fPchSource write fPchSource;
     property UseCustomMakefile: boolean read fUseCustomMakefile write SetUseCustomMakefile;
     property CustomMakefile: string read fCustomMakefile write SetCustomMakefile;
 
@@ -451,6 +454,8 @@ constructor TProject.Create(nFileName, nName: string);
 begin
   inherited Create;
   fNode := nil;
+  fPchHead := -1;
+  fPchSource := -1;
   fFolders := TStringList.Create;
   fFolders.Duplicates := dupIgnore;
   fFolders.Sorted := True;
@@ -895,6 +900,8 @@ begin
   begin
     Section := 'Project';
     fName := Read('name', '');
+    PchHead := Read('PchHead', -1);
+    PchSource := Read('PchSource', -1);
     fOptions.Ver := Read('Ver', -1);
     fOptions.Icon := Read('icon', '');
     if (fOptions.Ver > 0) then //ver > 0 is at least a v5 project
@@ -1029,6 +1036,8 @@ begin
     Section := 'Project';
 
     Write('FileName', ExtractRelativePath(Directory, fFileName));
+    Write('PchHead', PchHead);
+    Write('PchSource', PchSource);
     Write('Name', fName);
     Write('Type', fOptions.typ);
     Write('Ver', 2);
@@ -1485,6 +1494,20 @@ begin
 
     UpdateNodeIndexes();
     SetModified(TRUE);
+
+    //is this the PCH file?
+    if index = PchHead then
+      PchHead := -1
+    else if index = PchSource then
+      PchSource := -1
+    else
+    begin
+      //The header or source file unit may have moved
+      if (PchHead <> -1) and (PchHead > index) then
+        PchHead := PchHead - 1;
+      if (PchSource <> -1) and (PchSource > index) then
+        PchSource := PchSource - 1;
+    end;
   end
   else // pick from list
     with TRemoveUnitForm.Create(MainForm) do
