@@ -34,8 +34,9 @@ type
   public
     hPipeRead: THandle;
     EventReady: THandle;
+    OutputCrit: TRTLCriticalSection;
     Output: string;
-    Idling: boolean;
+    Idle: boolean;
 
   protected
     procedure Execute; override;
@@ -46,27 +47,24 @@ implementation
 
 procedure TDebugReader.Execute;
 var
-  lpBuffer: array[0..256] of char;
-  nBytesRead: DWORD;
-  _output: string;
+  Buffer: array[0..1024] of char;
+  LastRead: DWORD;
 begin
-  _output := '';
-  while true do begin
-    FillChar(lpBuffer, sizeof(lpBuffer), 0);
-    if (not ReadFile(hPipeRead, lpBuffer, sizeof(lpBuffer),
-        nBytesRead, nil) or (nBytesRead = 0)) then begin
-      if (GetLastError() = ERROR_BROKEN_PIPE) then
-        break // pipe done - normal exit path.
-      else
-        break; // Something bad happened.
-    end;
-    _output := _output + string(lpBuffer);
-    if pos(GDB_PROMPT, _output) <> 0 then begin
-      SetEvent(EventReady);
-      Output := _output;
-      _output := '';
-      Idling := true;
-    end;
+  while True do
+  begin
+    Idle := False;
+    FillChar(Buffer, sizeof(Buffer), 0);
+    if not ReadFile(hPipeRead, Buffer, sizeof(Buffer), LastRead, nil) then
+      Break;
+
+    //Now that we have read the data from the pipe, copy the contents
+    EnterCriticalSection(OutputCrit);
+    Self.Output := Self.Output + Buffer;
+    LeaveCriticalSection(OutputCrit);
+    Idle := true;
+
+    //Then pass control to our other half.
+    SetEvent(EventReady);
   end;
 end;
 

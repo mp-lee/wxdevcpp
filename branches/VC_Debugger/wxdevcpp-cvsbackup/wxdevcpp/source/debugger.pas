@@ -32,167 +32,286 @@ uses
 {$ENDIF}
 
 type
-  TGdbBreakpoint = class
+  AssemblySyntax = (asATnT, asIntel);
+  TRegisters = class
+    EAX: string;
+    EBX: string;
+    ECX: string;
+    EDX: string;
+    ESI: string;
+    EDI: string;
+    EBP: string;
+    ESP: string;
+    EIP: string;
+    CS: string;
+    DS: string;
+    SS: string;
+    ES: string;
+  end;
+
+  PBreakpoint = ^TBreakpoint;
+  TBreakpoint = class
   public
     Index: integer;
     Editor: TEditor;
-    // RNC add the file that this breakpoint is in
-    filename : string;
+    Filename: string;
     Line: integer;
-    // RNC 07.02.2004 -- A variable to hold GDB's index for this breakpoint
-    BreakPointIndex : integer;
+  end;
+
+  PStackFrame = ^TStackFrame;
+  TStackFrame = packed record
+    Filename: string;
+    Line: integer;
+    FuncName: string;
+    Args: string;
+  end;
+
+  PCommand = ^TCommand;
+  TCommand = class
+  public
+    Command: String;
+    Callback: procedure of object;
+  end;
+
+  PCommandWithResult = ^TCommandWithResult;
+  TCommandWithResult = class(TCommand)
+  public
+    constructor Create;
+    destructor Destroy; override;
+  public
+    Event: THandle;
+    Result: TStringList;
+  end;
+
+  PVariable = ^TVariable;
+  TVariable = packed record
+    Name: string;
+    Value: string;
+    Location: string;
   end;
 
   TDebugger = class
-    constructor Create;
+    constructor Create; virtual;
     destructor Destroy; override;
-  private
-    fIncDirs: string;
-    // RNC 07.02.2004 -- Increments each time a breakpoint is added to GDB.  And is the id for the next breakpoint in gdb
-    breakPointCount : integer;
-
-    function GetCallStack: TList;
-    function GetWatchValue: string;
-    function GetWatchVar: string;
-  published
-    property CallStack: TList read GetCallStack;
-    property WatchVar: string read GetWatchVar;
-    property WatchValue: string read GetWatchValue;
-
-  public
-    FileName: string;
-    Executing: boolean;
-    DebugTree: TTreeView;
-    InAssembler: boolean;
-    Registers: TRegisters;
-    OnRegistersReady: procedure of object;
-    procedure Execute;
-    procedure SendCommand(command, params: string);
-    //RNC Change Add/Remove Breakpoint to take an index into the 1 array of breakpoints
-    function AddBreakpoint(i:integer):integer;
-    procedure RemoveBreakpoint(i : integer);
-    procedure RemoveAllBreakpoints;
-    procedure RefreshContext(); // tries to display variable considered not in current context
-    procedure CloseDebugger(Sender: TObject);
-    procedure AddIncludeDir(s: string);
-    procedure ClearIncludeDirs;
-    function Idle: boolean;
-    function IsIdling: boolean;
-
-    // RNC 07-02-2004 3 new functions:
-    // Check to see if the debugger is currently stopped at a breakpoint
-    function  IsBroken : boolean;
-    // Set whether or not the debugger is currently at a breakpoint
-    procedure SetBroken(b: boolean);
-    // Check to see if the given line is already a breakpoint
-    //RNC change to take a filename, not an editor.  an editor is destroyed when the
-    // file is closed. however, the filename does not change.
-    function BreakpointExists(filename: string; line: integer):boolean;
 
   protected
+    fBusy: Boolean;
+    fPaused: Boolean;
+    fExecuting: Boolean;
+    fDebugTree: TTreeView;
+    fBreakpoints: TList;
+
+    CommandQueue: TList;
+    FileName: string;
     hInputWrite: THandle;
     hOutputRead: THandle;
-    //    hStdIn      : THandle; // Handle to parents std input.
-    hPid: THandle; // GDB process id
-    Reader: TDebugReader;
+    hPid: THandle;
+    Event: THandle;
     Wait: TDebugWait;
-    EventReady: THandle;
-    Breakpoints: TList;
-    GdbBreakCount: integer;
+    Reader: TDebugReader;
+    CurrentCommand: TCommand;
+
+    //These functions pass the debugger output to individual functions
+    function GetOutputOfCommand(command: TCommand): TStringList; overload;
+    function GetOutputOfCommand(command, param: string): TStringList; overload;
 
     procedure DisplayError(s: string);
-    procedure Launch(hChildStdOut, hChildStdIn,
-      hChildStdErr: THandle);
+    function GetBreakpointFromIndex(index: integer): TBreakpoint;
+    function GetLocals: TList; virtual; abstract;
+    function GetCallStack: TList; virtual; abstract;
+    function GetRegisters: TRegisters; virtual; abstract;
+    function GetDisassembly: string; virtual; abstract;
+    function GetWatchValue: string; virtual;
+    function GetWatchVar: string; virtual;
+
+    procedure Launch(hChildStdOut, hChildStdIn, hChildStdErr: THandle); virtual; abstract;
+    procedure OnOutput(Output: string); virtual; abstract;
+    procedure SendCommand; virtual;
+
+    //I don't know what these do... yet
     procedure OnDebugFinish(Sender: TObject);
     procedure OnNoDebuggingSymbolsFound;
     procedure OnSourceMoreRecent;
-    // RNC a function to be called if we have a valid-frame but no source file
-    // to open up
-    procedure InaccessibleFunction;
-    procedure OnAsmCode(s: string);
-    procedure OnAsmFunc(s: string);
-    procedure OnAsmCodeEnd;
-    procedure OnSegmentationFault;
+    procedure OnAccessViolation;
 
+  published
+    property Busy: Boolean read fBusy;
+    property Locals: TList read GetLocals;
+    property CallStack: TList read GetCallStack;
+    property Disassembly: string read GetDisassembly;
+    property Registers: TRegisters read GetRegisters;
+
+    property Breakpoints: TList read fBreakpoints;
+    property Executing: Boolean read fExecuting;
+    property Paused: Boolean read fPaused;
+
+    property WatchVar: string read GetWatchVar;
+    property WatchValue: string read GetWatchValue;
+    property DebugTree: TTreeView read fDebugTree write fDebugTree;
+
+  public
+    //Debugger basics
+    procedure Execute(filename: string);
+    procedure SetAssemblySyntax(syntax: AssemblySyntax); virtual; abstract;
+    procedure QueueCommand(command, params: String); overload; virtual;
+    procedure QueueCommand(command: TCommand); overload; virtual;
+
+    //Breakpoint handling
+    procedure AddBreakpoint(breakpoint: TBreakpoint); virtual; abstract;
+    procedure RemoveBreakpoint(breakpoint: TBreakpoint); virtual; abstract;
+    procedure RemoveAllBreakpoints; virtual;
+    procedure RefreshBreakpoints;
+    procedure RefreshBreakpoint(var breakpoint: TBreakpoint); virtual; abstract;
+    function BreakpointExists(filename: string; line: integer): boolean;
+
+    //Debugger control funtions
+    procedure Go; virtual; abstract;
+    procedure Pause; virtual; abstract;
+    procedure Next; virtual; abstract; //fDebugger.SendCommand(GDB_NEXT, '');
+    procedure Step; virtual; abstract; //fDebugger.SendCommand(GDB_STEP, '');
+    function Disassemble(func: string): string; virtual; abstract;
+    function GetVariableHint(name: string): string; virtual; abstract; //fDebugger.SendCommand(GDB_DISPLAY, fCurrentHint);
+
+    //Source lookup directories
+    procedure AddIncludeDir(s: string); virtual; abstract;
+    procedure ClearIncludeDirs; virtual; abstract;
+
+    //Variable watches
+    procedure RefreshContext;
+    procedure AddWatch(varname: string); virtual;
+    procedure RemoveWatch(varname: string); virtual;
+    procedure ModifyVariable(varname, newvalue: string); virtual; abstract;
+
+    //Havn't looked at these
+    procedure CloseDebugger(Sender: TObject);
+    function WaitForIdle: Boolean;
+    function Idle: Boolean;
+  end;
+
+  TCDBDebugger = class(TDebugger)
+    constructor Create; override;
+    destructor Destroy; override;
+
+  protected
+    IncludeDirs: TStringList;
+
+    //Transfer variables (from parsing to request)
+    Disassembly: String;
+
+  protected
+    procedure Launch(hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
+    function GetLocals: TList; override;
+    function GetCallStack: TList; override;
+    function GetRegisters: TRegisters; override;
+    function GetDisassembly: string; override;
+
+    //Output parsing
+    procedure OnOutput(Output: string); override;
+
+  public
+    //Set the include paths
+    procedure AddIncludeDir(s: string); override;
+    procedure ClearIncludeDirs; override;
+
+    //Override the breakpoint handling
+    procedure AddBreakpoint(breakpoint: TBreakpoint); override;
+    procedure RemoveBreakpoint(breakpoint: TBreakpoint); override;
+    procedure RefreshBreakpoint(var breakpoint: TBreakpoint); override;
+
+    //Debugger control
+    procedure Go; override;
+    procedure OnGo;
+    procedure Pause; override;
+    procedure Next; override;
+    procedure Step; override;
+    function Disassemble(func: string): string; override;
+    function GetVariableHint(name: string): string; override;
   end;
 
 implementation
 
 uses 
-  main, devcfg, MultiLangSupport, cpufrm, prjtypes, StrUtils;
+  main, devcfg, MultiLangSupport, cpufrm, prjtypes, StrUtils, dbugintf, RegExpr,
+  madstacktrace, Forms, utils;
+
+constructor TCommandWithResult.Create;
+begin
+  Event := CreateEvent(nil, false, false, nil);
+  Result := TStringList.Create;
+end;
+
+destructor TCommandWithResult.Destroy;
+begin
+  CloseHandle(Event);
+  Result.Free;
+end;
 
 constructor TDebugger.Create;
 begin
-  EventReady := CreateEvent(nil, false, false, nil);
-  Executing := false;
+  fBreakpoints := TList.Create;
+  CommandQueue := TList.Create;
+  fExecuting := False;
+  fBusy := False;
+
   FileName := '';
-  GdbBreakCount := 1;
-  fIncDirs := '';
-  InAssembler := false;
+  Event := CreateEvent(nil, false, false, nil);
 end;
 
 destructor TDebugger.Destroy;
 begin
   if (Executing) then
     CloseDebugger(nil);
-  CloseHandle(EventReady);
+  CloseHandle(Event);
+  RemoveAllBreakpoints;
+  
+  fBreakpoints.Free;
+  CommandQueue.Free;
   inherited Destroy;
 end;
 
-/////////////////////////////////
-// RNC 07-02-04 Get/Set the flag as to whether or not the debugger is at a breakpoint
-procedure TDebugger.SetBroken(b: boolean);
+function TDebugger.WaitForIdle: boolean;
+var
+  I : integer;
 begin
-  Wait.broken := b;
-end;
-
-
-function TDebugger.IsBroken : boolean;
-begin
-  if Wait = nil then
-    Result := False
-  else
-    Result := Wait.broken;
-end;
-////////////////////////////////////
-
-function TDebugger.Idle: boolean;
-var i : integer;
-begin
-  i := 0;
-  result := false;
-  while not Reader.Idling do begin
+  I := 0;
+  Result := false;
+  while not Reader.Idle do
+  begin
     Sleep(20);
-    //    Application.ProcessMessages;
-    i := i + 1;
+    I := I + 1;
     if (i = 200) then begin
-      MessageDlg('Wait timeout for debug command', mtError, [mbOK], 0);
-      Reader.Idling := True;
-      result := true;
+      MessageDlg('Timeout elapsed while waiting for previous debugger command to complete.'#10#13#10#13 +
+                 'Check if the debugger has hung.', mtError, [mbOK], MainForm.Handle);
+      Reader.Idle := True;
+      Result := true;
     end;
   end;
 end;
 
-function TDebugger.IsIdling: boolean;
+function TDebugger.Idle: boolean;
 begin
-  result := Reader.Idling;
+  result := Reader.Idle;
 end;
 
-procedure TDebugger.Execute;
+procedure TDebugger.Execute(filename: string);
 var
   hOutputReadTmp, hOutputWrite,
-    hInputWriteTmp, hInputRead,
-    hErrorWrite: THandle;
+  hInputWriteTmp, hInputRead,
+  hErrorWrite: THandle;
   sa: TSecurityAttributes;
 begin
-  Executing := true;
+  fExecuting := true;
+  self.FileName := filename;
+  
   // Set up the security attributes struct.
   sa.nLength := sizeof(TSecurityAttributes);
   sa.lpSecurityDescriptor := nil;
   sa.bInheritHandle := true;
+
   // Create the child output pipe.
   if (not CreatePipe(hOutputReadTmp, hOutputWrite, @sa, 0)) then
     DisplayError('CreatePipe');
+
   // Create a duplicate of the output write handle for the std error
   // write handle. This is necessary in case the child application
   // closes one of its std output handles.
@@ -220,18 +339,13 @@ begin
     0, false, // Make it uninheritable.
     DUPLICATE_SAME_ACCESS)) then
     DisplayError('DupliateHandle');
+
   // Close inheritable copies of the handles you we not want to be
   // inherited.
   if (not CloseHandle(hOutputReadTmp)) then
     DisplayError('CloseHandle');
   if (not CloseHandle(hInputWriteTmp)) then
     DisplayError('CloseHandle');
-
-  // Get std input handle so we can close it and force the ReadFile to
-  // fail when you want the input thread to exit.
-//  hStdIn := GetStdHandle(STD_INPUT_HANDLE);
-//  if (hStdIn = INVALID_HANDLE_VALUE) then
-//    DisplayError('GetStdHandle');
 
   Launch(hOutputWrite, hInputRead, hErrorWrite);
 
@@ -246,96 +360,45 @@ begin
   if (not CloseHandle(hErrorWrite)) then
     DisplayError('CloseHandle');
 
-  Reader := TDebugReader.Create(true);
-  // Create a thread that will notice when an output is ready to be analyzed
-  Wait := TDebugWait.Create(true);
-  Wait.broken := true;    // RNC 07-02-2004 Set broken to true before the debugger has actually started.  This allows breapoints to be set
-  Wait.OnNoDebuggingSymbols := OnNoDebuggingSymbolsFound;
-  Wait.OnSourceMoreRecent := OnSourceMoreRecent;
-  // RNC set DebugWait's InaccessibleFunction to this one
-  Wait.InaccessibleFunction := InaccessibleFunction;
-  Wait.OnAsmCode := OnAsmCode;
-  Wait.OnAsmFunc := OnAsmFunc;
-  Wait.OnAsmCodeEnd := OnAsmCodeEnd;
-  Wait.OnSegmentationFault := OnSegmentationFault;
-  Wait.Event := EventReady;
-  Wait.DebugTree := DebugTree;
-  Wait.Registers := @Registers;
-  Wait.OnTerminate := OnDebugFinish;
-  Wait.FreeOnTerminate := true;
-  Wait.Reader := Reader;
-  Wait.Resume;
-
   // Create a thread that will read the child's output.
+  Reader := TDebugReader.Create(true);
   Reader.hPipeRead := hOutputRead;
-  Reader.EventReady := EventReady;
+  Reader.EventReady := Event;
   Reader.OnTerminate := CloseDebugger;
-  Reader.FreeOnTerminate := true;
-  Reader.Idling := true;
+  Reader.FreeOnTerminate := True;
+  Reader.Idle := True;
+  InitializeCriticalSection(Reader.OutputCrit);
+
+  // Create a thread that will notice when an output is ready to be sent for processing
+  Wait := TDebugWait.Create(true);
+  Wait.OnOutput := OnOutput;
+  Wait.Reader := Reader;
+  Wait.Event := Event;
+  Wait.Resume;
   Reader.Resume;
-  // RNC 07-02-2004  set the breakPointCount to 0
-  breakPointCount := 0;
 end;
 
 procedure TDebugger.DisplayError(s: string);
 begin
-  MessageDlg('Error with debugging process : ' + s, mtError, [mbOK], 0);
-end;
-
-procedure TDebugger.Launch(hChildStdOut, hChildStdIn,
-  hChildStdErr: THandle);
-var
-  pi: TProcessInformation;
-  si: TStartupInfo;
-  // RNC send the include directories to GDB
-  inc : string;
-  gdb: string;
-begin
-  // Set up the start up info struct.
-  FillChar(si, sizeof(TStartupInfo), 0);
-  si.cb := sizeof(TStartupInfo);
-  si.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
-  si.hStdOutput := hChildStdOut;
-  si.hStdInput := hChildStdIn;
-  si.hStdError := hChildStdErr;
-  si.wShowWindow := SW_HIDE;
-
-  if (devCompiler.gdbName <> '') then
-    gdb := devCompiler.gdbName
-  else
-    gdb := DBG_PROGRAM(devCompiler.CompilerType);
-  // Launch process
-  // RNC add quotes to the include directories (in case they have spaces)
-  inc := StringReplace(fIncDirs, '  -', '"  -', [rfReplaceAll]);
-  inc := StringReplace(inc, '=', '="',[rfReplaceAll]);
-  inc := inc + '"';
-  if (not CreateProcess(nil,
-                        pchar(gdb + ' --annotate=2 --silent'), nil, nil, true,
-                        CREATE_NEW_CONSOLE, nil, nil, si, pi)) then begin
-    DisplayError('Could not find program file ' + gdb);
-    exit;
-  end;
-  hPid := pi.hProcess;
-  // Close any unnecessary handles.
-  if (not CloseHandle(pi.hThread)) then
-    DisplayError('CloseHandle');
+  MessageDlg('Error with debugging process: ' + s, mtError, [mbOK], Mainform.Handle);
 end;
 
 procedure TDebugger.CloseDebugger(Sender: TObject);
 begin
   if Executing then begin
-    SetBroken(false);    // RNC 07-02-2004 Set broken to false when exiting
-    Executing := false;
+    fPaused := false;
+    fExecuting := false;
+
     // Force the read on the input to return by closing the stdin handle.
-    //  if (not CloseHandle(hStdIn)) then
-    //    DisplayError('CloseHandle - stdin');
     Wait.Stop := True;
-    SetEvent(EventReady);
+    SetEvent(Event);
     TerminateProcess(hPid, 0);
     Wait.Terminate;
+    Wait := nil;
     Reader.Terminate;
     Reader := nil;
-    Wait := nil;
+
+    //Close the handles
     if (not CloseHandle(hPid)) then
       DisplayError('CloseHandle - gdb process');
     if (not CloseHandle(hOutputRead)) then
@@ -343,41 +406,131 @@ begin
     if (not CloseHandle(hInputWrite)) then
       DisplayError('CloseHandle - input write');
     MainForm.RemoveActiveBreakpoints;
+
+    //Clear the command queue
+    CommandQueue.Clear;
   end;
 end;
 
-procedure TDebugger.SendCommand(command, params: string);
+procedure TDebugger.QueueCommand(command, params: String);
 var
-  s: array[0..512] of char;
-  nBytesWrote: DWORD;
-  i, j: integer;
+  Combined: String;
+  Cmd: TCommand;
 begin
-  //  CurrentCommand := command;
-  Reader.Idling := False;
-  i := 0;
-  while i < length(command) do begin
-    s[i] := command[i + 1];
-    i := i + 1;
-  end;
-  s[i] := ' ';
-  i := i + 1;
-  j := 0;
-  while (j < length(params)) do begin
-    s[i] := params[j + 1];
-    i := i + 1;
-    j := j + 1;
-  end;
-  s[i] := #10;
-  s[i + 1] := #0;
-  if (not WriteFile(hInputWrite, s, strlen(s), nBytesWrote, nil)) then begin
-    if (GetLastError() = ERROR_NO_DATA) then
-      //showmessage('Debug finished') //Pipe was closed (normal exit path).
-    else
+  //Combine the strings to get the final command
+  Combined := command;
+  if Length(params) > 0 then
+    Combined := Combined + ' ' + params;
+
+  //Create the command object
+  Cmd := TCommand.Create;
+  Cmd.Command := Combined;
+  Cmd.Callback := nil;
+  QueueCommand(Cmd);
+end;
+
+procedure TDebugger.QueueCommand(command: TCommand);
+var
+  Ptr: PCommand;
+begin
+  //Copy the object
+  New(Ptr);
+  Ptr^ := command;
+  Command.Command := Command.Command + #10;
+
+  //Add it into our list of commands
+  CommandQueue.Add(Ptr);
+
+  //Can we execute the command now?
+  if Executing and Paused then
+    SendCommand;
+end;
+
+procedure TDebugger.SendCommand;
+var
+  Str: array[0..512] of char;
+  nBytesWrote, Copied: DWORD;
+  I, CommandLength: UInt;
+const
+  StrSize = 511;
+begin
+  //Do we have anything left? Are we paused?
+  if (CommandQueue.Count = 0) or (not Paused) then
+    Exit;
+  
+  //Initialize stuff
+  Copied := 0;
+  CurrentCommand := PCommand(CommandQueue[0])^;
+  CommandLength := Length(CurrentCommand.Command);
+
+  //Remove the entry from the list
+  if not (CurrentCommand is TCommandWithResult) then
+    Dispose(CommandQueue[0]);
+  CommandQueue.Delete(0);
+
+  //Write the command to the pipe, sequentially
+  repeat
+    //Copy the current string to as much as our buffer allows
+    I := 0;
+    while (I < StrSize) and (I + Copied < CommandLength) do
+    begin
+      Str[I] := CurrentCommand.Command[I + 1 + Copied];
+      Inc(I);
+    end;
+
+    //Set the last character to be NULL
+    Str[I] := #0;
+
+    //Then write the block to the pipe
+    if WriteFile(hInputWrite, Str, StrLen(Str), nBytesWrote, nil) then
+    begin
+      with MainForm.DebugOutput do
+        Lines[Lines.Count - 1] := Lines[Lines.Count - 1] + Str;
+      Inc(Copied, nBytesWrote);
+    end
+    else if (GetLastError() <> ERROR_NO_DATA) then
+    begin
       DisplayError('WriteFile');
-  end;
-  if Assigned(OnRegistersReady) then
-    OnRegistersReady;
-  //  Idle;
+      Break;
+    end;
+  until Copied >= CommandLength;
+
+  //Call the callback function if we are provided one
+  if Assigned(CurrentCommand.Callback) then
+    CurrentCommand.Callback;
+end;
+
+function TDebugger.GetOutputOfCommand(command: TCommand): TStringList;
+var
+  Ptr: PCommandWithResult;
+begin
+  //Copy the command
+  New(Ptr);
+  Ptr^ := TCommandWithResult.Create;
+  Ptr^.Command := command.Command + #10;
+  Ptr^.Callback := command.Callback;
+
+  //Send the command to the debugger
+  fBusy := True;
+  CommandQueue.Add(Ptr);
+  if Executing and Paused then
+    SendCommand;
+
+  //Wait for the event
+  while WaitForSingleObject(Ptr^.Event, 20) = WAIT_TIMEOUT do
+    Application.ProcessMessages;
+  Result := Ptr^.Result;
+  Dispose(Ptr);
+end;
+
+function TDebugger.GetOutputOfCommand(command, param: string): TStringList;
+var
+  Cmd: TCommand;
+begin
+  Cmd := TCommand.Create;
+  Cmd.Command := command + ' ' + param;
+  Cmd.Callback := nil;
+  Result := GetOutputOfCommand(Cmd);
 end;
 
 procedure TDebugger.OnDebugFinish(Sender: TObject);
@@ -394,6 +547,7 @@ var
   opts: TProjProfile;
 begin
   CloseDebugger(nil);
+  //Todo: lowjoel: Add multiple-compiler support
   if (MessageDlg(Lang[ID_MSG_NODEBUGSYMBOLS], mtConfirmation, [mbYes, mbNo], 0) = mrYes) then begin
     if devCompiler.FindOption('-g3', opt, idx) then begin
       opt.optValue := 1;
@@ -434,14 +588,7 @@ begin
   end;
 end;
 
-// RNC function to continue if we are stuck debugging places we can't see 
-// (ie, we entered a DLL)
-procedure TDebugger.InaccessibleFunction;
-begin
-  MainForm.actStepOverExecute(nil);
-end;
-
-
+//Todo: lowjoel: This isn't referenced anywhere...
 procedure TDebugger.OnSourceMoreRecent;
 begin
   if (MessageDlg(Lang[ID_MSG_SOURCEMORERECENT], mtConfirmation, [mbYes, mbNo], 0) = mrYes) then begin
@@ -450,117 +597,70 @@ begin
   end;
 end;
 
-procedure TDebugger.OnSegmentationFault;
+procedure TDebugger.OnAccessViolation;
 begin
-  MessageDlg(Lang[ID_MSG_SEGFAULT], mtWarning, [mbOk], 0);
-end;
-
-// RNC 07-02-2004
-// If the running program is not broken and the user tries to add a breakpoint, display
-// an error message saying that a breakpoint cannot be added while the program is running
-//RNC changed to accept an index into the array of breakpoints
-function TDebugger.AddBreakpoint(i : integer):integer;
-begin
-  Result:=-1;
-  if (IsBroken = true) then begin
-    inc(breakPointCount);
-    SendCommand(GDB_BREAK, '"' + PBreakPointEntry(BreakPointList.Items[i])^.file_name + ':' + inttostr(PBreakPointEntry(BreakPointList.Items[i])^.line) + '"');
-    Result:=breakPointCount;
+  case MessageDlg(Lang[ID_MSG_SEGFAULT], mtError, [mbYes, mbNo, mbAbort], MainForm.Handle) of
+    mrNo: Go;
+    mrAbort: CloseDebugger(nil);
   end;
 end;
 
-// RNC 07-02-2004 A function to return true or false depending on whether or not a breakpoint already exists
-// RNC changed to check if a breakpoint exists by checking a filename vs the global list, not an editor
-// editors change when a file is close, but the filename will not.  This makes sure that just becuse
-// you close a file, the breakpoint will not disappear
-function TDebugger.BreakpointExists(filename: string; line: integer):boolean;
+function TDebugger.BreakpointExists(filename: string; line: integer): Boolean;
 var
   I: integer;
 begin
-  Result := false;
-  for I := 0 to BreakPointList.Count-1 do
-    if (PBreakPointEntry(BreakPointList[I])^.file_name = filename) and
-       (PBreakPointEntry(BreakPointList[I])^.line = line) then begin
-       Result:=true;
+  Result := False;
+  for I := 0 to Breakpoints.Count - 1 do
+    if (PBreakpoint(Breakpoints[I])^.Filename = filename) and
+       (PBreakpoint(Breakpoints[I])^.Line = line) then
+    begin
+      Result := true;
       Break;
     end;
 end;
 
-// RNC changed to take an index in the 1 list of breakpoints, not an editor
-procedure TDebugger.RemoveBreakpoint(i: integer);
-begin
-if (IsBroken = true) then begin
-  if Executing then begin
-    SendCommand(GDB_DELETE, inttostr(i));
-  end;
-end;
-end;
-
-// RNC Change to remove breakpoints using new list
 procedure TDebugger.RemoveAllBreakpoints;
 var
   I: integer;
 begin
-  for I := 0 to BreakPointList.Count - 1 do begin
-    if Executing then
-      SendCommand(GDB_DELETE, inttostr(PBreakPointEntry(BreakPointList.Items[I])^.breakPointIndex));
-  end;
-  MainForm.RemoveAllBreakPointFromList();
+  for I := 0 to Breakpoints.Count - 1 do
+    RemoveBreakpoint(Breakpoints[I]);
 end;
 
-function TDebugger.GetCallStack: TList;
+procedure TDebugger.RefreshBreakpoints;
+var
+  I: Integer;
 begin
-  if Assigned(Wait) then
-    Result := Wait.CallStackList
-  else
-    Result := nil;
+  for I := 0 to Breakpoints.Count - 1 do
+    RefreshBreakpoint(PBreakPoint(Breakpoints.Items[I])^);
 end;
 
-procedure TDebugger.AddIncludeDir(s: string);
+function TDebugger.GetBreakpointFromIndex(index: integer): TBreakpoint;
+var
+  I: integer;
 begin
-  if DirectoryExists(s) then
-    fIncDirs := fIncDirs + ' --directory=' + s + ' ';
-end;
-
-procedure TDebugger.ClearIncludeDirs;
-begin
-  fIncDirs := '';
-end;
-
-procedure TDebugger.OnAsmCode(s: string);
-begin
-  if Assigned(CPUForm) then begin
-    CPUForm.CodeList.Lines.Add(s);
-  end;
-end;
-
-procedure TDebugger.OnAsmFunc(s: string);
-begin
-  if Assigned(CPUForm) then begin
-    CPUForm.CodeList.ClearAll;
-    CPUForm.edFunc.Text := s;
-  end;
-  InAssembler := true;
-end;
-
-procedure TDebugger.OnAsmCodeEnd;
-begin
-  InAssembler := false;
+  Result := nil;
+  for I := 0 to fBreakpoints.Count - 1 do
+    if PBreakpoint(fBreakpoints[I])^.Index = index then
+    begin
+      Result := PBreakpoint(fBreakpoints[I])^;
+      Exit;
+    end;
 end;
 
 function TDebugger.GetWatchValue: string;
 begin
-  if Assigned(Wait) then
+{  if Assigned(Wait) then
     Result := Wait.tmpWatchValue
-  else
+  else}
     Result := '';
 end;
 
 function TDebugger.GetWatchVar: string;
 begin
-  if Assigned(Wait) then
+{  if Assigned(Wait) then
     Result := Wait.tmpWatchVar
-  else
+  else}
     Result := '';
 end;
 
@@ -576,9 +676,467 @@ begin
        if k > 0 then begin
         s := DebugTree.Items[i].Text;
         Delete(s, k, length(s) - k + 1);
-        SendCommand(GDB_DISPLAY, s);
+        QueueCommand(GDB_DISPLAY, s);
       end;
     end;
+end;
+
+//------------------------------------------------------------------------------
+// TCDBDebugger
+//------------------------------------------------------------------------------
+constructor TCDBDebugger.Create;
+begin
+  inherited;
+  IncludeDirs := TStringList.Create;
+end;
+
+destructor TCDBDebugger.Destroy;
+begin
+  IncludeDirs.Free;
+  inherited;
+end;
+
+procedure TCDBDebugger.Launch(hChildStdOut, hChildStdIn, hChildStdErr: THandle);
+var
+  ProcessInfo: TProcessInformation;
+  StartupInfo: TStartupInfo;
+  Executable: string;
+  Srcpath: string;
+  I: Integer;
+begin
+  //Set up the start up info structure.
+  FillChar(StartupInfo, sizeof(TStartupInfo), 0);
+  StartupInfo.cb := sizeof(TStartupInfo);
+  StartupInfo.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
+  StartupInfo.hStdOutput := hChildStdOut;
+  StartupInfo.hStdInput := hChildStdIn;
+  StartupInfo.hStdError := hChildStdErr;
+  StartupInfo.wShowWindow := SW_HIDE;
+
+  //Get the name of the debugger
+  if (devCompiler.gdbName <> '') then
+    Executable := devCompiler.gdbName
+  else
+    Executable := DBG_PROGRAM(devCompiler.CompilerType);
+
+  //Strip the beginning and trailing " so we can deal with the path more easily
+  if (Filename[1] = '"') and (Filename[Length(Filename)] = '"') then
+    Filename := Copy(Filename, 2, Length(Filename) - 2);
+
+  //Create the command line
+  Executable := Format('%s -lines -2 -y "%s" "%s"', [Executable, ExtractFilePath(Filename), FileName]);
+
+  //Launch the process
+  if not CreateProcess(nil, PChar(Executable), nil, nil, True, CREATE_NEW_CONSOLE,
+                       nil, nil, StartupInfo, ProcessInfo) then
+  begin
+    DisplayError('Could not find program file ' + Executable);
+    Exit;
+  end;
+
+  //Send the source mode setting (enable all except ONLY source)
+  QueueCommand('l+t; l+l; l+s', '');
+
+  //Set all the paths
+  Srcpath := ExtractFilePath(Filename) + ';';
+  for I := 0 to IncludeDirs.Count - 1 do
+    Srcpath := Srcpath + IncludeDirs[I] + ';';
+  QueueCommand('.srcpath+', Srcpath);
+  QueueCommand('.exepath+', ExtractFilePath(Filename));
+
+  //Get the PID of the new process
+  hPid := ProcessInfo.hProcess;
+
+  //Close any unnecessary handles.
+  if (not CloseHandle(ProcessInfo.hThread)) then
+    DisplayError('CloseHandle');
+end;
+
+procedure TCDBDebugger.OnOutput(Output: string);
+var
+  RegExp: TRegExpr;
+  CurLine: String;
+  CurOutput: TStringList;
+  SentCommand: Boolean;
+
+  procedure ParseOutput(const line: string);
+  begin
+    if (not SentCommand) and RegExp.Exec(line, '^([0-9]+):([0-9]+)>') then
+    begin
+      //The debugger is waiting for input, we're paused!
+      fPaused := True;
+      fBusy := False;
+
+      //Because we are here, we probably are a side-effect of a previous instruction
+      //If we have to redirect the output (somewhere) do so!
+      if CurrentCommand is TCommandWithResult then
+      begin
+        TCommandWithResult(CurrentCommand).Result.Assign(CurOutput);
+        SetEvent(TCommandWithResult(CurrentCommand).Event);
+      end;
+      CurOutput.Clear;
+
+      //Send the command, and do not send any more
+      SendCommand;
+      SentCommand := True;
+
+      //Make sure we don't save the current line!
+      Exit;
+    end
+    else if RegExp.Exec(line, 'Symbol search path is: (.*)') then
+    begin
+      if RegExp.Substitute('$1') = '*** Invalid ***' then
+        OnNoDebuggingSymbolsFound;
+    end
+    else if RegExp.Exec(line, '\((.*)\): Access violation - code c0000005 \((.*)\)') then
+      OnAccessViolation
+    else if RegExp.Exec(line, 'Breakpoint ([0-9]+) hit') then
+      with GetBreakpointFromIndex(StrToInt(RegExp.Substitute('$1'))) do
+        MainForm.GotoBreakpoint(Filename, Line);
+
+    CurOutput.Add(Line);
+  end;
+begin
+  //Update the memo
+  SentCommand := False;
+  CurOutput := TStringList.Create;
+  RegExp := TRegExpr.Create;
+  while Pos(#10, Output) > 0 do
+  begin
+    //Extract the current line
+    CurLine := Copy(Output, 0, Pos(#10, Output) - 1);
+
+    //Process the output
+    MainForm.DebugOutput.Lines.Add(CurLine);
+    ParseOutput(CurLine);
+
+    //Remove those that we've already processed
+    Delete(Output, 1, Pos(#10, Output));
+  end;
+
+  if Length(Output) > 0 then
+  begin
+    MainForm.DebugOutput.Lines.Add(Output);
+    ParseOutput(Output);
+  end;
+
+  //Clean up
+  RegExp.Free;
+  CurOutput.Free;
+end;
+
+procedure TCDBDebugger.AddIncludeDir(s: string);
+begin
+  IncludeDirs.Add(s);
+end;
+
+procedure TCDBDebugger.ClearIncludeDirs;
+begin
+  IncludeDirs.Clear;
+end;
+
+procedure TCDBDebugger.AddBreakpoint(breakpoint: TBreakpoint);
+var
+  aBreakpoint: PBreakpoint;
+begin
+  if (not Paused) and Executing then
+  begin
+    MessageDlg('Cannot add a breakpoint while the debugger is executing.', mtError, [mbOK], MainForm.Handle);
+    Exit;
+  end;
+
+  New(aBreakpoint);
+  aBreakpoint^ := breakpoint;
+  fBreakpoints.Add(aBreakpoint);
+  RefreshBreakpoint(aBreakpoint^);
+end;
+
+procedure TCDBDebugger.RemoveBreakpoint(breakpoint: TBreakpoint);
+var
+  I: Integer;
+begin
+  if (not Paused) and Executing then
+  begin
+    MessageDlg('Cannot remove a breakpoint while the debugger is executing.', mtError, [mbOK], MainForm.Handle);
+    Exit;
+  end;
+
+  for i := 0 to Breakpoints.Count - 1 do
+  begin
+    if (PBreakPoint(Breakpoints.Items[i])^.line = breakpoint.Line) and (PBreakPoint(Breakpoints.Items[i])^.editor = breakpoint.Editor) then
+    begin
+      if Executing then
+        QueueCommand('bc', IntToStr(PBreakpoint(Breakpoints.Items[i])^.Index));
+      Dispose(Breakpoints.Items[i]);
+      Breakpoints.Delete(i);
+      Break;
+    end;
+  end;
+end;
+
+procedure TCDBDebugger.RefreshBreakpoint(var breakpoint: TBreakpoint);
+begin
+  if Executing then
+  begin
+    if fBreakpoints.Count > 1 then
+      breakpoint.Index := PBreakpoint(fBreakpoints[fBreakpoints.Count - 2])^.Index + 1
+    else
+      breakpoint.Index := fBreakpoints.Count;
+    QueueCommand('bp' + IntToStr(breakpoint.Index), '`' + breakpoint.Filename + ':' + IntToStr(breakpoint.Line) + '`');
+  end;
+end;
+
+function TCDBDebugger.GetCallStack: TList;
+var
+  I: Integer;
+  RegExp: TRegExpr;
+  Output: TStringList;
+  StackFrame: PStackFrame;
+begin
+  if (not Paused) or (not Executing) then
+  begin
+    Result := nil;
+    Exit;
+  end;
+
+  Result := TList.Create;
+  RegExp := TRegExpr.Create;
+  Output := GetOutputOfCommand('kp', '256');
+  for I := 0 to Output.Count - 1 do
+    if RegExp.Exec(Output[I], 'ChildEBP RetAddr') then
+      Continue
+    else if RegExp.Exec(Output[I], '([0-9a-fA-F]{1,8}) ([0-9a-fA-F]{1,8}) (.*)!([^ ]*)\((.*)\)(|.*) \[(.*) @ ([0-9]*)\]') then
+    begin
+      //Stack frame with source information
+      New(StackFrame);
+      Result.Add(StackFrame);
+
+      //Fill the fields
+      with StackFrame^ do
+      begin
+        Filename := RegExp.Substitute('$7');
+        Line := StrToInt(RegExp.Substitute('$8'));
+        FuncName := RegExp.Substitute('$4$6');
+        Args := RegExp.Substitute('$5');
+      end;
+    end
+    else if RegExp.Exec(Output[I], '([0-9a-fA-F]{1,8}) ([0-9a-fA-F]{1,8}) (.*)!([^ ]*)(|\((.*)\))(.*)') then
+    begin
+      //Stack frame without source information
+      New(StackFrame);
+      Result.Add(StackFrame);
+
+      //Fill the fields
+      with StackFrame^ do
+      begin
+        FuncName := RegExp.Substitute('$4$6');
+        Args := RegExp.Substitute('$5');
+        Line := 0;
+      end;
+    end;
+
+  //Clean up
+  RegExp.Free;
+  Output.Free;
+end;
+
+function TCDBDebugger.GetLocals: TList;
+var
+  I: Integer;
+  Local: PVariable;
+  RegExp: TRegExpr;
+  Output: TStringList;
+begin
+  if (not Executing) or (not Paused) then
+  begin
+    Result := nil;
+    Exit;
+  end;
+
+  Result := TList.Create;
+  RegExp := TRegExpr.Create;
+  Output := GetOutputOfCommand('dv', '/i /t /v');
+  for I := 0 to Output.Count - 1 do
+    if RegExp.Exec(Output[I], '(.*)( +)(.*)( +)([0-9a-fA-F]{1,8}) (.*) = (.*)') then
+    begin
+      New(Local);
+      Result.Add(Local);
+
+      //Fill the fields
+      with Local^ do
+      begin
+        Name := RegExp.Substitute('$6');
+        Value := RegExp.Substitute('$7');
+        Location := RegExp.Substitute('$5');
+      end;
+    end;
+
+  //Clean up
+  RegExp.Free;
+  Output.Free;
+end;
+
+function TCDBDebugger.GetRegisters: TRegisters;
+var
+  I: Integer;
+  RegExp: TRegExpr;
+  Output: TStringList;
+begin
+  if (not Executing) or (not Paused) then
+  begin
+    Result := nil;
+    Exit;
+  end;
+
+  Result := TRegisters.Create;
+  RegExp := TRegExpr.Create;
+  Output := GetOutputOfCommand('r', '');
+  for I := 0 to Output.Count - 1 do
+    if RegExp.Exec(Output[I], 'eax=([0-9a-fA-F]{1,8}) ebx=([0-9a-fA-F]{1,8}) ecx=([0-9a-fA-F]{1,8}) edx=([0-9a-fA-F]{1,8}) esi=([0-9a-fA-F]{1,8}) edi=([0-9a-fA-F]{1,8})') then
+      begin
+        with Result do
+        begin
+          EAX := RegExp.Substitute('$1');
+          EBX := RegExp.Substitute('$2');
+          ECX := RegExp.Substitute('$3');
+          EDX := RegExp.Substitute('$4');
+          ESI := RegExp.Substitute('$5');
+          EDI := RegExp.Substitute('$6');
+        end;
+      end
+      else if RegExp.Exec(Output[I], 'eip=([0-9a-fA-F]{1,8}) esp=([0-9a-fA-F]{1,8}) ebp=([0-9a-fA-F]{1,8}) iopl=([0-9a-fA-F]{1,8})') then
+      begin
+        with Result do
+        begin
+          EIP := RegExp.Substitute('$1');
+          ESP := RegExp.Substitute('$2');
+          EBP := RegExp.Substitute('$3');
+        end;
+      end
+      else if RegExp.Exec(Output[I], 'cs=([0-9a-fA-F]{1,4})  ss=([0-9a-fA-F]{1,4})  ds=([0-9a-fA-F]{1,4})  es=([0-9a-fA-F]{1,4})  fs=([0-9a-fA-F]{1,4})  gs=([0-9a-fA-F]{1,4})             efl=([0-9a-fA-F]{1,8})') then
+      begin
+        with Result do
+        begin
+          CS := RegExp.Substitute('$1');
+          SS := RegExp.Substitute('$2');
+          DS := RegExp.Substitute('$3');
+          ES := RegExp.Substitute('$4');
+        end;
+      end;
+
+  //Clean up
+  RegExp.Free;
+  Output.Free;
+end;
+
+function TCDBDebugger.GetDisassembly: string;
+begin
+  if (not Executing) or (not Paused) then
+  begin
+    Result := '';
+    Exit;
+  end;
+
+  Result := Disassemble('');
+end;
+
+function TCDBDebugger.Disassemble(func: string): string;
+var
+  I: Integer;
+  RegExp: TRegExpr;
+  Output: TStringList;
+begin
+  if (not Executing) or (not Paused) then
+  begin
+    Result := '';
+    Exit;
+  end;
+
+  RegExp := TRegExpr.Create;
+  Output := GetOutputOfCommand('ub ' + func + ';u ' + func, '');
+  for I := 0 to Output.Count - 1 do
+    if RegExp.Exec(Output[I], '^(.*)!(.*) \[(.*) @ ([0-9]+)]:') then
+      Result := Result + #9 + ';' + Output[I] + #10
+    else if RegExp.Exec(Output[I], '^([0-9a-fA-F]{1,8})( +)([^ ]*)( +)(.*)( +)(.*)') then
+      Result := Result + Output[I] + #10;
+
+  //Clean up
+  RegExp.Free;
+  Output.Free;
+end;
+
+function TCDBDebugger.GetVariableHint(name: string): string;
+var
+  I, Depth: Integer;
+  RegExp: TRegExpr;
+  Output: TStringList;
+begin
+  if (not Executing) or (not Paused) then
+  begin
+    Result := '';
+    Exit;
+  end;
+
+  //Decide what command we should send - dv for locals, dt for structures
+  RegExp := TRegExpr.Create;
+  if Pos('.', name) > 0 then
+  begin
+    //Remove the dots and count the number of indents
+    Depth := 0;
+    for I := 1 to Length(name) do
+      if name[I] = '.' then
+        Inc(Depth);
+
+    //Issue the command
+    Output := GetOutputOfCommand('dt', Copy(name, 1, Pos('.', name) - 1));
+
+    //Then find the member name
+    for I := 0 to Output.Count - 1 do
+      if RegExp.Exec(Output[I], '( {' + IntToStr(Depth * 3) + '})\+0x([0-9a-fA-F]{1,8}) ' +
+                     Copy(name, GetLastPos('.', name) + 1, Length(name)) + '( +): (.*)') then
+        Result := RegExp.Substitute(name + ' = $4');
+  end
+  else
+  begin
+    Output := GetOutputOfCommand('dv', name);
+    for I := 0 to Output.Count - 1 do
+      if RegExp.Exec(Output[I], '( +)(.*) = (.*)') then
+        Result := Trim(Output[I]);
+  end;
+
+  //Clean up
+  RegExp.Free;
+  Output.Free;
+end;
+
+procedure TCDBDebugger.Go;
+var
+  Command: TCommand;
+begin
+  Command := TCommand.Create;
+  Command.Command := 'g';
+  Command.Callback := OnGo;
+  QueueCommand(Command);
+end;
+
+procedure TCDBDebugger.OnGo;
+begin
+  fPaused := False;
+  fBusy := False;
+end;
+
+procedure TCDBDebugger.Pause;
+begin
+end;
+
+procedure TCDBDebugger.Next;
+begin
+  QueueCommand('p', '');
+end;
+
+procedure TCDBDebugger.Step;
+begin
+  QueueCommand('t', '');
 end;
 
 end.

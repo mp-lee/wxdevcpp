@@ -69,6 +69,7 @@ object CPUForm: TCPUForm
       Gutter.Font.Name = 'Terminal'
       Gutter.Font.Style = []
       Gutter.Visible = False
+      Highlighter = SynAsmSyn1
       Options = [eoAutoIndent, eoNoCaret, eoScrollPastEol, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabsToSpaces, eoTrimTrailingSpaces]
       ReadOnly = True
       RemovedKeystrokes = <
@@ -354,7 +355,11 @@ object CPUForm: TCPUForm
     AutoDetect = True
     XPControls = [xcMainMenu, xcPopupMenu, xcToolbar, xcControlbar, xcCombo, xcListBox, xcEdit, xcMaskEdit, xcMemo, xcRichEdit, xcMiscEdit, xcCheckBox, xcRadioButton, xcButton, xcBitBtn, xcSpeedButton, xcUpDown, xcPanel, xcTreeView, xcListView, xcProgressBar, xcHotKey]
     Active = False
-    Left = 144
-    Top = 120
+    Left = 37
+    Top = 420
+  end
+  object SynAsmSyn1: TSynAsmSyn
+    Left = 10
+    Top = 420
   end
 end

@@ -24,11 +24,12 @@ interface
 uses
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Buttons, SynEdit, XPMenu;
+  Dialogs, StdCtrls, Buttons, SynEdit, XPMenu, debugger,
+  SynEditHighlighter, SynHighlighterAsm;
 {$ENDIF}
 {$IFDEF LINUX}
   SysUtils, Variants, Classes, QGraphics, QControls, QForms,
-  QDialogs, QStdCtrls, QButtons, QSynEdit;
+  QDialogs, QStdCtrls, QButtons, QSynEdit, debugger;
 {$ENDIF}
 
 type
@@ -69,21 +70,24 @@ type
     lblES: TLabel;
     ESText: TEdit;
     XPMenu: TXPMenu;
+    SynAsmSyn1: TSynAsmSyn;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure edFuncKeyPress(Sender: TObject; var Key: Char);
     procedure rbSyntaxClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure edFuncKeyPress(Sender: TObject; var Key: Char);
   private
     ActiveLine: integer;
+    fDebugger: TDebugger;
 
     procedure LoadText;
-    procedure OnRegistersReady;
     procedure OnActiveLine(Sender: TObject; Line: Integer;
       var Special: Boolean; var FG, BG: TColor);
+    procedure SetDisassembly(disasm: string);
 
     { Private declarations }
   public
     { Public declarations }
+    procedure PopulateRegisters(debugger: TDebugger);
   end;
 
 var
@@ -92,42 +96,15 @@ var
 implementation
 
 uses 
-  main, version, MultiLangSupport, debugger, utils,
-  devcfg, debugwait, Types; 
+  main, version, MultiLangSupport, utils, devcfg, debugwait, Types; 
 
 {$R *.dfm}
 
-procedure TCPUForm.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TCPUForm.FormCreate(Sender: TObject);
 begin
-  MainForm.fDebugger.OnRegistersReady := nil;
-  CPUForm := nil;
-end;
-
-procedure TCPUForm.edFuncKeyPress(Sender: TObject; var Key: Char);
-begin
-  if key = #13 then begin
-    if (MainForm.fDebugger.Executing) then
-      CodeList.Lines.Clear;
-    MainForm.fDebugger.SendCommand(GDB_DISASSEMBLE, edFunc.Text);
-  end;
-end;
-
-procedure TCPUForm.rbSyntaxClick(Sender: TObject);
-var cb : TCheckBox;
-begin
-  cb := TCheckBox(sender);
-  while (MainForm.fDebugger.InAssembler) do
-    sleep(20);
-  if (MainForm.fDebugger.Executing) then begin
-    CodeList.Lines.Clear;
-    if cb.Tag = 0 then
-      MainForm.fDebugger.SendCommand(GDB_SETFLAVOR, GDB_ATT)
-    else
-      MainForm.fDebugger.SendCommand(GDB_SETFLAVOR, GDB_INTEL);
-    MainForm.fDebugger.Idle;
-    MainForm.fDebugger.SendCommand(GDB_DISASSEMBLE, edFunc.Text);
-    MainForm.fDebugger.Idle;
-  end;
+  ActiveLine := -1;
+  CodeList.OnSpecialLineColors := OnActiveLine;
+  LoadText;
 end;
 
 procedure TCPUForm.LoadText;
@@ -146,40 +123,57 @@ begin
   end;
 end;
 
-procedure TCPUForm.FormCreate(Sender: TObject);
+procedure TCPUForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  ActiveLine := -1;
-  CodeList.OnSpecialLineColors := OnActiveLine;
-  MainForm.fDebugger.OnRegistersReady := OnRegistersReady;
-  LoadText;
+  CPUForm := nil;
 end;
 
-procedure TCPUForm.OnRegistersReady;
-var i : integer;
+procedure TCPUForm.edFuncKeyPress(Sender: TObject; var Key: Char);
 begin
-  EAXText.Text := MainForm.fDebugger.Registers[EAX];
-  EBXText.Text := MainForm.fDebugger.Registers[EBX];
-  ECXText.Text := MainForm.fDebugger.Registers[ECX];
-  EDXText.Text := MainForm.fDebugger.Registers[EDX];
-  ESIText.Text := MainForm.fDebugger.Registers[ESI];
-  EDIText.Text := MainForm.fDebugger.Registers[EDI];
-  EBPText.Text := MainForm.fDebugger.Registers[EBP];
-  ESPText.Text := MainForm.fDebugger.Registers[ESP];
-  EIPText.Text := MainForm.fDebugger.Registers[EIP];
-  CSText.Text := MainForm.fDebugger.Registers[CS];
-  DSText.Text := MainForm.fDebugger.Registers[DS];
-  SSText.Text := MainForm.fDebugger.Registers[SS];
-  ESText.Text := MainForm.fDebugger.Registers[ES];
-  for i := 0 to CodeList.Lines.Count - 1 do
-    if pos(EIPText.Text, CodeList.Lines[i]) <> 0 then begin
-      if (ActiveLine <> i) and (ActiveLine <> -1) then
-        CodeList.InvalidateLine(ActiveLine);
-      ActiveLine := i + 1;
-      CodeList.InvalidateLine(ActiveLine);
-      CodeList.CaretY := ActiveLine;
-      CodeList.EnsureCursorPosVisible;
-      break;
+  if (Key = #13) and fDebugger.Executing then
+    SetDisassembly(fDebugger.Disassemble(edFunc.Text));
+end;
+
+procedure TCPUForm.rbSyntaxClick(Sender: TObject);
+var
+  cb : TCheckBox;
+begin
+  cb := TCheckBox(sender);
+  if fDebugger.Executing then
+  begin
+    if cb.Tag = 0 then
+      fDebugger.SetAssemblySyntax(asATnT)
+    else
+      fDebugger.SetAssemblySyntax(asIntel);
+    SetDisassembly(fDebugger.Disassembly);
+  end;
+end;
+
+procedure TCPUForm.PopulateRegisters(debugger: TDebugger);
+var
+  registers: TRegisters;
+begin
+  fDebugger := debugger;
+  registers := fDebugger.Registers;
+  if registers <> nil then
+    with registers do
+    begin
+      EAXText.Text := EAX;
+      EBXText.Text := EBX;
+      ECXText.Text := ECX;
+      EDXText.Text := EDX;
+      ESIText.Text := ESI;
+      EDIText.Text := EDI;
+      EBPText.Text := EBP;
+      ESPText.Text := ESP;
+      EIPText.Text := EIP;
+      CSText.Text := CS;
+      DSText.Text := DS;
+      SSText.Text := SS;
+      ESText.Text := ES;
     end;
+
+  SetDisassembly(fDebugger.Disassembly);
 end;
 
 procedure TCPUForm.OnActiveLine(Sender: TObject; Line: Integer;
@@ -192,6 +186,23 @@ var pt : TPoint;
     FG := pt.Y;
     Special := TRUE;
   end;
+end;
+
+procedure TCPUForm.SetDisassembly(disasm: string);
+var
+  i: integer;
+begin
+  CodeList.Lines.Text := disasm;
+  for i := 0 to CodeList.Lines.Count - 1 do
+    if pos(EIPText.Text, CodeList.Lines[i]) <> 0 then begin
+      if (ActiveLine <> i) and (ActiveLine <> -1) then
+        CodeList.InvalidateLine(ActiveLine);
+      ActiveLine := i + 1;
+      CodeList.InvalidateLine(ActiveLine);
+      CodeList.CaretY := ActiveLine;
+      CodeList.EnsureCursorPosVisible;
+      break;
+    end;
 end;
 
 end.

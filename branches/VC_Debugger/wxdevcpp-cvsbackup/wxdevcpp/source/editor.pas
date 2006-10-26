@@ -79,7 +79,6 @@ type
     fActiveLine: integer;
     fErrSetting: boolean;
     fDebugGutter: TDebugGutter;
-    fOnBreakPointToggle: TBreakpointToggleEvent;
     fDebugHintTimer: TTimer;
     fCurrentHint: string;
     //////// CODE-COMPLETION - mandrav /////////////
@@ -182,7 +181,6 @@ type
     procedure ReconfigCompletion;
     //////// CODE-COMPLETION - mandrav /////////////
 
-    property OnBreakpointToggle: TBreakpointToggleEvent read fOnBreakpointToggle write fOnBreakpointToggle;
     property FileName: string read fFileName write SetFileName;
     property InProject: boolean read fInProject write fInProject;
     property New: boolean read fNew write fNew;
@@ -226,7 +224,7 @@ implementation
 
 uses
   MigrateFrm, Main, project, MultiLangSupport, devcfg, Search_Center, datamod,
-  GotoLineFrm, Macros
+  GotoLineFrm, Macros, debugger
 {$IFDEF LINUX}
   ,Xlib, utils
 {$ENDIF};
@@ -291,7 +289,6 @@ begin
   // This is to have a pointer to the TEditor using the PageControl in MainForm
   fTabSheet.Tag := integer(self);
 
-  fOnBreakpointToggle := MainForm.OnBreakpointToggle;
   fText := TSynEdit.Create(fTabSheet);
   fText.Parent := fTabSheet;
 
@@ -619,37 +616,22 @@ end;
 // have been turned off.  By using these functions to explicitly turn on or turn
 // off a breakpoint, this cannot happen
 procedure TEditor.TurnOnBreakpoint(line: integer);
-var
-index:integer;
 begin
-  index := 0;
   if(line > 0) and (line <= fText.Lines.Count) then
-    begin
-      fText.InvalidateLine(line);
-      // RNC new synedit stuff
-      fText.InvalidateGutterLine(line);
-      MainForm.AddBreakPointToList(line, self, fFilename);
-      index := BreakPointList.Count -1;
+  begin
+    fText.InvalidateLine(line);
+    fText.InvalidateGutterLine(line);
+    MainForm.AddBreakPointToList(line, self);
   end;
-  if Assigned(fOnBreakpointToggle) then
-    fonBreakpointToggle(index, true);
 end;
 
 procedure TEditor.TurnOffBreakpoint(line: integer);
-var
-  index: integer;
 begin
   if(line > 0) and (line <= fText.Lines.Count) then
-    begin
-      fText.InvalidateLine(line);
-      // RNC new synedit stuff
-      fText.InvalidateGutterLine(line);
-      index := HasBreakPoint(line);
-      if index <> -1 then begin
-        index:=MainForm.RemoveBreakPointFromList(line, self);
-        if Assigned(fOnBreakpointToggle) then
-          fonBreakpointToggle(index, false);
-      end;
+  begin
+    fText.InvalidateLine(line);
+    fText.InvalidateGutterLine(line);
+    MainForm.RemoveBreakPointFromList(line, self);
   end;
 end;
 
@@ -658,13 +640,12 @@ procedure TEditor.SetBreakPointsOnOpen;
 var
   i: integer;
 begin
-  for i:=0 to BreakPointList.Count -1 do
-  begin
-      if PBreakPointEntry(BreakPointList.Items[i])^.file_name = self.TabSheet.Caption then begin
-          InsertBreakpoint(PBreakPointEntry(BreakPointList.Items[i])^.line);
-          PBreakPointEntry(BreakPointList.Items[i])^.editor := self;
-      end;
-  end;
+  for i := 0 to MainForm.fDebugger.Breakpoints.Count - 1 do
+    if PBreakpoint(MainForm.fDebugger.Breakpoints.Items[i])^.Filename = fFilename then
+    begin
+      InsertBreakpoint(PBreakpoint(MainForm.fDebugger.Breakpoints.Items[i])^.Line);
+      PBreakpoint(MainForm.fDebugger.Breakpoints.Items[i])^.Editor := self;
+    end;
 end;
         
 procedure TEditor.Close;
@@ -690,54 +671,33 @@ begin
   end;
 end;
 
-
-
 function TEditor.ToggleBreakpoint(Line: integer): boolean;
-var
-  idx: integer;
 begin
-  idx := 0;
   result := FALSE;
   if (line > 0) and (line <= fText.Lines.Count) then
   begin
     fText.InvalidateGutterLine(line);
     fText.InvalidateLine(line);
-    idx := HasBreakPoint(Line);
+    
     //RNC moved the check to see if the debugger is running to here
-    if idx <> -1 then begin
-        if (MainForm.fDebugger.Executing and MainForm.fDebugger.IsBroken) or not MainForm.fDebugger.Executing then begin
-            idx := MainForm.RemoveBreakPointFromList(line, self);  // RNC
-        end
-        else if (MainForm.fDebugger.Executing and not MainForm.fDebugger.IsBroken) then begin
-            MessageDlg('Cannot remove a breakpoint while the debugger is executing.', mtError, [mbOK], 0);
-        end;
-    end
-    else begin
-        if (MainForm.fDebugger.Executing and MainForm.fDebugger.IsBroken) or not MainForm.fDebugger.Executing then begin
-           MainForm.AddBreakPointToList(line, self, self.TabSheet.Caption);   // RNC
-           idx := BreakPointList.Count -1;
-      result := TRUE;
-        end
-        else if (MainForm.fDebugger.Executing and not MainForm.fDebugger.IsBroken) then begin
-            MessageDlg('Cannot add a breakpoint while the debugger is executing.', mtError, [mbOK], 0);
-        end;
-    end;
+    if HasBreakPoint(Line) <> -1 then
+      MainForm.RemoveBreakPointFromList(line, self)
+    else
+      MainForm.AddBreakPointToList(line, self);
   end
   else
     fText.Invalidate;
-  if Assigned(fOnBreakpointToggle) then
-     fOnBreakpointToggle(idx, Result);
 end;
 
-//Rnc change to use the new list of breakpoints
 function TEditor.HasBreakPoint(line_number: integer): integer;
 begin
-  for result:= 0 to BreakPointList.Count-1 do begin
-    if PBreakPointEntry(BreakPointList.Items[result])^.editor = self then begin
-         if PBreakPointEntry(BreakPointList.Items[result])^.line = line_number then exit;
-    end;
-  end;
-  result := -1;
+  for Result:= 0 to MainForm.fDebugger.Breakpoints.Count - 1 do
+    if PBreakpoint(MainForm.fDebugger.Breakpoints.Items[Result])^.Editor = self then
+      if PBreakpoint(MainForm.fDebugger.Breakpoints.Items[result])^.Line = line_number then
+        Exit;
+
+  //Cannot find an entry
+  Result := -1;
 end;
 
 procedure TEditor.EditorSpecialLineColors(Sender: TObject; Line: Integer;
@@ -1741,12 +1701,11 @@ begin
         fCompletionBox.ShowMsgHint(r, fCurrentHint);
       end;
     end
-    else if devData.WatchHint and MainForm.fDebugger.Executing then begin // debugging - evaluate var under cursor and show value in a hint
-      MainForm.fDebugger.SendCommand(GDB_DISPLAY, fCurrentHint);
-      {Sleep(25);
-      fText.Hint:=MainForm.fDebugger.WatchVar+': '+MainForm.fDebugger.WatchValue;
-      fText.ShowHint:=True;
-      Application.ActivateHint(Mouse.CursorPos);}
+    else if devData.WatchHint and MainForm.fDebugger.Executing then // debugging - evaluate var under cursor and show value in a hint
+    begin
+      fText.Hint := MainForm.fDebugger.GetVariableHint(fCurrentHint);
+      fText.ShowHint := True;
+      Application.ActivateHint(Mouse.CursorPos);
     end;
   end;
 end;

@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 283
-  Top = 106
+  Left = 355
+  Top = 122
   Width = 638
   Height = 444
   Color = clBtnFace
@@ -28,7 +28,6 @@ object MainForm: TMainForm
     Height = 135
     AutoSnap = False
     MinSize = 45
-    ResizeStyle = rsUpdate
   end
   object SplitterBottom: TSplitter
     Left = 0
@@ -41,20 +40,19 @@ object MainForm: TMainForm
     OnMoved = SplitterBottomMoved
   end
   object SplitterRight: TSplitter
-    Left = 460
+    Left = 627
     Top = 102
     Height = 135
     Align = alRight
     AutoSnap = False
     MinSize = 45
-    ResizeStyle = rsUpdate
   end
   object MessageControl: TPageControl
     Left = 0
     Top = 241
     Width = 630
     Height = 130
-    ActivePage = CompSheet
+    ActivePage = DebugSheet
     Align = alBottom
     Constraints.MinHeight = 1
     Images = dmMain.MenuImages_Gnome
@@ -72,7 +70,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 98
+        Height = 97
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -189,12 +187,12 @@ object MainForm: TMainForm
         TabOrder = 1
         DesignSize = (
           393
-          97)
+          98)
         object LogOutput: TMemo
           Left = 7
           Top = 16
           Width = 638
-          Height = 71
+          Height = 79
           Anchors = [akLeft, akTop, akRight, akBottom]
           ReadOnly = True
           ScrollBars = ssVertical
@@ -210,8 +208,8 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
-        ActivePage = tabVars
+        Height = 98
+        ActivePage = tabDebugOutput
         Align = alClient
         Style = tsFlatButtons
         TabOrder = 0
@@ -222,7 +220,7 @@ object MainForm: TMainForm
             Left = 468
             Top = 0
             Width = 156
-            Height = 49
+            Height = 66
             Align = alLeft
             BevelOuter = bvLowered
             TabOrder = 0
@@ -301,7 +299,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 156
-            Height = 49
+            Height = 66
             Align = alLeft
             BevelOuter = bvLowered
             TabOrder = 1
@@ -396,7 +394,7 @@ object MainForm: TMainForm
             Left = 156
             Top = 0
             Width = 156
-            Height = 49
+            Height = 66
             Align = alLeft
             BevelOuter = bvLowered
             TabOrder = 2
@@ -491,7 +489,7 @@ object MainForm: TMainForm
             Left = 312
             Top = 0
             Width = 156
-            Height = 49
+            Height = 66
             Align = alLeft
             BevelOuter = bvLowered
             TabOrder = 3
@@ -581,6 +579,50 @@ object MainForm: TMainForm
                 FF00FF00FF00FF00FF00FF00FF00FF00FF00E7E7E700EFEFEF00FF00FF00FF00
                 FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00}
             end
+            object PauseExecBtn: TSpeedButton
+              Left = 4
+              Top = 49
+              Width = 148
+              Height = 20
+              Caption = 'Pause Execution'
+              Flat = True
+              Glyph.Data = {
+                36040000424D3604000000000000360000002800000010000000100000000100
+                2000000000000004000000000000000000000000000000000000FF00FF00FF00
+                FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FFFFFF00F7F7F700D6D6
+                D600E7E7E700FF00FF00EFEFF700FF00FF00FF00FF00FF00FF00FF00FF00FF00
+                FF00FF00FF00FF00FF00FF00FF00EFEFEF00CECECE00ADADAD00ADADAD00A5A5
+                A500737373009494AD00D6D6EF00FF00FF00FF00FF00FF00FF00FF00FF00EFEF
+                FF00F7F7FF00FFFFFF00D6D6D6009C9C9C00636363004A4A4A00313939005A5A
+                5A003131840052528400E7E7E700FF00FF00FF00FF00FF00FF00FF00FF00E7E7
+                E700A5A5C600C6C6D6005A635A00393939002929290021212100212929001821
+                520010107B004A4A5200C6C6C600F7F7F700FF00FF00FF00FF00FF00FF00EFEF
+                EF00636384004242A50021294A00182121003942390031393900212939000808
+                8C0021293100424242007B7B7B0094949400F7F7F700FF00FF00FF00FF00F7F7
+                F7008C8C8C0039427B000000AD002931420031393900424252000000A5002131
+                63002939390039424200636363007B7B7B00F7F7F700FF00FF00FF00FF00FF00
+                FF00CECECE0042524A0018298C000808A50018215A0018189400081094004263
+                5A0039524A003142420039393900A5A5A500FFFFFF00FF00FF00FF00FF00F7F7
+                F700A5A5A5009CA59C004A737B000000AD000000AD0008089C00424A5A005A84
+                7B004A6B630039524A006B6B6B00C6C6C600FFFFFF00FF00FF00FF00FF00FFFF
+                FF0084848400BDC6C6007B949C002939AD000000AD000000AD00181894005A7B
+                94005A847B0042635A00636B6B00CECECE00FF00FF00FF00FF00FF00FF00FF00
+                FF00C6C6C600393994000808AD003942B500A5BDCE006B73AD000000AD000000
+                AD0039529C004A6B63004A525200BDBDBD00FF00FF00FF00FF00FF00FF00EFEF
+                F7005252CE000000AD000000AD00BDCECE00C6D6D600C6DED600737B8C003142
+                A5002939A50052736B00393939008C8C8C00EFEFEF00FF00FF008C8CDE001010
+                B5000000AD000000AD009494DE00EFEFEF00A5BDB500B5CEC600A5BDBD007B9C
+                9C005A7B730063736B00ADADAD0094949400EFEFEF00FF00FF000000B5000000
+                AD001818B500BDBDEF00FF00FF00E7E7E7005A5A5A00849C9C0094B5AD00738C
+                840039635A0063736B00EFEFEF00A5A5A500FF00FF00FF00FF00ADADE7009C9C
+                DE00F7F7FF00FF00FF00FF00FF00F7F7F700737373009CADAD0052848C007384
+                8400C6CECE00EFEFEF00FF00FF00EFEFEF00FF00FF00FF00FF00FF00FF00FF00
+                FF00FF00FF00FF00FF00FF00FF00FFFFFF0094949400E7E7E700FFFFFF00FF00
+                FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+                FF00FF00FF00FF00FF00FF00FF00FF00FF00E7E7E700EFEFEF00FF00FF00FF00
+                FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00}
+              OnClick = PauseExecBtnClick
+            end
           end
         end
         object tabBacktrace: TTabSheet
@@ -617,6 +659,34 @@ object MainForm: TMainForm
             OnMouseMove = lvBacktraceMouseMove
           end
         end
+        object TabLocals: TTabSheet
+          Caption = 'Local Variables'
+          ImageIndex = 3
+          object lvLocals: TListView
+            Left = 0
+            Top = 0
+            Width = 610
+            Height = 66
+            Align = alClient
+            Columns = <
+              item
+                Caption = 'Name'
+                Width = 200
+              end
+              item
+                Caption = 'Value'
+                Width = 325
+              end
+              item
+                Caption = 'Location'
+                Width = 75
+              end>
+            ReadOnly = True
+            RowSelect = True
+            TabOrder = 0
+            ViewStyle = vsReport
+          end
+        end
         object tabDebugOutput: TTabSheet
           Caption = 'Output'
           ImageIndex = 2
@@ -624,10 +694,14 @@ object MainForm: TMainForm
             Left = 0
             Top = 22
             Width = 610
-            Height = 44
+            Height = 45
             Align = alClient
-            Lines.Strings = (
-              'Debugger output')
+            Font.Charset = DEFAULT_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -11
+            Font.Name = 'Courier New'
+            Font.Style = []
+            ParentFont = False
             ReadOnly = True
             ScrollBars = ssVertical
             TabOrder = 0
@@ -640,26 +714,26 @@ object MainForm: TMainForm
             Align = alTop
             BevelOuter = bvNone
             TabOrder = 1
-            object lblSendCommandGdb: TLabel
-              Left = 4
-              Top = 0
-              Width = 118
+            object lblSendCommandDebugger: TLabel
+              Left = 0
+              Top = 2
+              Width = 137
               Height = 13
-              Caption = 'Send command to GDB :'
+              Caption = 'Send command to debugger:'
             end
             object edGdbCommand: TEdit
               Left = 160
               Top = 0
-              Width = 233
+              Width = 285
               Height = 21
               TabOrder = 0
               OnKeyPress = edGdbCommandKeyPress
             end
             object GdbCommandBtn: TButton
-              Left = 398
+              Left = 450
               Top = 0
               Width = 62
-              Height = 18
+              Height = 21
               Caption = 'Send'
               TabOrder = 1
               OnClick = GdbCommandBtnClick
@@ -1122,7 +1196,7 @@ object MainForm: TMainForm
   object PageControl: TPageControl
     Left = 213
     Top = 102
-    Width = 247
+    Width = 414
     Height = 135
     Align = alClient
     PopupMenu = EditorPopupMenu
@@ -1179,15 +1253,6 @@ object MainForm: TMainForm
     Active = False
     OnNotifyChange = devFileMonitor1NotifyChange
   end
-  object pnlControlHolder: TPanel
-    Left = 463
-    Top = 102
-    Width = 167
-    Height = 135
-    Align = alRight
-    TabOrder = 6
-    Visible = False
-  end
   object pnlBrowsers: TPanel
     Left = 0
     Top = 102
@@ -1198,7 +1263,7 @@ object MainForm: TMainForm
     Caption = 'pnlBrowsers'
     UseDockManager = False
     DockSite = True
-    TabOrder = 7
+    TabOrder = 6
     object LeftPageControl: TPageControl
       Left = 9
       Top = 9
@@ -3373,7 +3438,7 @@ object MainForm: TMainForm
     MultiLangStrings.HeaderShortcut = 'Shortcut assigned'
     MultiLangStrings.OK = 'OK'
     MultiLangStrings.Cancel = 'Cancel'
-    Left = 521
+    Left = 520
     Top = 158
   end
   object BrowserPopup: TPopupMenu
@@ -3463,7 +3528,7 @@ object MainForm: TMainForm
   end
   object DevCppDDEServer: TDdeServerConv
     OnExecuteMacro = DevCppDDEServerExecuteMacro
-    Left = 549
+    Left = 548
     Top = 158
   end
   object XPMenu: TXPMenu
@@ -3508,7 +3573,7 @@ object MainForm: TMainForm
     BottomSplitterStyle.ParentColor = False
     DockStyle = DockStyle
     CustomDock = False
-    Left = 577
+    Left = 576
     Top = 158
   end
   object DockStyle: TJvDockVSNetStyle
@@ -3524,7 +3589,7 @@ object MainForm: TMainForm
     TabServerOption.InactiveFont.Name = 'MS Sans Serif'
     TabServerOption.InactiveFont.Style = []
     TabServerOption.ShowCloseButtonOnTabs = False
-    Left = 605
+    Left = 604
     Top = 158
   end
 end
