@@ -22,16 +22,27 @@ unit debugwait;
 interface
 
 uses
+  Sysutils, Classes, version, StrUtils,
 {$IFDEF WIN32}
-  Sysutils, Classes, Windows, ShellAPI, debugreader,
-  version, Dialogs, ComCtrls, StrUtils, Forms;
+  Windows, ShellAPI, Dialogs, ComCtrls, Forms;
 {$ENDIF}
 {$IFDEF LINUX}
-  Sysutils, Classes, debugreader,
-  version, QDialogs, QComCtrls, StrUtils, QForms;
+  QDialogs, QComCtrls, QForms;
 {$ENDIF}
 
 type
+  TDebugReader = class(TThread)
+  public
+    hPipeRead: THandle;
+    EventReady: THandle;
+    OutputCrit: TRTLCriticalSection;
+    Output: string;
+    Idle: boolean;
+
+  protected
+    procedure Execute; override;
+  end;
+
   TDebugWait = class(TThread)
   public
     Stop: Boolean;
@@ -47,7 +58,30 @@ type
 implementation
 
 uses 
-  main, devcfg, utils, dbugintf;
+  main, devcfg, utils, dbugintf, debugger;
+
+procedure TDebugReader.Execute;
+var
+  Buffer: array[0..1024] of char;
+  LastRead: DWORD;
+begin
+  while True do
+  begin
+    Idle := False;
+    FillChar(Buffer, sizeof(Buffer), 0);
+    if not ReadFile(hPipeRead, Buffer, sizeof(Buffer), LastRead, nil) then
+      Break;
+
+    //Now that we have read the data from the pipe, copy the contents
+    EnterCriticalSection(OutputCrit);
+    Self.Output := Self.Output + Buffer;
+    LeaveCriticalSection(OutputCrit);
+    Idle := true;
+
+    //Then pass control to our other half.
+    SetEvent(EventReady);
+  end;
+end;
 
 procedure TDebugWait.Execute;
 begin

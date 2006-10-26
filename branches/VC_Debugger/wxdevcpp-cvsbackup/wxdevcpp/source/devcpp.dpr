@@ -26,17 +26,14 @@ program devcpp;
 {$R 'LangFrm.res' 'LangFrm.rc'}
 {$WARN SYMBOL_PLATFORM OFF}
 
-uses  
+uses
   FastMM4,
   FastCode,
-{$IFNDEF OLD_MADSHI}
   madListHardware,
   madListProcesses,
   madListModules,
-{$ENDIF}
   madExcept,
   madLinkDisAsm,
-  madScreenShot,
   inifiles,
   Windows,
   Forms,
@@ -75,7 +72,6 @@ uses
   editor in 'editor.pas',
   Envirofrm in 'Envirofrm.pas' {EnviroForm},
   debugwait in 'debugwait.pas',
-  debugreader in 'debugreader.pas',
   debugger in 'debugger.pas',
   CFGData in 'CFGData.pas',
   CFGINI in 'CFGINI.pas',
@@ -115,16 +111,13 @@ uses
   ImageTheme in 'ImageTheme.pas' {$IFDEF WX_BUILD},
   Wxcontrolpanel in 'components\Wxcontrolpanel.pas',
   uFileWatch in 'uFileWatch.pas',
-  
-  //New form files
   dmCreateNewProp in 'dmCreateNewProp.pas' {frmCreateFormProp},
   DesignerOptions in 'DesignerOptions.pas' {DesignerForm},
   Designerfrm in 'Designerfrm.pas' {frmNewForm},
   MigrateFrm in 'MigrateFrm.pas' {MigrateFrm},
   ViewIDForm in 'ViewIDForm.pas' {ViewControlIDsForm},
   CreateOrderFm in 'CreateOrderFm.pas' {CreationOrderForm},
-  
-  //Property editors
+  ComponentPalette in 'components\ComponentPalette.pas',
   dmListview in 'propedit\dmListview.pas' {ListviewForm},
   UStrings in 'propedit\UStrings.pas' {StringsForm},
   UStatusbar in 'propedit\UStatusbar.pas' {StatusBarForm},
@@ -132,8 +125,6 @@ uses
   UColorEdit in 'propedit\UColorEdit.pas' {ColorEdit},
   UMenuitem in 'propedit\UMenuitem.pas' {MenuItemForm},
   UValidator in 'propedit\UValidator.pas' {wxValidator},
-  
-  //UI components
   WxUtils in 'components\wxUtils.pas',
   WxBitmapButton in 'components\WxBitmapButton.pas',
   WXCheckBox in 'components\wxcheckbox.pas',
@@ -190,8 +181,7 @@ uses
   Wxsplitterwindow in 'components\wxsplitterwindow.pas',
   WxRadioBox in 'components\wxRadioBox.pas',
   WxDatePickerCtrl in 'components\wxDatePickerCtrl.pas',
-  CustomWXDRadioGroup in 'components\CustomWXDRadioGroup.pas'
-{$ENDIF};
+  CustomWXDRadioGroup in 'components\CustomWXDRadioGroup.pas' {$ENDIF};
 
 {$R *.res}
 {$R winxp.res}
@@ -313,7 +303,6 @@ begin
   Application.Initialize;
   Application.Title := 'wxDev-C++';
   Application.CreateForm(TMainForm, MainForm);
-
   if not devData.NoSplashScreen then
   begin
     SplashForm := TSplashForm.Create(Application);
@@ -329,8 +318,7 @@ begin
   Application.CreateForm(TWebUpdateForm, WebUpdateForm);
   MainForm.DoCreateEverything;
 
-  // apply the window placement. this method forced
-  // the form to show,
+  // apply the window placement. this method forces the form to show.
   MainForm.DoApplyWindowPlacement;
   if not devData.NoSplashScreen then
     SplashForm.Free;

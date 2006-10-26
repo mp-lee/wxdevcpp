@@ -70,7 +70,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -108,7 +108,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelKind = bkSoft
         BorderStyle = bsNone
@@ -126,7 +126,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 225
-        Height = 97
+        Height = 98
         Align = alLeft
         Caption = 'Information :'
         TabOrder = 0
@@ -181,7 +181,7 @@ object MainForm: TMainForm
         Left = 225
         Top = 0
         Width = 393
-        Height = 97
+        Height = 98
         Align = alClient
         Caption = 'Compile log :'
         TabOrder = 1
@@ -192,7 +192,7 @@ object MainForm: TMainForm
           Left = 7
           Top = 16
           Width = 638
-          Height = 79
+          Height = 81
           Anchors = [akLeft, akTop, akRight, akBottom]
           ReadOnly = True
           ScrollBars = ssVertical
@@ -632,7 +632,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 66
+            Height = 67
             Align = alClient
             Columns = <
               item
@@ -666,7 +666,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 66
+            Height = 67
             Align = alClient
             Columns = <
               item
@@ -750,7 +750,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft

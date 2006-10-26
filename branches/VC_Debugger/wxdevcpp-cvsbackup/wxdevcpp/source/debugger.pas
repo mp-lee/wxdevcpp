@@ -21,14 +21,13 @@ unit debugger;
 
 interface
 
-uses 
+uses
+  Sysutils, Classes, debugwait, version, editor,
 {$IFDEF WIN32}
-  Sysutils, Windows, Classes, ShellAPI, Dialogs, Controls,
-  debugreader, debugwait, version, editor, ComCtrls;
+  Windows, ShellAPI, Dialogs, Controls, ComCtrls;
 {$ENDIF}
 {$IFDEF LINUX}
-  Sysutils, Classes, QDialogs, QControls,
-  debugreader, debugwait, version, editor, QComCtrls;
+  QDialogs, QControls, debugwait, QComCtrls;
 {$ENDIF}
 
 type
@@ -88,6 +87,12 @@ type
     Name: string;
     Value: string;
     Location: string;
+  end;
+
+  PWatch = ^TWatch;
+  TWatch = packed record
+    Name: string;
+    Address: string;
   end;
 
   TDebugger = class
@@ -177,9 +182,9 @@ type
     procedure ClearIncludeDirs; virtual; abstract;
 
     //Variable watches
-    procedure RefreshContext;
-    procedure AddWatch(varname: string); virtual;
-    procedure RemoveWatch(varname: string); virtual;
+    procedure RefreshContext; virtual; abstract;
+    procedure AddWatch(varname: string); virtual; abstract;
+    procedure RemoveWatch(varname: string); virtual; abstract;
     procedure ModifyVariable(varname, newvalue: string); virtual; abstract;
 
     //Havn't looked at these
@@ -217,6 +222,11 @@ type
     procedure AddBreakpoint(breakpoint: TBreakpoint); override;
     procedure RemoveBreakpoint(breakpoint: TBreakpoint); override;
     procedure RefreshBreakpoint(var breakpoint: TBreakpoint); override;
+
+    //Variable watches
+    procedure RefreshContext; override;
+    procedure AddWatch(varname: string); override;
+    procedure RemoveWatch(varname: string); override;
 
     //Debugger control
     procedure Go; override;
@@ -664,23 +674,6 @@ begin
     Result := '';
 end;
 
-procedure TDebugger.RefreshContext;
-var i, k : integer;
-  s: string;
-begin
-  if not Executing then
-    exit;
-  if Assigned(MainForm.DebugTree) then
-    for i := 0 to DebugTree.Items.Count - 1 do begin
-      k := AnsiPos(' = Not found in current context', DebugTree.Items[i].Text);
-       if k > 0 then begin
-        s := DebugTree.Items[i].Text;
-        Delete(s, k, length(s) - k + 1);
-        QueueCommand(GDB_DISPLAY, s);
-      end;
-    end;
-end;
-
 //------------------------------------------------------------------------------
 // TCDBDebugger
 //------------------------------------------------------------------------------
@@ -769,11 +762,12 @@ var
 
       //Because we are here, we probably are a side-effect of a previous instruction
       //If we have to redirect the output (somewhere) do so!
-      if CurrentCommand is TCommandWithResult then
-      begin
-        TCommandWithResult(CurrentCommand).Result.Assign(CurOutput);
-        SetEvent(TCommandWithResult(CurrentCommand).Event);
-      end;
+      if Assigned(CurrentCommand) then
+        if CurrentCommand is TCommandWithResult then
+        begin
+          TCommandWithResult(CurrentCommand).Result.Assign(CurOutput);
+          SetEvent(TCommandWithResult(CurrentCommand).Event);
+        end;
       CurOutput.Clear;
 
       //Send the command, and do not send any more
@@ -883,6 +877,143 @@ begin
     else
       breakpoint.Index := fBreakpoints.Count;
     QueueCommand('bp' + IntToStr(breakpoint.Index), '`' + breakpoint.Filename + ':' + IntToStr(breakpoint.Line) + '`');
+  end;
+end;
+
+procedure TCDBDebugger.RefreshContext;
+var
+  Output: TStringList;
+  RegExp: TRegExpr;
+  Node: TTreeNode;
+  I, J: Integer;
+
+  procedure ParseStructure(Output: TStringList; ParentNode: TTreeNode);
+  const
+    VariableExpr = '( +)\+0x([0-9a-fA-F]{1,8}) ([^ ]*)?( +): (.*)';
+  var
+    SubStructure: TStringList;
+    Indent: Integer;
+    I: Integer;
+  begin
+    I := 0;
+    Indent := 0;
+    while I < Output.Count do
+    begin
+      if RegExp.Exec(Output[I], VariableExpr) then
+      begin
+        if Indent = 0 then
+          Indent := Length(RegExp.Substitute('$1'));
+
+        //Check if this is a sub-structure
+        if Indent <> Length(RegExp.Substitute('$1')) then
+        begin
+          //Populate the substructure string list
+          SubStructure := TStringList.Create;
+          while I < Output.Count do
+          begin
+            if RegExp.Exec(Output[I], VariableExpr) then
+              if Length(RegExp.Substitute('$1')) = Indent then
+                Break
+              else
+                SubStructure.Add(Output[I]);
+            Inc(I);
+          end;
+
+          //Process it
+          with ParentNode.Item[ParentNode.Count - 1] do
+          begin
+            SelectedIndex := 39;
+            ImageIndex := 39;
+          end;
+          ParseStructure(SubStructure, ParentNode.Item[ParentNode.Count - 1]);
+          SubStructure.Free;
+
+          //Decrement I, since we will increment one at the end of the loop
+          Dec(I);
+        end
+        
+        //Otherwise just add the value
+        else
+          with DebugTree.Items.AddChild(ParentNode, RegExp.Substitute('$3 = $5')) do
+          begin
+            SelectedIndex := 32;
+            ImageIndex := 32;
+          end;
+      end;
+
+      //Increment I
+      Inc(I);
+    end;
+  end;
+begin
+  if not Executing then
+    Exit;
+
+  RegExp := TRegExpr.Create;
+  if Assigned(DebugTree) then
+    for I := 0 to DebugTree.Items.Count - 1 do
+    begin
+      Node := DebugTree.Items[I];
+      with PWatch(Node.Data)^ do
+      begin
+        //Decide what command we should send - dv for locals, dt for structures
+        if Pos('.', Name) > 0 then
+        begin
+          //Issue the command
+          Output := GetOutputOfCommand('dt', '-r ' + Copy(name, 1, Pos('.', name) - 1));
+
+          //Set the type of the structure/class/whatever
+          if RegExp.Exec(Output[0], '(.*) (.*) @ 0x([0-9a-fA-F]{1,8}) Type (.*)') then
+            Node.Text := RegExp.Substitute(Copy(name, 1, Pos('.', name) - 1) + ' = $4 (0x$3)');
+
+          //Then find the member name
+          Node.DeleteChildren;
+          ParseStructure(Output, Node);
+        end
+        else
+        begin
+          Output := GetOutputOfCommand('dv', name);
+          for J := 0 to Output.Count - 1 do
+            if RegExp.Exec(Output[J], '( +)' + name + ' = (.*)') then
+              Node.Text := Trim(Output[J]);
+        end;
+
+        Output.Free;
+      end;
+    end;
+
+  //Clean up
+  RegExp.Free;
+end;
+
+procedure TCDBDebugger.AddWatch(varname: string);
+var
+  Watch: PWatch;
+begin
+  with DebugTree.Items.Add(nil, varname + ' = (unknown)') do
+  begin
+    ImageIndex := 21;
+    SelectedIndex := 21;
+    New(Watch);
+    Watch^.Name := varname;
+    Data := Watch;
+  end;
+end;
+
+procedure TCDBDebugger.RemoveWatch(varname: string);
+var
+  node: TTreeNode;
+begin
+  //Find the top-most node
+  node := DebugTree.Selected;
+  while Assigned(node) and (Assigned(node.Parent)) do
+    node := node.Parent;
+
+  //Then clean it up
+  if Assigned(node) then
+  begin
+    Dispose(node.Data);
+    DebugTree.Items.Delete(node);
   end;
 end;
 
