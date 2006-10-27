@@ -105,6 +105,7 @@ type
     fExecuting: Boolean;
     fDebugTree: TTreeView;
     fBreakpoints: TList;
+    fNextBreakpoint: Integer;
 
     CommandQueue: TList;
     FileName: string;
@@ -114,6 +115,7 @@ type
     Event: THandle;
     Wait: TDebugWait;
     Reader: TDebugReader;
+    Status: TDebugStatus;
     CurrentCommand: TCommand;
 
     //These functions pass the debugger output to individual functions
@@ -258,6 +260,7 @@ end;
 
 constructor TDebugger.Create;
 begin
+  fNextBreakpoint := 0;
   fBreakpoints := TList.Create;
   CommandQueue := TList.Create;
   fExecuting := False;
@@ -384,8 +387,13 @@ begin
   Wait.OnOutput := OnOutput;
   Wait.Reader := Reader;
   Wait.Event := Event;
+
+  // Create a thread that will handle keeping the GUI updated with the most current
+  // debugger information
+  Status := TDebugStatus.Create(true);
   Wait.Resume;
   Reader.Resume;
+  Status.Resume;
 end;
 
 procedure TDebugger.DisplayError(s: string);
@@ -407,6 +415,8 @@ begin
     Wait := nil;
     Reader.Terminate;
     Reader := nil;
+    Status.Terminate;
+    Status := nil;
 
     //Close the handles
     if (not CloseHandle(hPid)) then
@@ -419,6 +429,7 @@ begin
 
     //Clear the command queue
     CommandQueue.Clear;
+    CurrentCommand := nil;
   end;
 end;
 
@@ -465,7 +476,7 @@ const
   StrSize = 511;
 begin
   //Do we have anything left? Are we paused?
-  if (CommandQueue.Count = 0) or (not Paused) then
+  if (CommandQueue.Count = 0) or (not Paused) or Busy then
     Exit;
   
   //Initialize stuff
@@ -521,10 +532,10 @@ begin
   Ptr^.Callback := command.Callback;
 
   //Send the command to the debugger
-  fBusy := True;
   CommandQueue.Add(Ptr);
   if Executing and Paused then
     SendCommand;
+  fBusy := True;
 
   //Wait for the event
   while WaitForSingleObject(Ptr^.Event, 20) = WAIT_TIMEOUT do
@@ -753,6 +764,8 @@ var
   SentCommand: Boolean;
 
   procedure ParseOutput(const line: string);
+  var
+    CurCmdType: String;
   begin
     if (not SentCommand) and RegExp.Exec(line, '^([0-9]+):([0-9]+)>') then
     begin
@@ -767,6 +780,13 @@ var
         begin
           TCommandWithResult(CurrentCommand).Result.Assign(CurOutput);
           SetEvent(TCommandWithResult(CurrentCommand).Event);
+        end
+        else
+        begin
+          //Refresh the current variable context, without being reentrant!
+          CurCmdType := Copy(CurrentCommand.Command, 0, Pos(' ', CurrentCommand.Command) - 1)f;
+          if (CurrentCommand.Command = 'g'#10) or (CurrentCommand.Command = 't'#10) or (CurrentCommand.Command = 'p'#10) then
+            Status.Resume;
         end;
       CurOutput.Clear;
 
@@ -872,10 +892,8 @@ procedure TCDBDebugger.RefreshBreakpoint(var breakpoint: TBreakpoint);
 begin
   if Executing then
   begin
-    if fBreakpoints.Count > 1 then
-      breakpoint.Index := PBreakpoint(fBreakpoints[fBreakpoints.Count - 2])^.Index + 1
-    else
-      breakpoint.Index := fBreakpoints.Count;
+    Inc(fNextBreakpoint);
+    breakpoint.Index := fNextBreakpoint;
     QueueCommand('bp' + IntToStr(breakpoint.Index), '`' + breakpoint.Filename + ':' + IntToStr(breakpoint.Line) + '`');
   end;
 end;

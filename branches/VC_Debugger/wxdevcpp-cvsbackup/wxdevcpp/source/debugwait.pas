@@ -55,6 +55,13 @@ type
     procedure Update;
   end;
 
+  TDebugStatus = class(TThread)
+  public
+    procedure Update;
+  protected
+    procedure Execute; override;
+  end;
+
 implementation
 
 uses 
@@ -67,16 +74,14 @@ var
 begin
   while True do
   begin
-    Idle := False;
     FillChar(Buffer, sizeof(Buffer), 0);
     if not ReadFile(hPipeRead, Buffer, sizeof(Buffer), LastRead, nil) then
       Break;
 
     //Now that we have read the data from the pipe, copy the contents
     EnterCriticalSection(OutputCrit);
-    Self.Output := Self.Output + Buffer;
+    Output := Output + Buffer;
     LeaveCriticalSection(OutputCrit);
-    Idle := true;
 
     //Then pass control to our other half.
     SetEvent(EventReady);
@@ -104,6 +109,64 @@ begin
   OnOutput(Reader.Output);
   Reader.Output := '';
   LeaveCriticalSection(Reader.OutputCrit);
+end;
+
+procedure TDebugStatus.Execute;
+begin
+  while true do
+  begin
+    Self.Suspend;
+    Synchronize(Update);
+  end;
+end;
+
+procedure TDebugStatus.Update;
+var
+  I: integer;
+  list: TList;
+begin
+  with MainForm do
+  begin
+    fDebugger.RefreshContext;
+    lvBacktrace.Items.BeginUpdate;
+    lvBacktrace.Items.Clear;
+    if fDebugger.Executing then
+    begin
+      //Ask the debugger for the call stack
+      list := fDebugger.CallStack;
+      if Assigned(list) then
+      begin
+        for I := 0 to list.Count - 1 do
+          with lvBacktrace.Items.Add do
+          begin
+            Caption := PStackFrame(list[I])^.FuncName;
+            SubItems.Add(PStackFrame(list[I])^.Args);
+            SubItems.Add(PStackFrame(list[I])^.Filename);
+            SubItems.Add(IntToStr(PStackFrame(list[I])^.Line));
+            Data := CppParser1.Locate(Caption, True);
+          end;
+      end;
+    end;
+    lvBacktrace.Items.EndUpdate;
+
+    lvLocals.Items.BeginUpdate;
+    lvLocals.Items.Clear;
+    if fDebugger.Executing then
+    begin
+      //Ask the debugger for the local variables
+      list := fDebugger.Locals;
+      if Assigned(list) then
+      begin
+        for I := 0 to list.Count - 1 do
+          with lvLocals.Items.Add do begin
+            Caption := PVariable(list[I])^.Name;
+            SubItems.Add(PVariable(list[I])^.Value);
+            SubItems.Add(PVariable(list[I])^.Location);
+          end;
+      end;
+    end;
+    lvLocals.Items.EndUpdate;
+  end;
 end;
 
 end.
