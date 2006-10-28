@@ -25,7 +25,7 @@ uses
 {$IFDEF WIN32}
   Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, CodeCompletion, CppParser,
   Menus, ImgList, ComCtrls, StdCtrls, ExtCtrls, SynEdit, SynEditKeyCmds, version, Grids,
-   SynCompletionProposal, StrUtils, SynEditTypes,  SynEditHighlighter,
+  SynCompletionProposal, StrUtils, SynEditTypes, SynEditHighlighter,
 
   {** Modified by Peter **}
   DevCodeToolTip, SynAutoIndent,utils
@@ -126,6 +126,7 @@ type
     procedure EditorDblClick(Sender: TObject);
     procedure EditorMouseMove(Sender: TObject; Shift: TShiftState; X, Y:Integer);
     procedure DebugHintTimer(sender: TObject);
+    procedure OnVariableHint(Hint: string);
 
     procedure SetFileName(value: string);
     procedure DrawGutterImages(ACanvas: TCanvas; AClip: TRect;
@@ -1703,11 +1704,17 @@ begin
     end
     else if devData.WatchHint and MainForm.fDebugger.Executing then // debugging - evaluate var under cursor and show value in a hint
     begin
-      fText.Hint := MainForm.fDebugger.GetVariableHint(fCurrentHint);
-      fText.ShowHint := True;
-      Application.ActivateHint(Mouse.CursorPos);
+      MainForm.fDebugger.GetVariableHint(fCurrentHint);
+      MainForm.fDebugger.OnVariableHint := OnVariableHint;
     end;
   end;
+end;
+
+procedure TEditor.OnVariableHint(Hint: string);
+begin
+  fText.Hint := Hint;
+  fText.ShowHint := True;
+  Application.ActivateHint(Mouse.CursorPos);
 end;
 
 procedure TEditor.CommentSelection;

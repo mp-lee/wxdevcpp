@@ -75,6 +75,7 @@ type
     procedure rbSyntaxClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure edFuncKeyPress(Sender: TObject; var Key: Char);
+
   private
     ActiveLine: integer;
     fDebugger: TDebugger;
@@ -82,7 +83,10 @@ type
     procedure LoadText;
     procedure OnActiveLine(Sender: TObject; Line: Integer;
       var Special: Boolean; var FG, BG: TColor);
-    procedure SetDisassembly(disasm: string);
+
+    //Callback functions
+    procedure OnRegisters(Registers: TRegisters);
+    procedure OnDisassembly(Disassembly: string);
 
     { Private declarations }
   public
@@ -125,13 +129,15 @@ end;
 
 procedure TCPUForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
+  fDebugger.OnDisassemble := nil;
+  fDebugger.OnRegisters := nil;
   CPUForm := nil;
 end;
 
 procedure TCPUForm.edFuncKeyPress(Sender: TObject; var Key: Char);
 begin
   if (Key = #13) and fDebugger.Executing then
-    SetDisassembly(fDebugger.Disassemble(edFunc.Text));
+    fDebugger.Disassemble(edFunc.Text);
 end;
 
 procedure TCPUForm.rbSyntaxClick(Sender: TObject);
@@ -145,35 +151,39 @@ begin
       fDebugger.SetAssemblySyntax(asATnT)
     else
       fDebugger.SetAssemblySyntax(asIntel);
-    SetDisassembly(fDebugger.Disassembly);
+
+    //Reload the disassembly
+    fDebugger.Disassemble;
   end;
 end;
 
 procedure TCPUForm.PopulateRegisters(debugger: TDebugger);
-var
-  registers: TRegisters;
 begin
   fDebugger := debugger;
-  registers := fDebugger.Registers;
-  if registers <> nil then
-    with registers do
-    begin
-      EAXText.Text := EAX;
-      EBXText.Text := EBX;
-      ECXText.Text := ECX;
-      EDXText.Text := EDX;
-      ESIText.Text := ESI;
-      EDIText.Text := EDI;
-      EBPText.Text := EBP;
-      ESPText.Text := ESP;
-      EIPText.Text := EIP;
-      CSText.Text := CS;
-      DSText.Text := DS;
-      SSText.Text := SS;
-      ESText.Text := ES;
-    end;
+  fDebugger.OnRegisters := OnRegisters;
+  fDebugger.OnDisassemble := OnDisassembly;
+  fDebugger.GetRegisters;
+  fDebugger.Disassemble;
+end;
 
-  SetDisassembly(fDebugger.Disassembly);
+procedure TCPUForm.OnRegisters(Registers: TRegisters);
+begin
+  with Registers do
+  begin
+    EAXText.Text := EAX;
+    EBXText.Text := EBX;
+    ECXText.Text := ECX;
+    EDXText.Text := EDX;
+    ESIText.Text := ESI;
+    EDIText.Text := EDI;
+    EBPText.Text := EBP;
+    ESPText.Text := ESP;
+    EIPText.Text := EIP;
+    CSText.Text := CS;
+    DSText.Text := DS;
+    SSText.Text := SS;
+    ESText.Text := ES;
+  end;
 end;
 
 procedure TCPUForm.OnActiveLine(Sender: TObject; Line: Integer;
@@ -188,11 +198,11 @@ var pt : TPoint;
   end;
 end;
 
-procedure TCPUForm.SetDisassembly(disasm: string);
+procedure TCPUForm.OnDisassembly(Disassembly: string);
 var
   i: integer;
 begin
-  CodeList.Lines.Text := disasm;
+  CodeList.Lines.Text := Disassembly;
   for i := 0 to CodeList.Lines.Count - 1 do
     if pos(EIPText.Text, CodeList.Lines[i]) <> 0 then begin
       if (ActiveLine <> i) and (ActiveLine <> -1) then

@@ -213,7 +213,6 @@ object MainForm: TMainForm
         Align = alClient
         Style = tsFlatButtons
         TabOrder = 0
-        OnChange = DebugSubPagesChange
         object tabVars: TTabSheet
           Caption = 'Debug'
           object PanelDebug: TPanel

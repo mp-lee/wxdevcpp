@@ -823,7 +823,6 @@ type
     procedure actBrowserRenameFolderExecute(Sender: TObject);
     procedure actCloseAllButThisExecute(Sender: TObject);
     procedure actStepSingleExecute(Sender: TObject);
-    procedure DebugSubPagesChange(Sender: TObject);
     procedure lvBacktraceCustomDrawItem(Sender: TCustomListView;
       Item: TListItem; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure lvBacktraceMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -1042,9 +1041,11 @@ type
     procedure SetProjCompOpt(idx: integer; Value: boolean);// set project's compiler option indexed 'idx' to value 'Value'
     function CloseEditor(index: integer; Rem: boolean): Boolean;
 
-    { *** RNC Global Breakpoint Declarations *** }
+    //Debugger stuff
     procedure AddBreakPointToList(line_number: integer; e: TEditor);
     procedure RemoveBreakPointFromList(line_number: integer; e:TEditor);
+    procedure OnCallStack(Callstack: TList);
+    procedure OnLocals(Locals: TList);
 
 {$IFDEF WX_BUILD}
     procedure SurroundString(e: TEditor;strStart,strEnd:String);
@@ -1962,6 +1963,8 @@ begin
 
   fDebugger := TCDBDebugger.Create;
   fDebugger.DebugTree := DebugTree;
+  fDebugger.OnCallStack := OnCallStack;
+  fDebugger.OnLocals := OnLocals;
 
   SearchCenter.SearchProc := MainSearchProc;
   SearchCenter.PageControl := PageControl;
@@ -2089,6 +2092,44 @@ begin
     Editor := e;
   end;
   fDebugger.RemoveBreakpoint(Breakpoint);
+end;
+
+procedure TMainForm.OnCallStack(Callstack: TList);
+var
+  I: Integer;
+begin
+  Assert(Assigned(Callstack), 'Callstack must be valid');
+  lvBacktrace.Items.BeginUpdate;
+  lvBacktrace.Items.Clear;
+
+  for I := 0 to Callstack.Count - 1 do
+    with lvBacktrace.Items.Add do
+    begin
+      Caption := PStackFrame(Callstack[I])^.FuncName;
+      SubItems.Add(PStackFrame(Callstack[I])^.Args);
+      SubItems.Add(PStackFrame(Callstack[I])^.Filename);
+      SubItems.Add(IntToStr(PStackFrame(Callstack[I])^.Line));
+      Data := CppParser1.Locate(Caption, True);
+    end;
+  lvBacktrace.Items.EndUpdate;
+end;
+
+procedure TMainForm.OnLocals(Locals: TList);
+var
+  I: Integer;
+begin
+  Assert(Assigned(Locals), 'Locals list must be valid');
+  lvLocals.Items.BeginUpdate;
+  lvLocals.Items.Clear;
+
+  for I := 0 to Locals.Count - 1 do
+    with lvLocals.Items.Add do
+    begin
+      Caption := PVariable(Locals[I])^.Name;
+      SubItems.Add(PVariable(Locals[I])^.Value);
+      SubItems.Add(PVariable(Locals[I])^.Location);
+    end;
+  lvLocals.Items.EndUpdate;
 end;
 
 // This method is called from devcpp.dpr. It's called at the very last, because
@@ -5776,19 +5817,13 @@ end;
 procedure TMainForm.actNextStepExecute(Sender: TObject);
 begin
   if fDebugger.Paused and fDebugger.Executing then
-  begin
-    fDebugger.RefreshContext;
     fDebugger.Next;
-  end;
 end;
 
 procedure TMainForm.actStepSingleExecute(Sender: TObject);
 begin
   if fDebugger.Paused and fDebugger.Executing then
-  begin
-    fDebugger.RefreshContext;
     fDebugger.Step;
-  end;
 end;
 
 procedure TMainForm.actWatchItemExecute(Sender: TObject);
@@ -5843,7 +5878,6 @@ procedure TMainForm.actStepOverExecute(Sender: TObject);
 begin
   if fDebugger.Paused and fDebugger.Executing then begin
     RemoveActiveBreakpoints;
-    fDebugger.RefreshContext;
     fDebugger.Go;
   end;
 end;
@@ -6930,56 +6964,6 @@ begin
 {$ELSE}
     e.Text.SetFocus;
 {$ENDIF}
-  end;
-end;
-
-procedure TMainForm.DebugSubPagesChange(Sender: TObject);
-var
-  I: integer;
-  list: TList;
-begin
-  if DebugSubPages.ActivePage = tabBacktrace then
-  begin
-    lvBacktrace.Items.BeginUpdate;
-    lvBacktrace.Items.Clear;
-    if fDebugger.Executing then
-    begin
-      //Ask the debugger for the call stack
-      list := fDebugger.CallStack;
-      if Assigned(list) then
-      begin
-        for I := 0 to list.Count - 1 do
-          with lvBacktrace.Items.Add do
-          begin
-            Caption := PStackFrame(list[I])^.FuncName;
-            SubItems.Add(PStackFrame(list[I])^.Args);
-            SubItems.Add(PStackFrame(list[I])^.Filename);
-            SubItems.Add(IntToStr(PStackFrame(list[I])^.Line));
-            Data := CppParser1.Locate(Caption, True);
-          end;
-      end;
-    end;
-    lvBacktrace.Items.EndUpdate;
-  end
-  else if DebugSubPages.ActivePage = tabLocals then
-  begin
-    lvLocals.Items.BeginUpdate;
-    lvLocals.Items.Clear;
-    if fDebugger.Executing then
-    begin
-      //Ask the debugger for the local variables
-      list := fDebugger.Locals;
-      if Assigned(list) then
-      begin
-        for I := 0 to list.Count - 1 do
-          with lvLocals.Items.Add do begin
-            Caption := PVariable(list[I])^.Name;
-            SubItems.Add(PVariable(list[I])^.Value);
-            SubItems.Add(PVariable(list[I])^.Location);
-          end;
-      end;
-    end;
-    lvLocals.Items.EndUpdate;
   end;
 end;
 

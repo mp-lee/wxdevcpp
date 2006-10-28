@@ -32,6 +32,8 @@ uses
 
 type
   AssemblySyntax = (asATnT, asIntel);
+  TCallback = procedure(Output: TStringList) of object;
+  
   TRegisters = class
     EAX: string;
     EBX: string;
@@ -47,6 +49,7 @@ type
     SS: string;
     ES: string;
   end;
+  TRegistersCallback = procedure(Registers: TRegisters) of object;
 
   PBreakpoint = ^TBreakpoint;
   TBreakpoint = class
@@ -68,8 +71,10 @@ type
   PCommand = ^TCommand;
   TCommand = class
   public
+    Data: TObject;
     Command: String;
     Callback: procedure of object;
+    OnResult: procedure(Output: TStringList) of object;
   end;
 
   PCommandWithResult = ^TCommandWithResult;
@@ -107,6 +112,7 @@ type
     fBreakpoints: TList;
     fNextBreakpoint: Integer;
 
+    SentCommand: Boolean;
     CommandQueue: TList;
     FileName: string;
     hInputWrite: THandle;
@@ -115,21 +121,10 @@ type
     Event: THandle;
     Wait: TDebugWait;
     Reader: TDebugReader;
-    Status: TDebugStatus;
     CurrentCommand: TCommand;
-
-    //These functions pass the debugger output to individual functions
-    function GetOutputOfCommand(command: TCommand): TStringList; overload;
-    function GetOutputOfCommand(command, param: string): TStringList; overload;
 
     procedure DisplayError(s: string);
     function GetBreakpointFromIndex(index: integer): TBreakpoint;
-    function GetLocals: TList; virtual; abstract;
-    function GetCallStack: TList; virtual; abstract;
-    function GetRegisters: TRegisters; virtual; abstract;
-    function GetDisassembly: string; virtual; abstract;
-    function GetWatchValue: string; virtual;
-    function GetWatchVar: string; virtual;
 
     procedure Launch(hChildStdOut, hChildStdIn, hChildStdErr: THandle); virtual; abstract;
     procedure OnOutput(Output: string); virtual; abstract;
@@ -143,20 +138,19 @@ type
 
   published
     property Busy: Boolean read fBusy;
-    property Locals: TList read GetLocals;
-    property CallStack: TList read GetCallStack;
-    property Disassembly: string read GetDisassembly;
-    property Registers: TRegisters read GetRegisters;
-
     property Breakpoints: TList read fBreakpoints;
     property Executing: Boolean read fExecuting;
     property Paused: Boolean read fPaused;
-
-    property WatchVar: string read GetWatchVar;
-    property WatchValue: string read GetWatchValue;
     property DebugTree: TTreeView read fDebugTree write fDebugTree;
 
   public
+    //Callback functions
+    OnVariableHint: procedure(Hint: string) of object;
+    OnDisassemble: procedure(Disassembly: string) of object;
+    OnRegisters: procedure(Registers: TRegisters) of object;
+    OnCallStack: procedure(Callstack: TList) of object;
+    OnLocals: procedure(Locals: TList) of object;
+
     //Debugger basics
     procedure Execute(filename: string);
     procedure SetAssemblySyntax(syntax: AssemblySyntax); virtual; abstract;
@@ -176,7 +170,6 @@ type
     procedure Pause; virtual; abstract;
     procedure Next; virtual; abstract; //fDebugger.SendCommand(GDB_NEXT, '');
     procedure Step; virtual; abstract; //fDebugger.SendCommand(GDB_STEP, '');
-    function Disassemble(func: string): string; virtual; abstract;
     function GetVariableHint(name: string): string; virtual; abstract; //fDebugger.SendCommand(GDB_DISPLAY, fCurrentHint);
 
     //Source lookup directories
@@ -188,6 +181,11 @@ type
     procedure AddWatch(varname: string); virtual; abstract;
     procedure RemoveWatch(varname: string); virtual; abstract;
     procedure ModifyVariable(varname, newvalue: string); virtual; abstract;
+
+    //Low-level stuff
+    procedure GetRegisters; virtual; abstract;
+    procedure Disassemble; overload;
+    procedure Disassemble(func: string); overload; virtual; abstract;
 
     //Havn't looked at these
     procedure CloseDebugger(Sender: TObject);
@@ -207,13 +205,15 @@ type
 
   protected
     procedure Launch(hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
-    function GetLocals: TList; override;
-    function GetCallStack: TList; override;
-    function GetRegisters: TRegisters; override;
-    function GetDisassembly: string; override;
-
-    //Output parsing
     procedure OnOutput(Output: string); override;
+    
+    //Parser callbacks
+    procedure OnRefreshContext(Output: TStringList);
+    procedure OnVariableHint(Output: TStringList);
+    procedure OnDisassemble(Output: TStringList);
+    procedure OnCallStack(Output: TStringList);
+    procedure OnRegisters(Output: TStringList);
+    procedure OnLocals(Output: TStringList);
 
   public
     //Set the include paths
@@ -236,8 +236,11 @@ type
     procedure Pause; override;
     procedure Next; override;
     procedure Step; override;
-    function Disassemble(func: string): string; override;
     function GetVariableHint(name: string): string; override;
+
+    //Low-level stuff
+    procedure GetRegisters; override;
+    procedure Disassemble(func: string); overload; override;
   end;
 
 implementation
@@ -260,6 +263,7 @@ end;
 
 constructor TDebugger.Create;
 begin
+  SentCommand := False;
   fNextBreakpoint := 0;
   fBreakpoints := TList.Create;
   CommandQueue := TList.Create;
@@ -387,13 +391,8 @@ begin
   Wait.OnOutput := OnOutput;
   Wait.Reader := Reader;
   Wait.Event := Event;
-
-  // Create a thread that will handle keeping the GUI updated with the most current
-  // debugger information
-  Status := TDebugStatus.Create(true);
   Wait.Resume;
   Reader.Resume;
-  Status.Resume;
 end;
 
 procedure TDebugger.DisplayError(s: string);
@@ -411,12 +410,11 @@ begin
     Wait.Stop := True;
     SetEvent(Event);
     TerminateProcess(hPid, 0);
-    Wait.Terminate;
+    //Wait.Terminate;
+    Wait.Destroy;
     Wait := nil;
     Reader.Terminate;
     Reader := nil;
-    Status.Terminate;
-    Status := nil;
 
     //Close the handles
     if (not CloseHandle(hPid)) then
@@ -476,11 +474,12 @@ const
   StrSize = 511;
 begin
   //Do we have anything left? Are we paused?
-  if (CommandQueue.Count = 0) or (not Paused) or Busy then
+  if (CommandQueue.Count = 0) or (not Paused) or Busy or SentCommand then
     Exit;
   
   //Initialize stuff
   Copied := 0;
+  SentCommand := True;
   CurrentCommand := PCommand(CommandQueue[0])^;
   CommandLength := Length(CurrentCommand.Command);
 
@@ -519,39 +518,6 @@ begin
   //Call the callback function if we are provided one
   if Assigned(CurrentCommand.Callback) then
     CurrentCommand.Callback;
-end;
-
-function TDebugger.GetOutputOfCommand(command: TCommand): TStringList;
-var
-  Ptr: PCommandWithResult;
-begin
-  //Copy the command
-  New(Ptr);
-  Ptr^ := TCommandWithResult.Create;
-  Ptr^.Command := command.Command + #10;
-  Ptr^.Callback := command.Callback;
-
-  //Send the command to the debugger
-  CommandQueue.Add(Ptr);
-  if Executing and Paused then
-    SendCommand;
-  fBusy := True;
-
-  //Wait for the event
-  while WaitForSingleObject(Ptr^.Event, 20) = WAIT_TIMEOUT do
-    Application.ProcessMessages;
-  Result := Ptr^.Result;
-  Dispose(Ptr);
-end;
-
-function TDebugger.GetOutputOfCommand(command, param: string): TStringList;
-var
-  Cmd: TCommand;
-begin
-  Cmd := TCommand.Create;
-  Cmd.Command := command + ' ' + param;
-  Cmd.Callback := nil;
-  Result := GetOutputOfCommand(Cmd);
 end;
 
 procedure TDebugger.OnDebugFinish(Sender: TObject);
@@ -669,20 +635,9 @@ begin
     end;
 end;
 
-function TDebugger.GetWatchValue: string;
+procedure TDebugger.Disassemble;
 begin
-{  if Assigned(Wait) then
-    Result := Wait.tmpWatchValue
-  else}
-    Result := '';
-end;
-
-function TDebugger.GetWatchVar: string;
-begin
-{  if Assigned(Wait) then
-    Result := Wait.tmpWatchVar
-  else}
-    Result := '';
+  Disassemble('');
 end;
 
 //------------------------------------------------------------------------------
@@ -761,38 +716,28 @@ var
   RegExp: TRegExpr;
   CurLine: String;
   CurOutput: TStringList;
-  SentCommand: Boolean;
 
   procedure ParseOutput(const line: string);
-  var
-    CurCmdType: String;
   begin
-    if (not SentCommand) and RegExp.Exec(line, '^([0-9]+):([0-9]+)>') then
+    if RegExp.Exec(line, '^([0-9]+):([0-9]+)>') then
     begin
       //The debugger is waiting for input, we're paused!
+      SentCommand := False;
       fPaused := True;
       fBusy := False;
 
       //Because we are here, we probably are a side-effect of a previous instruction
-      //If we have to redirect the output (somewhere) do so!
-      if Assigned(CurrentCommand) then
-        if CurrentCommand is TCommandWithResult then
-        begin
-          TCommandWithResult(CurrentCommand).Result.Assign(CurOutput);
-          SetEvent(TCommandWithResult(CurrentCommand).Event);
-        end
-        else
-        begin
-          //Refresh the current variable context, without being reentrant!
-          CurCmdType := Copy(CurrentCommand.Command, 0, Pos(' ', CurrentCommand.Command) - 1)f;
-          if (CurrentCommand.Command = 'g'#10) or (CurrentCommand.Command = 't'#10) or (CurrentCommand.Command = 'p'#10) then
-            Status.Resume;
-        end;
+      //Execute the process function for the command.
+      if (CurOutput.Count <> 0) and (CurrentCommand <> nil) and Assigned(CurrentCommand.OnResult) then
+          CurrentCommand.OnResult(CurOutput);
+
+      if CurrentCommand <> nil then
+        if (CurrentCommand.Command = 'g'#10) or (CurrentCommand.Command = 't'#10) or (CurrentCommand.Command = 'p'#10) then
+          RefreshContext;
       CurOutput.Clear;
 
       //Send the command, and do not send any more
       SendCommand;
-      SentCommand := True;
 
       //Make sure we don't save the current line!
       Exit;
@@ -815,6 +760,7 @@ begin
   SentCommand := False;
   CurOutput := TStringList.Create;
   RegExp := TRegExpr.Create;
+  
   while Pos(#10, Output) > 0 do
   begin
     //Extract the current line
@@ -900,10 +846,56 @@ end;
 
 procedure TCDBDebugger.RefreshContext;
 var
-  Output: TStringList;
+  I: Integer;
+  Node: TTreeNode;
+  Command: TCommand;
+begin
+  if not Executing then
+    Exit;
+
+  //First send commands for stack tracing and locals
+  Command := TCommand.Create;
+  Command.Command := 'kp 512';
+  Command.OnResult := OnCallStack;
+  QueueCommand(Command);
+  Command := TCommand.Create;
+  Command.Command := 'dv /i /t /v';
+  Command.OnResult := OnLocals;
+  QueueCommand(Command);
+
+  //Then update the watches
+  if Assigned(DebugTree) then
+    for I := 0 to DebugTree.Items.Count - 1 do
+    begin
+      Node := DebugTree.Items[I];
+      if Node.Data = nil then
+        Continue;
+      with PWatch(Node.Data)^ do
+      begin
+        Command := TCommand.Create;
+
+        //Decide what command we should send - dv for locals, dt for structures
+        if Pos('.', Name) > 0 then
+          Command.Command := 'dt -r ' + Copy(name, 1, Pos('.', name) - 1)
+        else
+          Command.Command := 'dv ' + name;
+
+        //Fill in the other data
+        Command.Data := Node;
+        Command.OnResult := OnRefreshContext;
+        Node.DeleteChildren;
+
+        //Then send it
+        QueueCommand(Command);
+      end;
+    end;
+end;
+
+procedure TCDBDebugger.OnRefreshContext(Output: TStringList);
+var
   RegExp: TRegExpr;
   Node: TTreeNode;
-  I, J: Integer;
+  J: Integer;
 
   procedure ParseStructure(Output: TStringList; ParentNode: TTreeNode);
   const
@@ -964,43 +956,21 @@ var
     end;
   end;
 begin
-  if not Executing then
-    Exit;
-
   RegExp := TRegExpr.Create;
-  if Assigned(DebugTree) then
-    for I := 0 to DebugTree.Items.Count - 1 do
+  Node := TTreeNode(CurrentCommand.Data);
+
+  //Set the type of the structure/class/whatever
+  with PWatch(Node.Data)^ do
+    if RegExp.Exec(Output[0], '(.*) (.*) @ 0x([0-9a-fA-F]{1,8}) Type (.*)') then
     begin
-      Node := DebugTree.Items[I];
-      with PWatch(Node.Data)^ do
-      begin
-        //Decide what command we should send - dv for locals, dt for structures
-        if Pos('.', Name) > 0 then
-        begin
-          //Issue the command
-          Output := GetOutputOfCommand('dt', '-r ' + Copy(name, 1, Pos('.', name) - 1));
+        Node.Text := RegExp.Substitute(Copy(name, 1, Pos('.', name) - 1) + ' = $4 (0x$3)');
+      ParseStructure(Output, Node);
+    end
+    else
+      for J := 0 to Output.Count - 1 do
+        if RegExp.Exec(Output[J], '( +)' + name + ' = (.*)') then
+          Node.Text := Trim(Output[J]);
 
-          //Set the type of the structure/class/whatever
-          if RegExp.Exec(Output[0], '(.*) (.*) @ 0x([0-9a-fA-F]{1,8}) Type (.*)') then
-            Node.Text := RegExp.Substitute(Copy(name, 1, Pos('.', name) - 1) + ' = $4 (0x$3)');
-
-          //Then find the member name
-          Node.DeleteChildren;
-          ParseStructure(Output, Node);
-        end
-        else
-        begin
-          Output := GetOutputOfCommand('dv', name);
-          for J := 0 to Output.Count - 1 do
-            if RegExp.Exec(Output[J], '( +)' + name + ' = (.*)') then
-              Node.Text := Trim(Output[J]);
-        end;
-
-        Output.Free;
-      end;
-    end;
-
-  //Clean up
   RegExp.Free;
 end;
 
@@ -1035,22 +1005,16 @@ begin
   end;
 end;
 
-function TCDBDebugger.GetCallStack: TList;
+procedure TCDBDebugger.OnCallStack(Output: TStringList);
 var
   I: Integer;
   RegExp: TRegExpr;
-  Output: TStringList;
+  CallStack: TList;
   StackFrame: PStackFrame;
 begin
-  if (not Paused) or (not Executing) then
-  begin
-    Result := nil;
-    Exit;
-  end;
-
-  Result := TList.Create;
+  CallStack := TList.Create;
   RegExp := TRegExpr.Create;
-  Output := GetOutputOfCommand('kp', '256');
+  
   for I := 0 to Output.Count - 1 do
     if RegExp.Exec(Output[I], 'ChildEBP RetAddr') then
       Continue
@@ -1058,7 +1022,7 @@ begin
     begin
       //Stack frame with source information
       New(StackFrame);
-      Result.Add(StackFrame);
+      CallStack.Add(StackFrame);
 
       //Fill the fields
       with StackFrame^ do
@@ -1073,7 +1037,7 @@ begin
     begin
       //Stack frame without source information
       New(StackFrame);
-      Result.Add(StackFrame);
+      CallStack.Add(StackFrame);
 
       //Fill the fields
       with StackFrame^ do
@@ -1084,32 +1048,31 @@ begin
       end;
     end;
 
+  //Now that we have the entire callstack loaded into our list, call the function
+  //that wants it
+  if Assigned(TDebugger(Self).OnCallStack) then
+    TDebugger(Self).OnCallStack(CallStack);
+
   //Clean up
   RegExp.Free;
-  Output.Free;
+  CallStack.Free;
 end;
 
-function TCDBDebugger.GetLocals: TList;
+procedure TCDBDebugger.OnLocals(Output: TStringList);
 var
   I: Integer;
   Local: PVariable;
+  Locals: TList;
   RegExp: TRegExpr;
-  Output: TStringList;
 begin
-  if (not Executing) or (not Paused) then
-  begin
-    Result := nil;
-    Exit;
-  end;
-
-  Result := TList.Create;
+  Locals := TList.Create;
   RegExp := TRegExpr.Create;
-  Output := GetOutputOfCommand('dv', '/i /t /v');
+  
   for I := 0 to Output.Count - 1 do
     if RegExp.Exec(Output[I], '(.*)( +)(.*)( +)([0-9a-fA-F]{1,8}) (.*) = (.*)') then
     begin
       New(Local);
-      Result.Add(Local);
+      Locals.Add(Local);
 
       //Fill the fields
       with Local^ do
@@ -1120,30 +1083,41 @@ begin
       end;
     end;
 
+  //Pass the locals list to the callback function that wants it
+  if Assigned(TDebugger(Self).OnLocals) then
+    TDebugger(Self).OnLocals(Locals);
+
   //Clean up
+  Locals.Free;
   RegExp.Free;
-  Output.Free;
 end;
 
-function TCDBDebugger.GetRegisters: TRegisters;
+procedure TCDBDebugger.GetRegisters;
+var
+  Command: TCommand;
+begin
+  if (not Executing) or (not Paused) then
+    Exit;
+
+  Command := TCommand.Create;
+  Command.Command := 'r';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+end;
+
+procedure TCDBDebugger.OnRegisters(Output: TStringList);
 var
   I: Integer;
   RegExp: TRegExpr;
-  Output: TStringList;
+  Registers: TRegisters;
 begin
-  if (not Executing) or (not Paused) then
-  begin
-    Result := nil;
-    Exit;
-  end;
-
-  Result := TRegisters.Create;
   RegExp := TRegExpr.Create;
-  Output := GetOutputOfCommand('r', '');
+  Registers := TRegisters.Create;
+
   for I := 0 to Output.Count - 1 do
     if RegExp.Exec(Output[I], 'eax=([0-9a-fA-F]{1,8}) ebx=([0-9a-fA-F]{1,8}) ecx=([0-9a-fA-F]{1,8}) edx=([0-9a-fA-F]{1,8}) esi=([0-9a-fA-F]{1,8}) edi=([0-9a-fA-F]{1,8})') then
       begin
-        with Result do
+        with Registers do
         begin
           EAX := RegExp.Substitute('$1');
           EBX := RegExp.Substitute('$2');
@@ -1155,7 +1129,7 @@ begin
       end
       else if RegExp.Exec(Output[I], 'eip=([0-9a-fA-F]{1,8}) esp=([0-9a-fA-F]{1,8}) ebp=([0-9a-fA-F]{1,8}) iopl=([0-9a-fA-F]{1,8})') then
       begin
-        with Result do
+        with Registers do
         begin
           EIP := RegExp.Substitute('$1');
           ESP := RegExp.Substitute('$2');
@@ -1164,7 +1138,7 @@ begin
       end
       else if RegExp.Exec(Output[I], 'cs=([0-9a-fA-F]{1,4})  ss=([0-9a-fA-F]{1,4})  ds=([0-9a-fA-F]{1,4})  es=([0-9a-fA-F]{1,4})  fs=([0-9a-fA-F]{1,4})  gs=([0-9a-fA-F]{1,4})             efl=([0-9a-fA-F]{1,8})') then
       begin
-        with Result do
+        with Registers do
         begin
           CS := RegExp.Substitute('$1');
           SS := RegExp.Substitute('$2');
@@ -1173,62 +1147,80 @@ begin
         end;
       end;
 
+  //Pass the locals list to the callback function that wants it
+  if Assigned(TDebugger(Self).OnRegisters) then
+    TDebugger(Self).OnRegisters(Registers);
+
   //Clean up
-  RegExp.Free;
-  Output.Free;
+  RegExp.Free;  
 end;
 
-function TCDBDebugger.GetDisassembly: string;
+procedure TCDBDebugger.Disassemble(func: string);
+var
+  Command: TCommand;
 begin
   if (not Executing) or (not Paused) then
-  begin
-    Result := '';
     Exit;
-  end;
 
-  Result := Disassemble('');
+  Command := TCommand.Create;
+  Command.Command := 'ub ' + func + ';u ' + func;
+  Command.OnResult := OnDisassemble;
+  QueueCommand(Command);
 end;
 
-function TCDBDebugger.Disassemble(func: string): string;
+procedure TCDBDebugger.OnDisassemble(Output: TStringList);
 var
   I: Integer;
   RegExp: TRegExpr;
-  Output: TStringList;
+  Disassembly: String;
 begin
-  if (not Executing) or (not Paused) then
-  begin
-    Result := '';
-    Exit;
-  end;
-
   RegExp := TRegExpr.Create;
-  Output := GetOutputOfCommand('ub ' + func + ';u ' + func, '');
   for I := 0 to Output.Count - 1 do
     if RegExp.Exec(Output[I], '^(.*)!(.*) \[(.*) @ ([0-9]+)]:') then
-      Result := Result + #9 + ';' + Output[I] + #10
+      Disassembly := Disassembly + #9 + ';' + Output[I] + #10
     else if RegExp.Exec(Output[I], '^([0-9a-fA-F]{1,8})( +)([^ ]*)( +)(.*)( +)(.*)') then
-      Result := Result + Output[I] + #10;
+      Disassembly := Disassembly + Output[I] + #10;
+
+  //Pass the disassembly to the callback function that wants it
+  if Assigned(TDebugger(Self).OnDisassemble) then
+    TDebugger(Self).OnDisassemble(Disassembly);
 
   //Clean up
   RegExp.Free;
-  Output.Free;
 end;
 
 function TCDBDebugger.GetVariableHint(name: string): string;
 var
-  I, Depth: Integer;
-  RegExp: TRegExpr;
-  Output: TStringList;
+  Command: TCommand;
 begin
   if (not Executing) or (not Paused) then
-  begin
-    Result := '';
     Exit;
-  end;
+
+  Command := TCommand.Create;
+  Command.Data := TObject(name);
+  Command.OnResult := OnVariableHint;
 
   //Decide what command we should send - dv for locals, dt for structures
-  RegExp := TRegExpr.Create;
   if Pos('.', name) > 0 then
+    Command.Command := 'dt ' + Copy(name, 1, Pos('.', name) - 1)
+  else
+    Command.Command := 'dv ' + name;
+
+  //Send the command;
+  QueueCommand(Command);
+end;
+
+procedure TCDBDebugger.OnVariableHint(Output: TStringList);
+var
+  Hint, Name: String;
+  I, Depth: Integer;
+  RegExp: TRegExpr;
+begin
+  if CurrentCommand <> nil then
+    Name := string(CurrentCommand.Data);
+  RegExp := TRegExpr.Create;
+
+  if Pos('.', Name) <> 0 then
   begin
     //Remove the dots and count the number of indents
     Depth := 0;
@@ -1236,26 +1228,25 @@ begin
       if name[I] = '.' then
         Inc(Depth);
 
-    //Issue the command
-    Output := GetOutputOfCommand('dt', Copy(name, 1, Pos('.', name) - 1));
-
     //Then find the member name
     for I := 0 to Output.Count - 1 do
       if RegExp.Exec(Output[I], '( {' + IntToStr(Depth * 3) + '})\+0x([0-9a-fA-F]{1,8}) ' +
                      Copy(name, GetLastPos('.', name) + 1, Length(name)) + '( +): (.*)') then
-        Result := RegExp.Substitute(name + ' = $4');
+        Hint := RegExp.Substitute(name + ' = $4');
   end
   else
   begin
-    Output := GetOutputOfCommand('dv', name);
     for I := 0 to Output.Count - 1 do
       if RegExp.Exec(Output[I], '( +)(.*) = (.*)') then
-        Result := Trim(Output[I]);
+        Hint := Trim(Output[I]);
   end;
+
+  //Call the callback
+  if Assigned(TDebugger(Self).OnVariableHint) then
+    TDebugger(Self).OnVariableHint(Hint);
 
   //Clean up
   RegExp.Free;
-  Output.Free;
 end;
 
 procedure TCDBDebugger.Go;
