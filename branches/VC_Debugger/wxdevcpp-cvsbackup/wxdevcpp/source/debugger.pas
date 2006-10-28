@@ -570,23 +570,6 @@ begin
   end;
 end;
 
-//Todo: lowjoel: This isn't referenced anywhere...
-procedure TDebugger.OnSourceMoreRecent;
-begin
-  if (MessageDlg(Lang[ID_MSG_SOURCEMORERECENT], mtConfirmation, [mbYes, mbNo], 0) = mrYes) then begin
-    CloseDebugger(nil);
-    MainForm.actCompileExecute(nil);
-  end;
-end;
-
-procedure TDebugger.OnAccessViolation;
-begin
-  case MessageDlg(Lang[ID_MSG_SEGFAULT], mtError, [mbYes, mbNo, mbAbort], MainForm.Handle) of
-    mrNo: Go;
-    mrAbort: CloseDebugger(nil);
-  end;
-end;
-
 function TDebugger.BreakpointExists(filename: string; line: integer): Boolean;
 var
   I: integer;
@@ -628,6 +611,23 @@ begin
       Result := PBreakpoint(fBreakpoints[I])^;
       Exit;
     end;
+end;
+
+//Todo: lowjoel: This isn't referenced anywhere...
+procedure TDebugger.OnSourceMoreRecent;
+begin
+  if (MessageDlg(Lang[ID_MSG_SOURCEMORERECENT], mtConfirmation, [mbYes, mbNo], 0) = mrYes) then begin
+    CloseDebugger(nil);
+    MainForm.actCompileExecute(nil);
+  end;
+end;
+
+procedure TDebugger.OnAccessViolation;
+begin
+  case MessageDlg(Lang[ID_MSG_SEGFAULT], mtError, [mbYes, mbNo, mbAbort], MainForm.Handle) of
+    mrNo: Go;
+    mrAbort: CloseDebugger(nil);
+  end;
 end;
 
 procedure TDebugger.Disassemble;
@@ -713,6 +713,14 @@ var
   CurLine: String;
   CurOutput: TStringList;
 
+  procedure ParseError(const line: string);
+  begin
+    if RegExp.Exec(line, '\((.*)\): Access Violation - code c0000005 \((.*)\)') then
+      OnAccessViolation
+    else if RegExp.Exec(line, '\((.*)\): Control-C exception - code 40010005 \((.*)\)') then
+    else if RegExp.Exec(line, '\((.*)\): Break instruction exception - code 80000003 \((.*)\)') then;
+  end;
+
   procedure ParseOutput(const line: string);
   begin
     if RegExp.Exec(line, '^([0-9]+):([0-9]+)>') then
@@ -743,8 +751,8 @@ var
       if RegExp.Substitute('$1') = '*** Invalid ***' then
         OnNoDebuggingSymbolsFound;
     end
-    else if RegExp.Exec(line, '\((.*)\): Access violation - code c0000005 \((.*)\)') then
-      OnAccessViolation
+    else if RegExp.Exec(line, '\((.*)\): (.*) - code ([0-9a-fA-F]{1,8}) \((.*)\)') then
+      ParseError(line)
     else if RegExp.Exec(line, 'Breakpoint ([0-9]+) hit') then
       with GetBreakpointFromIndex(StrToInt(RegExp.Substitute('$1'))) do
         MainForm.GotoBreakpoint(Filename, Line);
