@@ -1130,14 +1130,13 @@ procedure TEditor.SetActiveBreakpointFocus(const Line: integer);
 begin
   if (fActiveLine <> Line) and (fActiveLine <> -1) then
     fText.InvalidateLine(fActiveLine);
-   fText.InvalidateGutterLine(fActiveLine);
+  fText.InvalidateGutterLine(fActiveLine);
   fActiveLine := Line;
   fText.InvalidateLine(fActiveLine);
-   fText.InvalidateGutterLine(fActiveLine);
+  fText.InvalidateGutterLine(fActiveLine);
   fText.CaretY := Line;
   fText.EnsureCursorPosVisible;
-  // RNC -- 07.02.2004 This will clear the run to cursor value when a breakpoint is hit
-  {if Line = fRunToCursorLine then begin}
+
   if fRunToCursorLine <> -1 then begin
     TurnOffBreakpoint(fRunToCursorLine);
     fRunToCursorLine := -1;

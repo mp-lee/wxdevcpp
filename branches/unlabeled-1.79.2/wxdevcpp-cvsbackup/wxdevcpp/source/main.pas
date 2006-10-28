@@ -6987,12 +6987,22 @@ end;
 procedure TMainForm.GotoTopOfStackTrace;
 var
   I: Integer;
+  Idx: Integer;
+  e: TEditor;
 begin
   for I := 0 to lvBacktrace.Items.Count - 1 do
     if lvBackTrace.Items[I].SubItems[2] <> '' then
     begin
-      lvBacktrace.Selected := lvBackTrace.Items[I];
-      lvBacktrace.OnDblClick(lvBacktrace);
+      idx := StrToIntDef(lvBacktrace.Items[I].SubItems[2], -1);
+      if idx <> -1 then
+      begin
+        e := GetEditorFromFileName(CppParser1.GetFullFilename(lvBacktrace.Items[I].SubItems[1]));
+        if Assigned(e) then
+        begin
+          e.SetActiveBreakpointFocus(idx);
+          Break;
+        end;
+      end;
     end;
 end;
 
@@ -11554,10 +11564,11 @@ procedure TMainForm.ELDesigner1Notification(Sender: TObject;
 var
     strOp:String;
 begin
-    if Operation = opInsert then
-        strOp:='opInsert';
-    if Operation = opRemove then
-        strOp:='opRemove';
+  //TODO: Guru: Dead code?
+  if Operation = opInsert then
+    strOp:='opInsert';
+  if Operation = opRemove then
+    strOp:='opRemove';
 end;
 {$ENDIF}
 

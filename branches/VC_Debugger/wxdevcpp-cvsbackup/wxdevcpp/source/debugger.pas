@@ -112,16 +112,18 @@ type
     fBreakpoints: TList;
     fNextBreakpoint: Integer;
 
-    SentCommand: Boolean;
-    CommandQueue: TList;
-    FileName: string;
     hInputWrite: THandle;
     hOutputRead: THandle;
     hPid: THandle;
+    
+    SentCommand: Boolean;
+    CurrentCommand: TCommand;
+    CommandQueue: TList;
+
+    FileName: string;
     Event: THandle;
     Wait: TDebugWait;
     Reader: TDebugReader;
-    CurrentCommand: TCommand;
 
     procedure DisplayError(s: string);
     function GetBreakpointFromIndex(index: integer): TBreakpoint;
@@ -131,7 +133,6 @@ type
     procedure SendCommand; virtual;
 
     //I don't know what these do... yet
-    procedure OnDebugFinish(Sender: TObject);
     procedure OnNoDebuggingSymbolsFound;
     procedure OnSourceMoreRecent;
     procedure OnAccessViolation;
@@ -199,14 +200,16 @@ type
 
   protected
     IncludeDirs: TStringList;
-
-    //Transfer variables (from parsing to request)
-    Disassembly: String;
+    JumpToCurrentLine: Boolean;
 
   protected
     procedure Launch(hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
     procedure OnOutput(Output: string); override;
-    
+
+    //Instruction callbacks
+    procedure OnGo;
+    procedure OnTrace;
+
     //Parser callbacks
     procedure OnRefreshContext(Output: TStringList);
     procedure OnVariableHint(Output: TStringList);
@@ -232,7 +235,6 @@ type
 
     //Debugger control
     procedure Go; override;
-    procedure OnGo;
     procedure Pause; override;
     procedure Next; override;
     procedure Step; override;
@@ -265,11 +267,11 @@ constructor TDebugger.Create;
 begin
   SentCommand := False;
   fNextBreakpoint := 0;
-  fBreakpoints := TList.Create;
-  CommandQueue := TList.Create;
   fExecuting := False;
   fBusy := False;
 
+  fBreakpoints := TList.Create;
+  CommandQueue := TList.Create;
   FileName := '';
   Event := CreateEvent(nil, false, false, nil);
 end;
@@ -520,12 +522,6 @@ begin
     CurrentCommand.Callback;
 end;
 
-procedure TDebugger.OnDebugFinish(Sender: TObject);
-begin
-  if Executing then
-    CloseDebugger(sender);
-end;
-
 procedure TDebugger.OnNoDebuggingSymbolsFound;
 var
   opt: TCompilerOption;
@@ -646,6 +642,7 @@ end;
 constructor TCDBDebugger.Create;
 begin
   inherited;
+  JumpToCurrentLine := False;
   IncludeDirs := TStringList.Create;
 end;
 
@@ -865,7 +862,9 @@ begin
 
   //Then update the watches
   if Assigned(DebugTree) then
-    for I := 0 to DebugTree.Items.Count - 1 do
+  begin
+    I := 0;
+    while I < DebugTree.Items.Count do
     begin
       Node := DebugTree.Items[I];
       if Node.Data = nil then
@@ -888,11 +887,17 @@ begin
         //Then send it
         QueueCommand(Command);
       end;
+
+      //Increment our counter
+      Inc(I);
     end;
+  end;
 end;
 
 procedure TCDBDebugger.OnRefreshContext(Output: TStringList);
 var
+  NeedsRefresh: Boolean;
+  Expanded: Boolean;
   RegExp: TRegExpr;
   Node: TTreeNode;
   J: Integer;
@@ -932,22 +937,23 @@ var
           //Process it
           with ParentNode.Item[ParentNode.Count - 1] do
           begin
-            SelectedIndex := 39;
-            ImageIndex := 39;
+            SelectedIndex := 32;
+            ImageIndex := 32;
           end;
           ParseStructure(SubStructure, ParentNode.Item[ParentNode.Count - 1]);
+          ParentNode.Item[ParentNode.Count - 1].Expand(false);
           SubStructure.Free;
 
           //Decrement I, since we will increment one at the end of the loop
           Dec(I);
         end
-        
+
         //Otherwise just add the value
         else
           with DebugTree.Items.AddChild(ParentNode, RegExp.Substitute('$3 = $5')) do
           begin
-            SelectedIndex := 32;
-            ImageIndex := 32;
+            SelectedIndex := 21;
+            ImageIndex := 21;
           end;
       end;
 
@@ -956,6 +962,7 @@ var
     end;
   end;
 begin
+  NeedsRefresh := False;
   RegExp := TRegExpr.Create;
   Node := TTreeNode(CurrentCommand.Data);
 
@@ -963,14 +970,30 @@ begin
   with PWatch(Node.Data)^ do
     if RegExp.Exec(Output[0], '(.*) (.*) @ 0x([0-9a-fA-F]{1,8}) Type (.*)') then
     begin
-        Node.Text := RegExp.Substitute(Copy(name, 1, Pos('.', name) - 1) + ' = $4 (0x$3)');
+      Expanded := Node.Expanded;
+      Node.Text := RegExp.Substitute(Copy(name, 1, Pos('.', name) - 1) + ' = $4 (0x$3)');
+      Node.SelectedIndex := 32;
+      Node.ImageIndex := 32;
       ParseStructure(Output, Node);
+
+      if Expanded then
+        Node.Expand(True);
     end
     else
       for J := 0 to Output.Count - 1 do
         if RegExp.Exec(Output[J], '( +)' + name + ' = (.*)') then
-          Node.Text := Trim(Output[J]);
+          //Check if it is a structure
+          if Pos('struct', RegExp.Substitute('$2')) > 0 then
+          begin
+            PWatch(Node.Data)^.Name := PWatch(Node.Data)^.Name + '.';
+            NeedsRefresh := True;
+          end
+          else
+            Node.Text := Trim(Output[J]);
 
+  //Do we have to refresh the entire thing?
+  if NeedsRefresh then
+    RefreshContext;
   RegExp.Free;
 end;
 
@@ -1052,6 +1075,13 @@ begin
   //that wants it
   if Assigned(TDebugger(Self).OnCallStack) then
     TDebugger(Self).OnCallStack(CallStack);
+
+  //Do we show the new execution point?
+  if JumpToCurrentLine then
+  begin
+    JumpToCurrentLine := False;
+    MainForm.GotoTopOfStackTrace;
+  end;
 
   //Clean up
   RegExp.Free;
@@ -1270,13 +1300,30 @@ begin
 end;
 
 procedure TCDBDebugger.Next;
+var
+  Command: TCommand;
 begin
-  QueueCommand('p', '');
+  Command := TCommand.Create;
+  Command.Command := 'p';
+  Command.Callback := OnTrace;
+  QueueCommand(Command);
 end;
 
 procedure TCDBDebugger.Step;
+var
+  Command: TCommand;
 begin
-  QueueCommand('t', '');
+  Command := TCommand.Create;
+  Command.Command := 't';
+  Command.Callback := OnTrace;
+  QueueCommand(Command);
+end;
+
+procedure TCDBDebugger.OnTrace;
+begin
+  JumpToCurrentLine := True;
+  fPaused := False;
+  fBusy := False;
 end;
 
 end.
