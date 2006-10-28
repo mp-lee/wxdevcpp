@@ -19,11 +19,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 }
 
-//{$A+,B-,C+,D+,E-,F-,G+,H+,I+,J-,K-,L+,M-,N+,O+,P+,Q-,R-,S-,T-,U-,V+,W-,X+,Y+,Z1}
-//{$MINSTACKSIZE $00004000}
-//{$MAXSTACKSIZE $00100000}
-//{$IMAGEBASE $00400000}
-//{$APPTYPE GUI}
 {$WARN SYMBOL_PLATFORM OFF}
 unit main;
 
@@ -647,7 +642,6 @@ type
     DebugLeftSheet: TTabSheet;
     DebugTree: TTreeView;
     pnlBrowsers: TPanel;
-    PauseExecBtn: TSpeedButton;
     TabLocals: TTabSheet;
     lvLocals: TListView;
     procedure FormShow(Sender: TObject);
@@ -3536,24 +3530,13 @@ begin
 end;
 
 procedure TMainForm.OpenCloseMessageSheet;
-const
-  Step = 15;
-var
-  Stop: Integer;
 begin
   if Assigned(ReportToolWindow) then
-    exit;
+    Exit;
 
-  //Then slide the tabs
   with MessageControl do
     if _Show then
     begin
-      while Height < fmsgHeight - Step do
-      begin
-        Height := Height + Step;
-        Application.ProcessMessages;
-        Sleep(10);
-      end;
       Height := fmsgHeight;
       CloseSheet.TabVisible := True;
     end
@@ -3561,14 +3544,7 @@ begin
     begin
       ActivePageIndex := -1;
       CloseSheet.TabVisible := False;
-      Stop := Height - CompSheet.Height;
-      while Height > Stop + Step do
-      begin
-        Height := Height - Step;
-        Application.ProcessMessages;
-        Sleep(10);
-      end;
-      Height := Stop;
+      Height := Height - CompSheet.Height;
     end;
   Statusbar.Top := Self.ClientHeight;
 end;
@@ -5432,7 +5408,7 @@ end;
 procedure TMainForm.actDebugUpdate(Sender: TObject);
 begin
   (Sender as TCustomAction).Enabled := (assigned(fProject) or (PageControl.PageCount > 0)) and
-    not devExecutor.Running;
+    (not devExecutor.Running) and (not fDebugger.Executing);
 end;
 
 procedure TMainForm.actCompileUpdate(Sender: TObject);
@@ -5460,8 +5436,7 @@ begin
   e := GetEditor;
   if (assigned(e)) then
   begin
-  //Added for wx problems.
-  //Some weird error pops when doing an Update
+    //TODO: Guru: Proper solution?
     try
         (Sender as TAction).Enabled := (e.Text.Text <> '');
     except
@@ -5486,7 +5461,6 @@ begin
   tbSpecials.Visible := ToolSpecialsItem.Checked;
   tbSearch.Visible := ToolSearchItem.Checked;
   tbClasses.Visible := ToolClassesItem.Checked;
-  //  ProjectView.Visible:= actProjectManager.Checked;
 
   devData.ToolbarMain := ToolMainItem.checked;
   devData.ToolbarEdit := ToolEditItem.Checked;
@@ -5614,8 +5588,6 @@ begin
   frmIncremental.ShowModal;
 end;
 
-//Added for wx : Modifications to this function is for
-//Original DevC++ was not parsing certain error lines properly
 procedure TMainForm.CompilerOutputDblClick(Sender: TObject);
 var
   Col, Line: integer;
@@ -5712,49 +5684,42 @@ end;
 procedure TMainForm.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 {$IFDEF WX_BUILD}
-  var
+var
    i : Integer;
- {$ENDIF}
+{$ENDIF}
 begin
   case key of
 {$IFDEF WIN32}
-    vk_F6:
+    VK_F6:
 {$ENDIF}
 {$IFDEF LINUX}
-   XK_F6:
+    XK_F6:
 {$ENDIF}
-      if ssCtrl in Shift then ShowDebug;
-end;
+      if ssCtrl in Shift then
+        ShowDebug;
+  end;
     
 {$IFDEF WX_BUILD}
-if (ssCtrl in Shift) and MainForm.ELDesigner1.Active and not JvInspProperties.Focused and not JvInspEvents.Focused then   // If Designer Form is in focus
-begin
-  case key of
-// Move the wx components around
-  vk_Left :
-    for i := 0 to (ELDesigner1.SelectedControls.Count - 1) do
-        ELDesigner1.SelectedControls.Items[i].Left := ELDesigner1.SelectedControls.Items[i].Left - 1;
-   vk_Right :
-    for i := 0 to (ELDesigner1.SelectedControls.Count - 1) do
-        ELDesigner1.SelectedControls.Items[i].Left := ELDesigner1.SelectedControls.Items[i].Left + 1;
-
-   vk_Up :
-    for i := 0 to (ELDesigner1.SelectedControls.Count - 1) do
-        ELDesigner1.SelectedControls.Items[i].Top := ELDesigner1.SelectedControls.Items[i].Top - 1;
-
-   vk_Down :
-    for i := 0 to (ELDesigner1.SelectedControls.Count - 1) do
-        ELDesigner1.SelectedControls.Items[i].Top := ELDesigner1.SelectedControls.Items[i].Top + 1;
-
+  if (ssCtrl in Shift) and MainForm.ELDesigner1.Active and not JvInspProperties.Focused and not JvInspEvents.Focused then   // If Designer Form is in focus
+  begin
+    case key of
+      //Move the selected component
+      VK_Left :
+        for i := 0 to (ELDesigner1.SelectedControls.Count - 1) do
+          ELDesigner1.SelectedControls.Items[i].Left := ELDesigner1.SelectedControls.Items[i].Left - 1;
+      VK_Right :
+        for i := 0 to (ELDesigner1.SelectedControls.Count - 1) do
+          ELDesigner1.SelectedControls.Items[i].Left := ELDesigner1.SelectedControls.Items[i].Left + 1;
+      VK_Up :
+        for i := 0 to (ELDesigner1.SelectedControls.Count - 1) do
+          ELDesigner1.SelectedControls.Items[i].Top := ELDesigner1.SelectedControls.Items[i].Top - 1;
+      VK_Down :
+        for i := 0 to (ELDesigner1.SelectedControls.Count - 1) do
+          ELDesigner1.SelectedControls.Items[i].Top := ELDesigner1.SelectedControls.Items[i].Top + 1;
+    end;
+  ELDesigner1.OnModified(Sender);
  end;
-
-
- ELDesigner1.OnModified(Sender);
-
- end;
-
 {$ENDIF}
-
 end;
 
 function TMainForm.GetEditor(const index: integer): TEditor;
@@ -5876,7 +5841,8 @@ end;
 
 procedure TMainForm.actStepOverExecute(Sender: TObject);
 begin
-  if fDebugger.Paused and fDebugger.Executing then begin
+  if fDebugger.Paused and fDebugger.Executing then
+  begin
     RemoveActiveBreakpoints;
     fDebugger.Go;
   end;
@@ -5884,9 +5850,8 @@ end;
 
 procedure TMainForm.actStopExecuteExecute(Sender: TObject);
 begin
-  if fDebugger.Executing then begin
+  if fDebugger.Executing then
     fDebugger.CloseDebugger(sender);
-  end;
 end;
 
 procedure TMainForm.PauseExecBtnClick(Sender: TObject);

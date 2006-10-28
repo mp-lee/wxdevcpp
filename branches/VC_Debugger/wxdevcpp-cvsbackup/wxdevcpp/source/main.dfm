@@ -70,7 +70,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 98
+        Height = 97
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -108,7 +108,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 98
+        Height = 97
         Align = alClient
         BevelKind = bkSoft
         BorderStyle = bsNone
@@ -126,7 +126,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 225
-        Height = 98
+        Height = 97
         Align = alLeft
         Caption = 'Information :'
         TabOrder = 0
@@ -181,7 +181,7 @@ object MainForm: TMainForm
         Left = 225
         Top = 0
         Width = 393
-        Height = 98
+        Height = 97
         Align = alClient
         Caption = 'Compile log :'
         TabOrder = 1
@@ -209,7 +209,7 @@ object MainForm: TMainForm
         Top = 0
         Width = 618
         Height = 98
-        ActivePage = tabDebugOutput
+        ActivePage = tabVars
         Align = alClient
         Style = tsFlatButtons
         TabOrder = 0
@@ -219,7 +219,7 @@ object MainForm: TMainForm
             Left = 468
             Top = 0
             Width = 156
-            Height = 66
+            Height = 67
             Align = alLeft
             BevelOuter = bvLowered
             TabOrder = 0
@@ -298,7 +298,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 156
-            Height = 66
+            Height = 67
             Align = alLeft
             BevelOuter = bvLowered
             TabOrder = 1
@@ -393,7 +393,7 @@ object MainForm: TMainForm
             Left = 156
             Top = 0
             Width = 156
-            Height = 66
+            Height = 67
             Align = alLeft
             BevelOuter = bvLowered
             TabOrder = 2
@@ -488,7 +488,7 @@ object MainForm: TMainForm
             Left = 312
             Top = 0
             Width = 156
-            Height = 66
+            Height = 67
             Align = alLeft
             BevelOuter = bvLowered
             TabOrder = 3
@@ -578,50 +578,6 @@ object MainForm: TMainForm
                 FF00FF00FF00FF00FF00FF00FF00FF00FF00E7E7E700EFEFEF00FF00FF00FF00
                 FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00}
             end
-            object PauseExecBtn: TSpeedButton
-              Left = 4
-              Top = 49
-              Width = 148
-              Height = 20
-              Caption = 'Pause Execution'
-              Flat = True
-              Glyph.Data = {
-                36040000424D3604000000000000360000002800000010000000100000000100
-                2000000000000004000000000000000000000000000000000000FF00FF00FF00
-                FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FFFFFF00F7F7F700D6D6
-                D600E7E7E700FF00FF00EFEFF700FF00FF00FF00FF00FF00FF00FF00FF00FF00
-                FF00FF00FF00FF00FF00FF00FF00EFEFEF00CECECE00ADADAD00ADADAD00A5A5
-                A500737373009494AD00D6D6EF00FF00FF00FF00FF00FF00FF00FF00FF00EFEF
-                FF00F7F7FF00FFFFFF00D6D6D6009C9C9C00636363004A4A4A00313939005A5A
-                5A003131840052528400E7E7E700FF00FF00FF00FF00FF00FF00FF00FF00E7E7
-                E700A5A5C600C6C6D6005A635A00393939002929290021212100212929001821
-                520010107B004A4A5200C6C6C600F7F7F700FF00FF00FF00FF00FF00FF00EFEF
-                EF00636384004242A50021294A00182121003942390031393900212939000808
-                8C0021293100424242007B7B7B0094949400F7F7F700FF00FF00FF00FF00F7F7
-                F7008C8C8C0039427B000000AD002931420031393900424252000000A5002131
-                63002939390039424200636363007B7B7B00F7F7F700FF00FF00FF00FF00FF00
-                FF00CECECE0042524A0018298C000808A50018215A0018189400081094004263
-                5A0039524A003142420039393900A5A5A500FFFFFF00FF00FF00FF00FF00F7F7
-                F700A5A5A5009CA59C004A737B000000AD000000AD0008089C00424A5A005A84
-                7B004A6B630039524A006B6B6B00C6C6C600FFFFFF00FF00FF00FF00FF00FFFF
-                FF0084848400BDC6C6007B949C002939AD000000AD000000AD00181894005A7B
-                94005A847B0042635A00636B6B00CECECE00FF00FF00FF00FF00FF00FF00FF00
-                FF00C6C6C600393994000808AD003942B500A5BDCE006B73AD000000AD000000
-                AD0039529C004A6B63004A525200BDBDBD00FF00FF00FF00FF00FF00FF00EFEF
-                F7005252CE000000AD000000AD00BDCECE00C6D6D600C6DED600737B8C003142
-                A5002939A50052736B00393939008C8C8C00EFEFEF00FF00FF008C8CDE001010
-                B5000000AD000000AD009494DE00EFEFEF00A5BDB500B5CEC600A5BDBD007B9C
-                9C005A7B730063736B00ADADAD0094949400EFEFEF00FF00FF000000B5000000
-                AD001818B500BDBDEF00FF00FF00E7E7E7005A5A5A00849C9C0094B5AD00738C
-                840039635A0063736B00EFEFEF00A5A5A500FF00FF00FF00FF00ADADE7009C9C
-                DE00F7F7FF00FF00FF00FF00FF00F7F7F700737373009CADAD0052848C007384
-                8400C6CECE00EFEFEF00FF00FF00EFEFEF00FF00FF00FF00FF00FF00FF00FF00
-                FF00FF00FF00FF00FF00FF00FF00FFFFFF0094949400E7E7E700FFFFFF00FF00
-                FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
-                FF00FF00FF00FF00FF00FF00FF00FF00FF00E7E7E700EFEFEF00FF00FF00FF00
-                FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00}
-              OnClick = PauseExecBtnClick
-            end
           end
         end
         object tabBacktrace: TTabSheet
@@ -631,7 +587,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 67
+            Height = 66
             Align = alClient
             Columns = <
               item
@@ -665,7 +621,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 67
+            Height = 66
             Align = alClient
             Columns = <
               item
@@ -693,7 +649,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 22
             Width = 610
-            Height = 45
+            Height = 44
             Align = alClient
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clWindowText
@@ -749,7 +705,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 98
+        Height = 97
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft

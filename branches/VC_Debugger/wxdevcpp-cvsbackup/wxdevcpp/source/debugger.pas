@@ -412,12 +412,11 @@ begin
     Wait.Stop := True;
     SetEvent(Event);
     TerminateProcess(hPid, 0);
-    //Wait.Terminate;
-    Wait.Destroy;
+    Wait.Terminate;
     Wait := nil;
     Reader.Terminate;
     Reader := nil;
-
+    
     //Close the handles
     if (not CloseHandle(hPid)) then
       DisplayError('CloseHandle - gdb process');
@@ -426,7 +425,7 @@ begin
     if (not CloseHandle(hInputWrite)) then
       DisplayError('CloseHandle - input write');
     MainForm.RemoveActiveBreakpoints;
-
+    
     //Clear the command queue
     CommandQueue.Clear;
     CurrentCommand := nil;
@@ -981,15 +980,14 @@ begin
     end
     else
       for J := 0 to Output.Count - 1 do
+        if RegExp.Exec(Output[J], '( +)' + name + ' = (struct|class|union) (.*)') then
+        begin
+          PWatch(Node.Data)^.Name := PWatch(Node.Data)^.Name + '.';
+          NeedsRefresh := True;
+        end
+        else
         if RegExp.Exec(Output[J], '( +)' + name + ' = (.*)') then
-          //Check if it is a structure
-          if Pos('struct', RegExp.Substitute('$2')) > 0 then
-          begin
-            PWatch(Node.Data)^.Name := PWatch(Node.Data)^.Name + '.';
-            NeedsRefresh := True;
-          end
-          else
-            Node.Text := Trim(Output[J]);
+          Node.Text := Trim(Output[J]);
 
   //Do we have to refresh the entire thing?
   if NeedsRefresh then
