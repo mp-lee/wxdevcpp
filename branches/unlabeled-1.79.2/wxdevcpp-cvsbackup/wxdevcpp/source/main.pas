@@ -955,6 +955,7 @@ type
     procedure ProjectViewKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure tmrInspectorHelperTimer(Sender: TObject);
     procedure PauseExecBtnClick(Sender: TObject);
+
 {$ENDIF}
 
   private
@@ -1765,7 +1766,7 @@ begin
     BandWidth := 150;
     BevelInner := bvNone;
     RelativeDivider := False;
-    Divider := 125;
+    Divider := 100;
     ItemHeight := 16;
     Painter := JvInspectorDotNETPainter1;
     ReadOnly := False;
@@ -1798,7 +1799,7 @@ begin
     BandWidth := 150;
     BevelInner := bvNone;
     RelativeDivider := False;
-    Divider := 125;
+    Divider := 100;
     ItemHeight := 16;
     Painter := JvInspectorDotNETPainter2;
     ReadOnly := False;
@@ -8751,8 +8752,10 @@ end;
 
 procedure TMainForm.ELDesigner1ContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
 var
-CurrentControl: TControl;
-NewMenuItem: TMenuItem;
+  CurrentControl: TControl;
+  NewMenuItem: TMenuItem;
+  strControlName:String;
+  FrmInterface:IWxDesignerFormInterface;
 begin
     //Create the selected control's "inheritence" tree
     if ELDesigner1.SelectedControls.Count > 0 then
@@ -8771,7 +8774,11 @@ begin
         begin
             CurrentControl := CurrentControl.Parent;
             NewMenuItem := TMenuItem.Create(Self);
-            NewMenuItem.Caption := CurrentControl.Name;
+            if CurrentControl.GetInterface(IID_IWxDesignerFormInterface,FrmInterface) = true then
+              strControlName := FrmInterface.GetFormName
+            else
+              strControlName:= CurrentControl.Name;
+            NewMenuItem.Caption := strControlName;
             NewMenuItem.OnClick := SelectParentClick;
             DesignerMenuSelectParent.Add(NewMenuItem);
         end;
@@ -9173,6 +9180,15 @@ begin
   AControlClass := TControlClass(GetClass(ComponentPalette.SelectedComponent));
   if AControlClass = nil then
     Exit;
+  if ELDesigner1.SelectedControls.count > 0 then
+  begin
+    CurrentParent:=TWinControl(ELDesigner1.SelectedControls[ELDesigner1.SelectedControls.count-1]);
+  end
+  else
+  begin
+    CurrentParent:=nil;
+    CurrentParent:=ELDesigner1.DesignControl;
+  end;
 
   if ELDesigner1.SelectedControls.count > 0 then
     CurrentParent := TWinControl(ELDesigner1.SelectedControls[0])
