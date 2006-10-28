@@ -1997,15 +1997,8 @@ begin
         fText.Canvas.Font.Assign(fText.Font);
         fText.Canvas.Font.Style := Attri.Style;
 
-        if (TransientType = ttAfter) then begin
-          fText.Canvas.Font.Color:= fText.Highlighter.WhitespaceAttribute.Background;
-          fText.Canvas.Brush.Color := Attri.Foreground;
-        end
-        else begin
-          fText.Canvas.Font.Color := Attri.Foreground;
-          fText.Canvas.Brush.Color:= fText.Highlighter.WhitespaceAttribute.Background;
-        end;
-
+        if (TransientType = ttAfter) then
+          fText.Canvas.Font.Style := [fsBold];
         fText.Canvas.TextOut(Pix.X, Pix.Y, S);
         P := fText.GetMatchingBracketEx(P);
 

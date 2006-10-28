@@ -2103,7 +2103,8 @@ begin
       Caption := PStackFrame(Callstack[I])^.FuncName;
       SubItems.Add(PStackFrame(Callstack[I])^.Args);
       SubItems.Add(PStackFrame(Callstack[I])^.Filename);
-      SubItems.Add(IntToStr(PStackFrame(Callstack[I])^.Line));
+      if PStackFrame(Callstack[I])^.Line <> 0 then
+        SubItems.Add(IntToStr(PStackFrame(Callstack[I])^.Line));
       Data := CppParser1.Locate(Caption, True);
     end;
   lvBacktrace.Items.EndUpdate;
@@ -6938,7 +6939,7 @@ var
   idx: integer;
   e: TEditor;
 begin
-  if Assigned(lvBacktrace.Selected) then begin
+  if Assigned(lvBacktrace.Selected) and (lvBackTrace.Selected.SubItems.Count >= 3) then begin
     idx := StrToIntDef(lvBacktrace.Selected.SubItems[2], -1);
     if idx <> -1 then begin
       e := GetEditorFromFileName(CppParser1.GetFullFilename(lvBacktrace.Selected.SubItems[1]));
@@ -6957,7 +6958,7 @@ var
   e: TEditor;
 begin
   for I := 0 to lvBacktrace.Items.Count - 1 do
-    if lvBackTrace.Items[I].SubItems[2] <> '' then
+    if (lvBackTrace.Items[I].SubItems.Count >= 3) and (lvBackTrace.Items[I].SubItems[2] <> '') then
     begin
       idx := StrToIntDef(lvBacktrace.Items[I].SubItems[2], -1);
       if idx <> -1 then

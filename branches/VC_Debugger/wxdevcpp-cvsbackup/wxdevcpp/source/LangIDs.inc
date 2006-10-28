@@ -308,7 +308,7 @@ const
   ID_DEB_WATCHES                   = 330;
   ID_DEB_BACKTRACE                 = 331;
   ID_DEB_OUTPUT                    = 332;
-  ID_DEB_SENDGDBCOMMAND            = 333;
+  ID_DEB_SENDDEBUGCOMMAND          = 333;
   ID_DEB_SEND                      = 334;
   //free to 339 for column titles
 
@@ -884,6 +884,7 @@ const
   ID_MSG_SEGFAULT                  = 1021;
   ID_MSG_SOURCEMORERECENT          = 1022;
   ID_MSG_ATTACH                    = 1023;
+  ID_MSG_BREAKPOINT                = 1024;
 
   //errors 1500+
   ID_ERR_OPENFILE                  = 1500; // %s

@@ -136,6 +136,7 @@ type
     procedure OnNoDebuggingSymbolsFound;
     procedure OnSourceMoreRecent;
     procedure OnAccessViolation;
+    procedure OnBreakpoint;
 
   published
     property Busy: Boolean read fBusy;
@@ -200,6 +201,7 @@ type
 
   protected
     IncludeDirs: TStringList;
+    IgnoreBreakpoint: Boolean;
     JumpToCurrentLine: Boolean;
 
   protected
@@ -624,7 +626,17 @@ end;
 
 procedure TDebugger.OnAccessViolation;
 begin
+  Application.BringToFront;
   case MessageDlg(Lang[ID_MSG_SEGFAULT], mtError, [mbYes, mbNo, mbAbort], MainForm.Handle) of
+    mrNo: Go;
+    mrAbort: CloseDebugger(nil);
+  end;
+end;
+
+procedure TDebugger.OnBreakpoint;
+begin
+  Application.BringToFront;
+  case MessageDlg(Lang[ID_MSG_BREAKPOINT], mtError, [mbYes, mbNo, mbAbort], MainForm.Handle) of
     mrNo: Go;
     mrAbort: CloseDebugger(nil);
   end;
@@ -659,6 +671,10 @@ var
   Srcpath: string;
   I: Integer;
 begin
+  //Set this to true for CDB and WinDbg will have an initial process initialization
+  //breakpoint. We do not want to raise false alarms when starting the debugger
+  IgnoreBreakpoint := True;
+  
   //Set up the start up info structure.
   FillChar(StartupInfo, sizeof(TStartupInfo), 0);
   StartupInfo.cb := sizeof(TStartupInfo);
@@ -716,9 +732,19 @@ var
   procedure ParseError(const line: string);
   begin
     if RegExp.Exec(line, '\((.*)\): Access Violation - code c0000005 \((.*)\)') then
-      OnAccessViolation
+    begin
+      JumpToCurrentLine := True;
+      OnAccessViolation;
+    end
     else if RegExp.Exec(line, '\((.*)\): Control-C exception - code 40010005 \((.*)\)') then
-    else if RegExp.Exec(line, '\((.*)\): Break instruction exception - code 80000003 \((.*)\)') then;
+    else if RegExp.Exec(line, '\((.*)\): Break instruction exception - code 80000003 \((.*)\)') then
+      if IgnoreBreakpoint then
+        IgnoreBreakpoint := False
+      else
+      begin
+        JumpToCurrentLine := True;
+        OnBreakpoint;
+      end;
   end;
 
   procedure ParseOutput(const line: string);
@@ -736,8 +762,13 @@ var
           CurrentCommand.OnResult(CurOutput);
 
       if CurrentCommand <> nil then
+      begin
         if (CurrentCommand.Command = 'g'#10) or (CurrentCommand.Command = 't'#10) or (CurrentCommand.Command = 'p'#10) then
+        begin
           RefreshContext;
+          Application.BringToFront;
+        end;
+      end;
       CurOutput.Clear;
 
       //Send the command, and do not send any more
