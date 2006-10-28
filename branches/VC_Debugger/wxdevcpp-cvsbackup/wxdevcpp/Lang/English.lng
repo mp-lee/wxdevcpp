@@ -222,7 +222,7 @@ Ver=1
 330=Watched Variables
 331=Backtrace
 332=Output
-333=Send command to GDB :
+333=Send command to debugger:
 334=Send
 
 # Specials toolbar items
@@ -242,7 +242,7 @@ Ver=1
 354=Save Project
 355=Select a Help File
 
-357=New Variable  Watch
+357=New Variable Watch
 358=Enter Variable Name:
 359=Modify Variable Watch
 360=New Variable Name:
@@ -557,7 +557,7 @@ Ver=1
 752=Use fast but imperfect dependency generation
 753=Code profiling
 754=Generate profiling info for analysis
-755=Link an Objective  C program
+755=Link an Objective-C program
 756=Generate debugging information
 757=Do not use standard system startup files or libraries
 758=Do not create a console window
@@ -762,9 +762,10 @@ Ver=1
 1018=Enter the new folder name:
 1019=The file %s is marked as read-only. Do you want to mark it as read-write? If no, the file will not be saved...
 1020=An error occured. The file %s was not marked as read-write and it was not saved...
-1021=An Access Violation (Segmentation Fault) raised in your program.
-1022=Source file is more recent than executable. Do you want to rebuild it ?
+1021=An Access Violation was raised in your program.<CR><CR>Do you want to break into the process?
+1022=The source file is more recent than the executable. Do you want to rebuild the project?
 1023=Please select the application you want to attach to:
+1024=A Breakpoint was raised in your program<CR><CR>Do you want to break into the process?
 
 # errors
 1500=Cannot open file %s
@@ -860,8 +861,8 @@ Ver=1
 2813=External program associations:
 2814=Watch variable under mouse
 2815=Report watch errors
-2816=  Debug variables browser 
-2817=  Alternate Configuration File  
+2816=Debug variables browser
+2817=Alternate Configuration File
 2818=Use this alternate configuration file
 2819=You changed the configuration file to be used by the application.<CR>The new configuration file will *not* be used in the current session. Any configuration changes you do in this session, will be saved in the *currently* open configuration file.<CR><CR>It is suggested that you restart the application now, so that it starts using the new configuration file...
 
