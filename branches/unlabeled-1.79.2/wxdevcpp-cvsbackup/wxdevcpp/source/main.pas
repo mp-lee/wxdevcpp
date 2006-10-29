@@ -923,6 +923,7 @@ type
     procedure ELDesigner1ControlHint(Sender: TObject; AControl: TControl;var AHint: string);
     procedure ELDesigner1ControlInserted(Sender: TObject; AControl: TControl);
     procedure ELDesigner1ControlInserting(Sender: TObject;var AControlClass: TControlClass);
+    procedure ELDesigner1ControlDoubleClick(Sender: TObject);
     procedure ELDesigner1KeyDown(Sender: TObject; var Key: Word;Shift: TShiftState);
     procedure ELDesigner1Modified(Sender: TObject);
     procedure JvInspPropertiesAfterItemCreate(Sender: TObject;Item: TJvCustomInspectorItem);
@@ -1124,7 +1125,7 @@ private
     procedure CreateNewDialogOrFrameCode(dsgnType:TWxDesignerType; frm:TfrmCreateFormProp; insertProj:integer);
     procedure NewWxProjectCode(dsgnType:TWxDesignerType);
     procedure ParseAndSaveTemplate(template, destination: string; frm:TfrmCreateFormProp);
-    function CreateCreateFormDlg(dsgnType:TWxDesignerType; insertProj:integer; filenamebase: string = ''): TfrmCreateFormProp;
+    function CreateCreateFormDlg(dsgnType:TWxDesignerType; insertProj:integer;projShow:boolean;filenamebase: string = ''): TfrmCreateFormProp;
     function CreateFormFile(strFName, strCName, strFTitle: string; dlgSStyle:TWxDlgStyleSet;dsgnType:TWxDesignerType): Boolean;
 public
     procedure DisableDesignerControls;
@@ -1209,7 +1210,8 @@ uses
   WxPageSetupDialog, WxTimer, WxNonVisibleBaseComponent, WxSplitterWindow, WxDatePickerCtrl,
   WxToggleButton, WxRadioBox, WxOwnerDrawnComboBox, WxSTC, WxRichTextCtrl, WxTreeListCtrl,
   WxCalendarCtrl, WxTextEntryDialog, WxPasswordEntryDialog, WxSingleChoiceDialog,
-  WxMultiChoiceDialog, WxHyperLinkCtrl, WxDialUpManager, WxHtmlEasyPrinting, WxMediaCtrl
+  WxMultiChoiceDialog, WxHyperLinkCtrl, WxDialUpManager, WxHtmlEasyPrinting, WxMediaCtrl,
+  WxBitmapComboBox
 {$ENDIF}
   ;
 {$ENDIF}
@@ -1655,6 +1657,7 @@ begin
     OnControlInserted := ELDesigner1ControlInserted;
     OnControlInserting := ELDesigner1ControlInserting;
     OnModified := ELDesigner1Modified;
+    OnDblClick:=ELDesigner1ControlDoubleClick;
     OnKeyDown := ELDesigner1KeyDown;
   end;
 
@@ -1981,6 +1984,7 @@ begin
       LoadTheme;
     devData.FileDate := FileAge(Application.ExeName);
     devData.First := FALSE;
+    SaveOptions;
   end
   else
     Lang.Open(devData.Language);
@@ -4307,18 +4311,17 @@ begin
         Exit;
       end;
       fCompiler.Project := fProject;
-      with fProject.CurrentProfile do
-      begin
-        CompilerSet := devCompiler.compilerSet;
-        CompilerOptions := devCompiler.OptionStr;
-      end;
-
       {$IFDEF WX_BUILD}
       if strContains('wxWidgets Frame', GetTemplate.Name) then
           NewWxProjectCode(dtWxFrame)
       else if strContains('wxWidgets Dialog', GetTemplate.Name) then
           NewWxProjectCode(dtWxDialog);
       {$ENDIF}
+
+      devCompiler.CompilerSet:=fProject.CurrentProfile.CompilerSet;
+      devCompilerSet.LoadSet(fProject.CurrentProfile.CompilerSet);
+      devCompilerSet.AssignToCompiler();
+      devCompiler.OptionStr:=fProject.CurrentProfile.CompilerOptions;
 
       if not devData.ProjectView then
         actProjectManager.Execute;
@@ -8282,10 +8285,11 @@ end;
 
 // Create a dialog that will be destroyed by the client code
 function TMainForm.CreateCreateFormDlg(dsgnType:TWxDesignerType; insertProj:integer;
-                                       filenamebase: string): TfrmCreateFormProp;
+                                       projShow:boolean;filenamebase: string): TfrmCreateFormProp;
 var
   SuggestedFilename: string;
   INI: Tinifile;
+  i : integer;
 begin
   if filenamebase = '' then
     SuggestedFilename := Lang[ID_UNTITLED] + inttostr(dmMain.GetNum)
@@ -8304,13 +8308,13 @@ begin
   //Suggest a filename to the user
   if dsgnType = dtWxFrame then
   begin
-    Result.txtFileName.Text := SuggestedFilename + 'Frm';
-    Result.txtClassName.Text := SuggestedFilename + 'Frm';
+    Result.txtFileName.Text := CreateValidFileName(SuggestedFilename + 'Frm');
+    Result.txtClassName.Text := CreateValidClassName(SuggestedFilename + 'Frm');
   end
   else
   begin
-    Result.txtFileName.Text := SuggestedFilename + 'Dlg';
-    Result.txtClassName.Text := SuggestedFilename + 'Dlg';
+    Result.txtFileName.Text := CreateValidFileName(SuggestedFilename + 'Dlg');
+    Result.txtClassName.Text := CreateValidClassName(SuggestedFilename + 'Dlg');
   end;
 
   // Open the ini file and see if we have any default values for author, class, license
@@ -8319,6 +8323,21 @@ begin
   Result.txtAuthorName.Text := INI.ReadString('wxWidgets', 'Author', GetLoginName);
   INI.free;
 
+  // Add compiler profile names to the dropdown box
+  if (fProject <> nil) and (projShow = true) then // if nil, then this is not part of a project (so no profile)
+  begin
+    Result.ProfileNameSelect.Show;
+    Result.ProfileLabel.Show;
+    Result.ProfileNameSelect.Clear;
+    for i := 0 to fProject.Profiles.Count-1 do
+      Result.ProfileNameSelect.Items.Add(fProject.Profiles.Items[i].ProfileName);
+    Result.ProfileNameSelect.ItemIndex := fProject.DefaultProfileIndex; // default compiler profile selection
+  end
+  else
+  begin
+    Result.ProfileNameSelect.Hide;
+     Result.ProfileLabel.Hide;
+  end;
   //Decide where the file will be stored
   if insertProj = 1 then
     Result.txtSaveTo.Text := IncludeTrailingBackslash(ExtractFileDir(fProject.FileName))
@@ -8387,15 +8406,13 @@ begin
   if (not Assigned(frm)) then
   begin
     //Get an instance of the dialog
-    frm := CreateCreateFormDlg(dsgnType, insertProj);
-
+    frm := CreateCreateFormDlg(dsgnType, insertProj,false);
     //Show the dialog
     if frm.showModal <> mrOK then
     begin
       frm.Destroy;
       exit;
     end;
-
     //Wow, the user clicked OK: save the user name
     INI := TiniFile.Create(devDirs.Config + 'devcpp.ini');
     INI.WriteString('wxWidgets', 'Author', frm.txtAuthorName.Text);
@@ -8545,23 +8562,23 @@ begin
   end;
 
   //Create an instance of the form creation dialog and show it
-  frm := CreateCreateFormDlg(dsgnType, 1, ChangeFileExt(ExtractFileName(fProject.FileName),''));
+  frm := CreateCreateFormDlg(dsgnType, 1, true,ChangeFileExt(ExtractFileName(fProject.FileName),''));
   if frm.showModal <> mrOK then
   begin
-    frm.Destroy;
+  frm.Destroy;
     exit;
   end;
 
+  // Change the current profile to what the user selected in the new project dialog
+  fProject.CurrentProfileIndex := frm.ProfileNameSelect.ItemIndex;
+  fProject.DefaultProfileIndex := frm.ProfileNameSelect.ItemIndex;
+  
+
+  
   //Write the current strings back as the default
   INI := TiniFile.Create(devDirs.Config + 'devcpp.ini');
   INI.WriteString('wxWidgets', 'Author', frm.txtAuthorName.Text);
   INI.free;
-  
-  with fProject.CurrentProfile do
-  begin
-    CompilerSet := devCompiler.compilerSet;
-    CompilerOptions := devCompilerSet.OptionsStr;
-  end;
 
   //Then add the application initialization code
   BaseFilename := Trim(ChangeFileExt(fProject.FileName, '')) + APP_SUFFIX;
@@ -8814,6 +8831,12 @@ begin
   try
 
      { Make sure Designer Form has the focus }
+    if ELDesigner1 = nil then
+      exit;
+
+    if ELDesigner1.DesignControl = nil then
+      exit;
+
      ELDesigner1.DesignControl.SetFocus;
     { clear inspector }
 
@@ -8930,6 +8953,7 @@ var
   wxcompInterface: IWxComponentInterface;
   strClass: string;
   e: TEditor;
+  wxControlPanelInterface:IWxControlPanelInterface;
 begin
   FirstComponentBeingDeleted := '';
   if ELDesigner1.SelectedControls.Count > 0 then
@@ -8994,12 +9018,15 @@ begin
     if compObj is TWinControl then
       //if we drop a control to image or other static controls that are derived
       //from TWxControlPanel
-      if TWinControl(compObj).Parent is TWxControlPanel then
+
+      if TWinControl(compObj).Parent.GetInterface(IID_IWxControlPanelInterface,wxControlPanelInterface) then
+      begin
         try
           if assigned(TWinControl(compObj).parent.parent) then
             TWinControl(compObj).parent:=TWinControl(compObj).parent.parent;
         except
         end;
+      end;
 
     try
       if compObj.GetInterface(IID_IWxComponentInterface, wxcompInterface) then
@@ -9095,9 +9122,39 @@ begin
   DockServer.RightDockPanel.Width := 170;
 end;
 
+procedure TMainForm.ELDesigner1ControlDoubleClick(Sender: TObject);
+var
+  i,nSlectedItem:Integer;
+begin
+  if JvInspEvents.Root.Count = 0 then
+    exit;
+  nSlectedItem:=-1;
+  for i:=0 to JvInspEvents.Root.Count -1 do
+  Begin
+      if JvInspEvents.Root.Items[i].Hidden = false then
+      begin
+        nSlectedItem:=i;
+        break;
+      end;
+  end;
+  if nSlectedItem = -1 then
+    exit;
+  if JvInspEvents.Root.Items[nSlectedItem].Data.AsString <> '' then
+    exit;
+
+  JvInspEvents.Show;
+  //If we dont select it then the Selection Event wont get fired
+  JvInspEvents.SelectedIndex:=JvInspEvents.Root.Items[nSlectedItem].DisplayIndex;
+  JvInspEvents.OnDataValueChanged:=nil;
+  JvInspEvents.Root.Items[nSlectedItem].Data.AsString:='<Add New Function>';
+  JvInspEvents.Root.Items[nSlectedItem].DoneEdit(true);
+  JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
+  JvInspEventsDataValueChanged(nil,JvInspEvents.Root.Items[nSlectedItem].Data);  
+end;
+
 procedure TMainForm.ELDesigner1ControlInserting(Sender: TObject;
   var AControlClass: TControlClass);
-  
+
 var
       dlgInterface:IWxDialogNonInsertableInterface;
       tlbrInterface:IWxToolBarInsertableInterface;
@@ -9189,14 +9246,6 @@ begin
   begin
     CurrentParent:=nil;
     CurrentParent:=ELDesigner1.DesignControl;
-  end;
-
-  if ELDesigner1.SelectedControls.count > 0 then
-    CurrentParent := TWinControl(ELDesigner1.SelectedControls[0])
-  else
-  begin
-    CurrentParent := nil;             
-    CurrentParent := ELDesigner1.DesignControl;
   end;
 
   if TFrmNewForm(ELDesigner1.DesignControl).Wx_DesignerType = dtWxFrame then
@@ -9853,15 +9902,6 @@ begin
 
       if boolIsFilesDirty then
       begin
-        if MessageBox(Self.Handle, PChar('Adding a new event handler requires that the source files be saved,'#10#13 +
-                                         'however, the files have not been saved to disk.'#10#13#10#13 +
-                                         'Do you want to save the files now?'), PChar(Application.Title),
-                      MB_ICONQUESTION or MB_YESNO or MB_TASKMODAL or MB_DEFBUTTON1) <> mrYES then
-        begin
-          Data.AsString := '';
-          Exit;
-        end;
-        
         if e.IsDesignerHPPOpened then
           //This wont open a new editor window
           SaveFile(e.GetDesignerHPPEditor);
@@ -9896,6 +9936,10 @@ begin
           //CreateFunctionInEditor
           //Data.AsString := str;
           SetPropertyValue(componentInstance,propertyName,str);
+          JvInspEvents.OnDataValueChanged:=nil;
+          Data.AsString := str;
+          //JvInspEvents.Root.DoneEdit(true);
+          JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
           fstrCppFileToOpen:=e.GetDesignerCPPEditor.FileName;
         end
         else
@@ -9929,8 +9973,7 @@ begin
 
       if boolIsFilesDirty then
       begin
-        if MessageDlg('The corresponding source files have not been saved. '#10#13#10#13+
-                      'Do you want to save them before continuing?', mtConfirmation, [mbYes, mbNo], 0) = mrYES then
+        //if MessageDlg('The corresponding source files have not been saved. '#10#13#10#13+'Do you want to save them before continuing?', mtConfirmation, [mbYes, mbNo], 0) = mrYES then
         begin
           if e.IsDesignerHPPOpened then
             //This wont open a new editor window
@@ -9954,6 +9997,8 @@ begin
 
     if strNewValue = '<Remove Function>' then
       Data.AsString := '';
+
+    JvInspEvents.Root.DoneEdit(true);
 
     UpdateDefaultFormContent;
   except
