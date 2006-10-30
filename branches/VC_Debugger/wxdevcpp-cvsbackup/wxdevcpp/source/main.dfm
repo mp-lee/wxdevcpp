@@ -70,7 +70,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -108,7 +108,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelKind = bkSoft
         BorderStyle = bsNone
@@ -126,7 +126,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 225
-        Height = 97
+        Height = 98
         Align = alLeft
         Caption = 'Information :'
         TabOrder = 0
@@ -181,7 +181,7 @@ object MainForm: TMainForm
         Left = 225
         Top = 0
         Width = 393
-        Height = 97
+        Height = 98
         Align = alClient
         Caption = 'Compile log :'
         TabOrder = 1
@@ -192,7 +192,7 @@ object MainForm: TMainForm
           Left = 7
           Top = 16
           Width = 638
-          Height = 81
+          Height = 87
           Anchors = [akLeft, akTop, akRight, akBottom]
           ReadOnly = True
           ScrollBars = ssVertical
@@ -307,7 +307,7 @@ object MainForm: TMainForm
               Top = 3
               Width = 148
               Height = 20
-              Action = actNextStep
+              Action = actStepOver
               Flat = True
               Glyph.Data = {
                 36040000424D3604000000000000360000002800000010000000100000000100
@@ -350,7 +350,7 @@ object MainForm: TMainForm
               Top = 26
               Width = 148
               Height = 20
-              Action = actStepSingle
+              Action = actStepInto
               Flat = True
               Glyph.Data = {
                 36040000424D3604000000000000360000002800000010000000100000000100
@@ -587,7 +587,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 66
+            Height = 67
             Align = alClient
             Columns = <
               item
@@ -621,7 +621,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 66
+            Height = 67
             Align = alClient
             Columns = <
               item
@@ -705,7 +705,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -836,7 +836,7 @@ object MainForm: TMainForm
     object tbCompile: TToolBar
       Left = 11
       Top = 30
-      Width = 166
+      Width = 130
       Height = 22
       AutoSize = True
       Caption = 'Compile and Run'
@@ -855,39 +855,37 @@ object MainForm: TMainForm
         Top = 0
         Action = actCompile
       end
-      object RunBtn: TToolButton
-        Left = 23
-        Top = 0
-        Action = actRun
-      end
       object RebuildAllBtn: TToolButton
-        Left = 46
+        Left = 23
         Top = 0
         Action = actRebuild
       end
+      object ToolButton2: TToolButton
+        Left = 46
+        Top = 0
+        Width = 8
+        Caption = 'ToolButton2'
+        ImageIndex = 49
+        Style = tbsSeparator
+      end
+      object RunBtn: TToolButton
+        Left = 54
+        Top = 0
+        Action = actRun
+      end
       object CompileAndRunBtn: TToolButton
-        Left = 69
+        Left = 77
         Top = 0
         Action = actCompRun
       end
       object ProgramResetBtn: TToolButton
-        Left = 92
+        Left = 100
         Top = 0
         Action = actProgramReset
       end
-      object DebugBtn: TToolButton
-        Left = 115
-        Top = 0
-        Action = actDebug
-      end
-      object DebugStopBtn: TToolButton
-        Left = 138
-        Top = 0
-        Action = actStopExecute
-      end
     end
     object tbOptions: TToolBar
-      Left = 190
+      Left = 299
       Top = 30
       Width = 46
       Height = 22
@@ -1031,7 +1029,7 @@ object MainForm: TMainForm
       end
     end
     object tbSpecials: TToolBar
-      Left = 249
+      Left = 358
       Top = 30
       Width = 243
       Height = 22
@@ -1124,6 +1122,60 @@ object MainForm: TMainForm
         Sorted = True
         TabOrder = 1
         OnChange = cmbMembersChange
+      end
+    end
+    object tbDebug: TToolBar
+      Left = 154
+      Top = 30
+      Width = 132
+      Height = 22
+      AutoSize = True
+      Caption = 'Debug'
+      DragKind = dkDock
+      EdgeBorders = []
+      EdgeInner = esNone
+      EdgeOuter = esNone
+      Flat = True
+      Images = dmMain.MenuImages_Gnome
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 8
+      Wrapable = False
+      object DebugBtn: TToolButton
+        Left = 0
+        Top = 0
+        Action = actDebug
+      end
+      object DebugStopBtn: TToolButton
+        Left = 23
+        Top = 0
+        Action = actStopExecute
+        ImageIndex = 55
+      end
+      object DebugRestartButton: TToolButton
+        Left = 46
+        Top = 0
+        Caption = 'Restart Debuggee'
+        ImageIndex = 56
+      end
+      object ToolButton1: TToolButton
+        Left = 69
+        Top = 0
+        Width = 8
+        Caption = 'ToolButton1'
+        ImageIndex = 33
+        Style = tbsSeparator
+      end
+      object DebugStepOver: TToolButton
+        Left = 77
+        Top = 0
+        Action = actStepOver
+      end
+      object DebugStepInto: TToolButton
+        Left = 100
+        Top = 0
+        Action = actStepInto
+        ImageIndex = 57
       end
     end
   end
@@ -1753,24 +1805,19 @@ object MainForm: TMainForm
         Action = actStopExecute
         ShortCut = 49265
       end
-      object mnuDebugParameters: TMenuItem
-        Action = actExecParams
-      end
       object N18: TMenuItem
         Caption = '-'
       end
       object TogglebreakpointItem: TMenuItem
         Action = actBreakPoint
       end
-      object DbgNextItem: TMenuItem
-        Action = actNextStep
-      end
-      object DbgSingleStep: TMenuItem
-        Action = actStepSingle
-        ShortCut = 8310
-      end
-      object StepoverItem: TMenuItem
+      object DbgStepOver: TMenuItem
         Action = actStepOver
+      end
+      object DbgStepInto: TMenuItem
+        Action = actStepInto
+        ImageIndex = 57
+        ShortCut = 8310
       end
       object RuntocursorItem: TMenuItem
         Action = actRunToCursor
@@ -2755,8 +2802,8 @@ object MainForm: TMainForm
     object actDebug: TAction
       Tag = 6
       Category = 'Debug'
-      Caption = '&Debug'
-      ImageIndex = 32
+      Caption = '&Run'
+      ImageIndex = 54
       ShortCut = 119
       OnExecute = actDebugExecute
       OnUpdate = actDebugUpdate
@@ -2902,20 +2949,12 @@ object MainForm: TMainForm
       Caption = '&Edit watch'
       ImageIndex = 36
     end
-    object actNextStep: TAction
+    object actStepOver: TAction
       Category = 'Debug'
-      Caption = '&Next Step'
+      Caption = 'Step &Over'
       ImageIndex = 18
       ShortCut = 118
       OnExecute = actNextStepExecute
-      OnUpdate = actUpdateDebuggerRunning
-    end
-    object actStepOver: TAction
-      Category = 'Debug'
-      Caption = '&Continue'
-      ImageIndex = 14
-      ShortCut = 16502
-      OnExecute = actStepOverExecute
       OnUpdate = actUpdateDebuggerRunning
     end
     object actWatchItem: TAction
@@ -3120,9 +3159,9 @@ object MainForm: TMainForm
       OnExecute = actCloseAllButThisExecute
       OnUpdate = actUpdatePageCount
     end
-    object actStepSingle: TAction
+    object actStepInto: TAction
       Category = 'Debug'
-      Caption = 'Step into'
+      Caption = '&Step Into'
       OnExecute = actStepSingleExecute
       OnUpdate = actUpdateDebuggerRunning
     end

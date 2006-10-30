@@ -330,8 +330,7 @@ type
     DebugMenu: TMenuItem;
     N18: TMenuItem;
     TogglebreakpointItem: TMenuItem;
-    DbgNextItem: TMenuItem;
-    StepoverItem: TMenuItem;
+    DbgStepOver: TMenuItem;
     N21: TMenuItem;
     WatchItem: TMenuItem;
     DebugSheet: TTabSheet;
@@ -340,7 +339,6 @@ type
     actEditWatch: TAction;
     pnlFull: TPanel;
     btnFullScrRevert: TSpeedButton;
-    actNextStep: TAction;
     actStepOver: TAction;
     actWatchItem: TAction;
     actRemoveWatch: TAction;
@@ -431,8 +429,7 @@ type
     CloseAll1: TMenuItem;
     Closeallexceptthis1: TMenuItem;
     CloseAll2: TMenuItem;
-    actStepSingle: TAction;
-    DbgSingleStep: TMenuItem;
+    DbgStepInto: TMenuItem;
     DebugVarsPopup: TPopupMenu;
     AddwatchPop: TMenuItem;
     RemoveWatchPop: TMenuItem;
@@ -452,6 +449,7 @@ type
     actProjectRenameFolder: TAction;
     Newfolder1: TMenuItem;
     N40: TMenuItem;
+    actStepInto: TAction;
     Addfolder1: TMenuItem;
     Removefolder1: TMenuItem;
     Renamefolder1: TMenuItem;
@@ -468,7 +466,6 @@ type
     actViewCPU: TAction;
     actExecParams: TAction;
     mnuExecParameters: TMenuItem;
-    mnuDebugParameters: TMenuItem;
     DevCppDDEServer: TDdeServerConv;
     actShowTips: TAction;
     ips1: TMenuItem;
@@ -644,6 +641,12 @@ type
     pnlBrowsers: TPanel;
     TabLocals: TTabSheet;
     lvLocals: TListView;
+    tbDebug: TToolBar;
+    DebugRestartButton: TToolButton;
+    ToolButton1: TToolButton;
+    DebugStepOver: TToolButton;
+    DebugStepInto: TToolButton;
+    ToolButton2: TToolButton;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormDestroy(Sender: TObject);
@@ -2180,6 +2183,7 @@ begin
       MessageControl.Images := CurrentTheme.MenuImages;
       tbMain.Images := CurrentTheme.MenuImages;
       tbCompile.Images := CurrentTheme.MenuImages;
+      tbDebug.Images := CurrentTheme.MenuImages;
       tbOptions.Images := CurrentTheme.MenuImages;
       tbProject.Images := CurrentTheme.MenuImages;
       tbClasses.Images := CurrentTheme.MenuImages;
@@ -2676,6 +2680,7 @@ begin
     tbEdit.Caption := Strings[ID_TOOLEDIT];
     tbSearch.Caption := Strings[ID_TOOLSEARCH];
     tbCompile.Caption := Strings[ID_TOOLCOMPRUN];
+    tbDebug.Caption := Strings[ID_TOOLDEBUG];
     tbProject.Caption := Strings[ID_TOOLPROJECT];
     tbOptions.Caption := Strings[ID_TOOLOPTIONS];
     tbSpecials.Caption := Strings[ID_TOOLSPECIAL];
@@ -2712,8 +2717,7 @@ begin
     actEditWatch.Caption := Strings[ID_ITEM_WATCHEDIT];
     actModifyWatch.Caption := Strings[ID_ITEM_MODIFYVALUE];
     actRemoveWatch.Caption := Strings[ID_ITEM_WATCHREMOVE];
-    actNextStep.Caption := Strings[ID_ITEM_STEPNEXT];
-    actStepSingle.Caption := Strings[ID_ITEM_STEPINTO];
+    actStepInto.Caption := Strings[ID_ITEM_STEPINTO];
     actStepOver.Caption := Strings[ID_ITEM_STEPOVER];
     actWatchItem.Caption := Strings[ID_ITEM_WATCHITEMS];
     actStopExecute.Caption := Strings[ID_ITEM_STOPEXECUTION];
@@ -5346,58 +5350,63 @@ var
   idx, idx2: integer;
   s: string;
 begin
-  PrepareDebugger;
-  if assigned(fProject) then
+  if not fDebugger.Executing then
   begin
-    if not FileExists(fProject.Executable) then begin
-      MessageDlg(Lang[ID_ERR_PROJECTNOTCOMPILED], mtWarning, [mbOK], 0);
-      exit;
-    end;
-    if fProject.CurrentProfile.typ = dptDyn then begin
-      if fProject.CurrentProfile.HostApplication = '' then begin
-        MessageDlg(Lang[ID_ERR_HOSTMISSING], mtWarning, [mbOK], 0);
-        exit;
-      end
-      else if not FileExists(fProject.CurrentProfile.HostApplication) then begin
-        MessageDlg(Lang[ID_ERR_HOSTNOTEXIST], mtWarning, [mbOK], 0);
-        exit;
-      end;
-    end;
-
-    // add to the debugger the project include dirs
-    for idx := 0 to fProject.CurrentProfile.Includes.Count - 1 do
-      fDebugger.AddIncludeDir(fProject.CurrentProfile.Includes[idx]);
-
-    fDebugger.Execute('"' + StringReplace(fProject.Executable, '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
-    fDebugger.RefreshBreakpoints;
-  end
-  else
-  begin
-    e := GetEditor;
-    if assigned(e) then
+    PrepareDebugger;
+    if assigned(fProject) then
     begin
-      if not FileExists(ChangeFileExt(e.FileName, EXE_EXT)) then begin
-        MessageDlg(Lang[ID_ERR_SRCNOTCOMPILED], mtWarning, [mbOK], 0);
+      if not FileExists(fProject.Executable) then begin
+        MessageDlg(Lang[ID_ERR_PROJECTNOTCOMPILED], mtWarning, [mbOK], 0);
         exit;
       end;
-      if e.Modified then // if file is modified
-        if not SaveFile(e) then // save it first
-          Abort; // if it's not saved, abort
-      chdir(ExtractFilePath(e.FileName));
-      
-      fDebugger.Execute(StringReplace(ChangeFileExt(ExtractFileName(e.FileName), EXE_EXT), '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
-      fDebugger.RefreshBreakpoints;
-    end;
-  end;
+      if fProject.CurrentProfile.typ = dptDyn then begin
+        if fProject.CurrentProfile.HostApplication = '' then begin
+          MessageDlg(Lang[ID_ERR_HOSTMISSING], mtWarning, [mbOK], 0);
+          exit;
+        end
+        else if not FileExists(fProject.CurrentProfile.HostApplication) then begin
+          MessageDlg(Lang[ID_ERR_HOSTNOTEXIST], mtWarning, [mbOK], 0);
+          exit;
+        end;
+      end;
 
-  for idx := 0 to DebugTree.Items.Count - 1 do begin
-    idx2 := AnsiPos('=', DebugTree.Items[idx].Text);
-    if (idx2 > 0) then begin
-      s := DebugTree.Items[idx].Text;
-      Delete(s, idx2 + 1, length(s) - idx2);
-      DebugTree.Items[idx].Text := s + ' ?';
+      // add to the debugger the project include dirs
+      for idx := 0 to fProject.CurrentProfile.Includes.Count - 1 do
+        fDebugger.AddIncludeDir(fProject.CurrentProfile.Includes[idx]);
+
+      fDebugger.Execute('"' + StringReplace(fProject.Executable, '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
+      fDebugger.RefreshBreakpoints;
+    end
+    else
+    begin
+      e := GetEditor;
+      if assigned(e) then
+      begin
+        if not FileExists(ChangeFileExt(e.FileName, EXE_EXT)) then begin
+          MessageDlg(Lang[ID_ERR_SRCNOTCOMPILED], mtWarning, [mbOK], 0);
+          exit;
+        end;
+        if e.Modified then // if file is modified
+          if not SaveFile(e) then // save it first
+            Abort; // if it's not saved, abort
+        chdir(ExtractFilePath(e.FileName));
+
+        fDebugger.Execute(StringReplace(ChangeFileExt(ExtractFileName(e.FileName), EXE_EXT), '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
+        fDebugger.RefreshBreakpoints;
+      end;
     end;
-  end;
+
+    for idx := 0 to DebugTree.Items.Count - 1 do begin
+      idx2 := AnsiPos('=', DebugTree.Items[idx].Text);
+      if (idx2 > 0) then begin
+        s := DebugTree.Items[idx].Text;
+        Delete(s, idx2 + 1, length(s) - idx2);
+        DebugTree.Items[idx].Text := s + ' ?';
+      end;
+    end;
+  end
+  else if fDebugger.Paused then
+    RemoveActiveBreakpoints;
 
   // Run the debugger
   fDebugger.Go;
@@ -5445,7 +5454,7 @@ end;
 procedure TMainForm.actDebugUpdate(Sender: TObject);
 begin
   (Sender as TCustomAction).Enabled := (assigned(fProject) or (PageControl.PageCount > 0)) and
-    (not devExecutor.Running) and (not fDebugger.Executing);
+    (not devExecutor.Running) and ((not fDebugger.Executing) or fDebugger.Paused);
 end;
 
 procedure TMainForm.actCompileUpdate(Sender: TObject);
