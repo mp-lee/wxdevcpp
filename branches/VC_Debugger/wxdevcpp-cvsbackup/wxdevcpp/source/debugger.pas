@@ -111,6 +111,8 @@ type
     fDebugTree: TTreeView;
     fBreakpoints: TList;
     fNextBreakpoint: Integer;
+    IncludeDirs: TStringList;
+    JumpToCurrentLine: Boolean;
 
     hInputWrite: THandle;
     hOutputRead: THandle;
@@ -128,13 +130,15 @@ type
     procedure DisplayError(s: string);
     function GetBreakpointFromIndex(index: integer): TBreakpoint;
 
-    procedure Launch(hChildStdOut, hChildStdIn, hChildStdErr: THandle); virtual; abstract;
+    procedure Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle); virtual; abstract;
     procedure OnOutput(Output: string); virtual; abstract;
     procedure SendCommand; virtual;
 
+    //Instruction callbacks
+    procedure OnGo;
+
     //I don't know what these do... yet
     procedure OnNoDebuggingSymbolsFound;
-    procedure OnSourceMoreRecent;
     procedure OnAccessViolation;
     procedure OnBreakpoint;
 
@@ -154,7 +158,7 @@ type
     OnLocals: procedure(Locals: TList) of object;
 
     //Debugger basics
-    procedure Execute(filename: string);
+    procedure Execute(filename, arguments: string);
     procedure SetAssemblySyntax(syntax: AssemblySyntax); virtual; abstract;
     procedure QueueCommand(command, params: String); overload; virtual;
     procedure QueueCommand(command: TCommand); overload; virtual;
@@ -170,7 +174,7 @@ type
     //Debugger control funtions
     procedure Go; virtual; abstract;
     procedure Pause; virtual; abstract;
-    procedure Next; virtual; abstract; //fDebugger.SendCommand(GDB_NEXT, '');
+    procedure Next; virtual; abstract;
     procedure Step; virtual; abstract; //fDebugger.SendCommand(GDB_STEP, '');
     function GetVariableHint(name: string): string; virtual; abstract; //fDebugger.SendCommand(GDB_DISPLAY, fCurrentHint);
 
@@ -200,16 +204,13 @@ type
     destructor Destroy; override;
 
   protected
-    IncludeDirs: TStringList;
     IgnoreBreakpoint: Boolean;
-    JumpToCurrentLine: Boolean;
 
   protected
-    procedure Launch(hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
+    procedure Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
     procedure OnOutput(Output: string); override;
 
     //Instruction callbacks
-    procedure OnGo;
     procedure OnTrace;
 
     //Parser callbacks
@@ -247,6 +248,62 @@ type
     procedure Disassemble(func: string); overload; override;
   end;
 
+  TGDBDebugger = class(TDebugger)
+    constructor Create; override;
+    destructor Destroy; override;
+
+  protected
+    OverrideHandler: TCallback;
+    RegistersFilled: Integer;
+    Registers: TRegisters;
+    CurOutput: TStringList;
+
+  protected
+    procedure Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
+    procedure OnOutput(Output: string); override;
+    procedure OnSignal(Output: TStringList);
+    procedure OnSourceMoreRecent;
+
+    //Instruction callbacks
+    procedure OnTrace;
+
+    //Parser callbacks
+    procedure OnRefreshContext(Output: TStringList);
+    procedure OnVariableHint(Output: TStringList);
+    procedure OnDisassemble(Output: TStringList);
+    procedure OnCallStack(Output: TStringList);
+    procedure OnRegisters(Output: TStringList);
+    procedure OnLocals(Output: TStringList);
+
+  public
+    //Set the include paths
+    procedure AddIncludeDir(s: string); override;
+    procedure ClearIncludeDirs; override;
+
+    //Override the breakpoint handling
+    procedure AddBreakpoint(breakpoint: TBreakpoint); override;
+    procedure RemoveBreakpoint(breakpoint: TBreakpoint); override;
+    procedure RefreshBreakpoint(var breakpoint: TBreakpoint); override;
+
+    //Variable watches
+    procedure RefreshContext; override;
+    procedure AddWatch(varname: string); override;
+    procedure RemoveWatch(varname: string); override;
+    procedure ModifyVariable(varname, newvalue: string); override;
+
+    //Debugger control
+    procedure Go; override;
+    procedure Pause; override;
+    procedure Next; override;
+    procedure Step; override;
+    function GetVariableHint(name: string): string; override;
+
+    //Low-level stuff
+    procedure GetRegisters; override;
+    procedure Disassemble(func: string); overload; override;
+    procedure SetAssemblySyntax(syntax: AssemblySyntax); override;
+  end;
+
 implementation
 
 uses 
@@ -272,8 +329,10 @@ begin
   fExecuting := False;
   fBusy := False;
 
+  JumpToCurrentLine := False;
   fBreakpoints := TList.Create;
   CommandQueue := TList.Create;
+  IncludeDirs := TStringList.Create;
   FileName := '';
   Event := CreateEvent(nil, false, false, nil);
 end;
@@ -287,6 +346,7 @@ begin
   
   fBreakpoints.Free;
   CommandQueue.Free;
+  IncludeDirs.Free;
   inherited Destroy;
 end;
 
@@ -314,7 +374,7 @@ begin
   result := Reader.Idle;
 end;
 
-procedure TDebugger.Execute(filename: string);
+procedure TDebugger.Execute(filename, arguments: string);
 var
   hOutputReadTmp, hOutputWrite,
   hInputWriteTmp, hInputRead,
@@ -322,7 +382,11 @@ var
   sa: TSecurityAttributes;
 begin
   fExecuting := true;
-  self.FileName := filename;
+  //Strip the beginning and trailing " so we can deal with the path more easily
+  if (Filename[1] = '"') and (Filename[Length(Filename)] = '"') then
+    self.Filename := Copy(Filename, 2, Length(Filename) - 2)
+  else
+    self.FileName := filename;
   
   // Set up the security attributes struct.
   sa.nLength := sizeof(TSecurityAttributes);
@@ -368,7 +432,7 @@ begin
   if (not CloseHandle(hInputWriteTmp)) then
     DisplayError('CloseHandle');
 
-  Launch(hOutputWrite, hInputRead, hErrorWrite);
+  Launch(arguments, hOutputWrite, hInputRead, hErrorWrite);
 
   // Close pipe handles (do not continue to modify the parent).
   // Make sure that no handles of the
@@ -523,6 +587,12 @@ begin
     CurrentCommand.Callback;
 end;
 
+procedure TDebugger.OnGo;
+begin
+  fPaused := False;
+  fBusy := False;
+end;
+
 procedure TDebugger.OnNoDebuggingSymbolsFound;
 var
   opt: TCompilerOption;
@@ -615,21 +685,13 @@ begin
     end;
 end;
 
-//Todo: lowjoel: This isn't referenced anywhere...
-procedure TDebugger.OnSourceMoreRecent;
-begin
-  if (MessageDlg(Lang[ID_MSG_SOURCEMORERECENT], mtConfirmation, [mbYes, mbNo], 0) = mrYes) then begin
-    CloseDebugger(nil);
-    MainForm.actCompileExecute(nil);
-  end;
-end;
-
 procedure TDebugger.OnAccessViolation;
 begin
   Application.BringToFront;
   case MessageDlg(Lang[ID_MSG_SEGFAULT], mtError, [mbYes, mbNo, mbAbort], MainForm.Handle) of
     mrNo: Go;
     mrAbort: CloseDebugger(nil);
+    mrYes: JumpToCurrentLine := True;
   end;
 end;
 
@@ -639,6 +701,7 @@ begin
   case MessageDlg(Lang[ID_MSG_BREAKPOINT], mtError, [mbYes, mbNo, mbAbort], MainForm.Handle) of
     mrNo: Go;
     mrAbort: CloseDebugger(nil);
+    mrYes: JumpToCurrentLine := True;
   end;
 end;
 
@@ -653,17 +716,14 @@ end;
 constructor TCDBDebugger.Create;
 begin
   inherited;
-  JumpToCurrentLine := False;
-  IncludeDirs := TStringList.Create;
 end;
 
 destructor TCDBDebugger.Destroy;
 begin
-  IncludeDirs.Free;
   inherited;
 end;
 
-procedure TCDBDebugger.Launch(hChildStdOut, hChildStdIn, hChildStdErr: THandle);
+procedure TCDBDebugger.Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle);
 var
   ProcessInfo: TProcessInformation;
   StartupInfo: TStartupInfo;
@@ -689,13 +749,9 @@ begin
     Executable := devCompiler.gdbName
   else
     Executable := DBG_PROGRAM(devCompiler.CompilerType);
-
-  //Strip the beginning and trailing " so we can deal with the path more easily
-  if (Filename[1] = '"') and (Filename[Length(Filename)] = '"') then
-    Filename := Copy(Filename, 2, Length(Filename) - 2);
-
+  
   //Create the command line
-  Executable := Format('%s -lines -2 -y "%s" "%s"', [Executable, ExtractFilePath(Filename), FileName]);
+  Executable := Format('%s -lines -2 -y "%s" "%s" %s', [Executable, ExtractFilePath(Filename), FileName, arguments]);
 
   //Launch the process
   if not CreateProcess(nil, PChar(Executable), nil, nil, True, CREATE_NEW_CONSOLE,
@@ -823,6 +879,8 @@ end;
 procedure TCDBDebugger.AddIncludeDir(s: string);
 begin
   IncludeDirs.Add(s);
+  if Executing then
+    QueueCommand('.sympath+', s);
 end;
 
 procedure TCDBDebugger.ClearIncludeDirs;
@@ -1326,12 +1384,6 @@ begin
   QueueCommand(Command);
 end;
 
-procedure TCDBDebugger.OnGo;
-begin
-  fPaused := False;
-  fBusy := False;
-end;
-
 procedure TCDBDebugger.Pause;
 begin
 end;
@@ -1363,4 +1415,71 @@ begin
   fBusy := False;
 end;
 
-end.
+//------------------------------------------------------------------------------
+// TGDBDebugger
+//------------------------------------------------------------------------------
+constructor TGDBDebugger.Create;
+begin
+  inherited;
+  CurOutput := TStringList.Create;
+  OverrideHandler := nil;
+end;
+
+destructor TGDBDebugger.Destroy;
+begin
+  CurOutput.Free;
+  inherited;
+end;
+
+procedure TGDBDebugger.Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle);
+var
+  ProcessInfo: TProcessInformation;
+  StartupInfo: TStartupInfo;
+  Executable: string;
+begin
+  //Set up the start up info structure.
+  FillChar(StartupInfo, sizeof(TStartupInfo), 0);
+  StartupInfo.cb := sizeof(TStartupInfo);
+  StartupInfo.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
+  StartupInfo.hStdOutput := hChildStdOut;
+  StartupInfo.hStdInput := hChildStdIn;
+  StartupInfo.hStdError := hChildStdErr;
+  StartupInfo.wShowWindow := SW_HIDE;
+
+  //Get the name of the debugger
+  if (devCompiler.gdbName <> '') then
+    Executable := devCompiler.gdbName
+  else
+    Executable := DBG_PROGRAM(devCompiler.CompilerType);
+  Executable := Executable + ' --annotate=2 --silent';
+
+  //Launch the process
+  if not CreateProcess(nil, PChar(Executable), nil, nil, True, CREATE_NEW_CONSOLE,
+                       nil, nil, StartupInfo, ProcessInfo) then
+  begin
+    DisplayError('Could not find program file ' + Executable);
+    Exit;
+  end;
+
+  //Get the PID of the new process
+  hPid := ProcessInfo.hProcess;
+
+  //Close any unnecessary handles.
+  if (not CloseHandle(ProcessInfo.hThread)) then
+    DisplayError('CloseHandle');
+
+  //Tell GDB which file we want to debug
+  QueueCommand('file', '"' + filename + '"');
+  QueueCommand('set args', arguments);
+end;
+
+procedure TGDBDebugger.OnOutput(Output: string);
+var
+  RegExp: TRegExpr;
+  CurLine: String;
+
+  procedure ParseOutput(const line: string);
+  begin
+    Assert((Pos(#9, line) = 0) and (Pos(#13, line) = 0));
+    //Exclude these miscellaneous messages
+    if (line = '
