@@ -647,6 +647,8 @@ type
     DebugStepOver: TToolButton;
     DebugStepInto: TToolButton;
     ToolButton2: TToolButton;
+    actRestartDebug: TAction;
+    Restart1: TMenuItem;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormDestroy(Sender: TObject);
@@ -959,6 +961,8 @@ type
     procedure ProjectViewKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure tmrInspectorHelperTimer(Sender: TObject);
     procedure PauseExecBtnClick(Sender: TObject);
+    procedure actRestartDebugUpdate(Sender: TObject);
+    procedure actRestartDebugExecute(Sender: TObject);
 
 {$ENDIF}
 
@@ -5497,6 +5501,11 @@ begin
   (Sender as TAction).Enabled := fDebugger.Executing;
 end;
 
+procedure TMainForm.actRestartDebugUpdate(Sender: TObject);
+begin
+  (Sender as TAction).Enabled := fDebugger.Executing;
+end;
+
 procedure TMainForm.ToolbarClick(Sender: TObject);
 begin
   tbMain.Visible := ToolMainItem.checked;
@@ -5904,6 +5913,12 @@ procedure TMainForm.PauseExecBtnClick(Sender: TObject);
 begin
   if fDebugger.Executing then
     fDebugger.Pause;
+end;
+
+procedure TMainForm.actRestartDebugExecute(Sender: TObject);
+begin
+  fDebugger.CloseDebugger(Sender);
+  actDebug.Execute;
 end;
 
 procedure TMainForm.actUndoUpdate(Sender: TObject);

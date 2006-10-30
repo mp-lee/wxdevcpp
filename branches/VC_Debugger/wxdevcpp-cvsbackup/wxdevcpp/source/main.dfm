@@ -1150,13 +1150,11 @@ object MainForm: TMainForm
         Left = 23
         Top = 0
         Action = actStopExecute
-        ImageIndex = 55
       end
       object DebugRestartButton: TToolButton
         Left = 46
         Top = 0
-        Caption = 'Restart Debuggee'
-        ImageIndex = 56
+        Action = actRestartDebug
       end
       object ToolButton1: TToolButton
         Left = 69
@@ -1804,6 +1802,9 @@ object MainForm: TMainForm
       object StopExecution1: TMenuItem
         Action = actStopExecute
         ShortCut = 49265
+      end
+      object Restart1: TMenuItem
+        Action = actRestartDebug
       end
       object N18: TMenuItem
         Caption = '-'
@@ -2973,7 +2974,7 @@ object MainForm: TMainForm
     object actStopExecute: TAction
       Category = 'Debug'
       Caption = 'Stop Execution'
-      ImageIndex = 11
+      ImageIndex = 55
       ShortCut = 32881
       OnExecute = actStopExecuteExecute
       OnUpdate = actUpdateDebuggerRunning
@@ -3365,6 +3366,14 @@ object MainForm: TMainForm
       Caption = 'Paste'
       ShortCut = 16470
       OnExecute = actWxPropertyInspectorPasteExecute
+    end
+    object actRestartDebug: TAction
+      Category = 'Debug'
+      Caption = '&Restart'
+      ImageIndex = 56
+      ShortCut = 8311
+      OnExecute = actRestartDebugExecute
+      OnUpdate = actRestartDebugUpdate
     end
   end
   object ApplicationEvents1: TApplicationEvents
