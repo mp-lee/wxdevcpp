@@ -159,6 +159,7 @@ type
 
     //Debugger basics
     procedure Execute(filename, arguments: string);
+    procedure CloseDebugger(Sender: TObject); virtual;
     procedure SetAssemblySyntax(syntax: AssemblySyntax); virtual; abstract;
     procedure QueueCommand(command, params: String); overload; virtual;
     procedure QueueCommand(command: TCommand); overload; virtual;
@@ -194,7 +195,6 @@ type
     procedure Disassemble(func: string); overload; virtual; abstract;
 
     //Havn't looked at these
-    procedure CloseDebugger(Sender: TObject);
     function WaitForIdle: Boolean;
     function Idle: Boolean;
   end;
@@ -257,6 +257,7 @@ type
     RegistersFilled: Integer;
     Registers: TRegisters;
     CurOutput: TStringList;
+    Started: Boolean;
 
   protected
     procedure Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
@@ -265,6 +266,7 @@ type
     procedure OnSourceMoreRecent;
 
     //Instruction callbacks
+    procedure OnGo;
     procedure OnTrace;
 
     //Parser callbacks
@@ -276,6 +278,9 @@ type
     procedure OnLocals(Output: TStringList);
 
   public
+    //Debugger control
+    procedure CloseDebugger(Sender: TObject); override;
+
     //Set the include paths
     procedure AddIncludeDir(s: string); override;
     procedure ClearIncludeDirs; override;
@@ -381,7 +386,6 @@ var
   hErrorWrite: THandle;
   sa: TSecurityAttributes;
 begin
-  fExecuting := true;
   //Strip the beginning and trailing " so we can deal with the path more easily
   if (Filename[1] = '"') and (Filename[Length(Filename)] = '"') then
     self.Filename := Copy(Filename, 2, Length(Filename) - 2)
@@ -1423,6 +1427,7 @@ begin
   inherited;
   CurOutput := TStringList.Create;
   OverrideHandler := nil;
+  Started := False;
 end;
 
 destructor TGDBDebugger.Destroy;
@@ -1437,6 +1442,10 @@ var
   StartupInfo: TStartupInfo;
   Executable: string;
 begin
+  //Reset our variables
+  fExecuting := True;
+  fNextBreakpoint := 0;
+
   //Set up the start up info structure.
   FillChar(StartupInfo, sizeof(TStartupInfo), 0);
   StartupInfo.cb := sizeof(TStartupInfo);
@@ -1473,6 +1482,12 @@ begin
   QueueCommand('set args', arguments);
 end;
 
+procedure TGDBDebugger.CloseDebugger(Sender: TObject);
+begin
+  inherited;
+  Started := False;
+end;
+
 procedure TGDBDebugger.OnOutput(Output: string);
 var
   RegExp: TRegExpr;
@@ -1480,6 +1495,6 @@ var
 
   procedure ParseOutput(const line: string);
   begin
-    Assert((Pos(#9, line) = 0) and (Pos(#13, line) = 0));
+    Assert((Pos(#10, line) = 0) and (Pos(#13, line) = 0));
     //Exclude these miscellaneous messages
     if (line = '
