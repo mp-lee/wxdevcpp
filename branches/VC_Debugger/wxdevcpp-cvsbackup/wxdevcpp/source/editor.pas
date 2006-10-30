@@ -159,6 +159,7 @@ type
     procedure GotoLineNr(Nr: integer);
     function Search(const isReplace: boolean): boolean;
     procedure SearchAgain;
+    procedure SearchKeyNavigation(MoveForward:Boolean = true);
     procedure Exportto(const isHTML: boolean);
     procedure InsertString(const Value: string; const move: boolean);
     {$IFDEF WX_BUILD}
@@ -641,11 +642,11 @@ procedure TEditor.SetBreakPointsOnOpen;
 var
   i: integer;
 begin
-  for i := 0 to MainForm.fDebugger.Breakpoints.Count - 1 do
-    if PBreakpoint(MainForm.fDebugger.Breakpoints.Items[i])^.Filename = fFilename then
+  for i := 0 to debugger.Breakpoints.Count - 1 do
+    if PBreakpoint(debugger.Breakpoints.Items[i])^.Filename = fFilename then
     begin
-      InsertBreakpoint(PBreakpoint(MainForm.fDebugger.Breakpoints.Items[i])^.Line);
-      PBreakpoint(MainForm.fDebugger.Breakpoints.Items[i])^.Editor := self;
+      InsertBreakpoint(PBreakpoint(debugger.Breakpoints.Items[i])^.Line);
+      PBreakpoint(debugger.Breakpoints.Items[i])^.Editor := self;
     end;
 end;
         
@@ -692,9 +693,9 @@ end;
 
 function TEditor.HasBreakPoint(line_number: integer): integer;
 begin
-  for Result:= 0 to MainForm.fDebugger.Breakpoints.Count - 1 do
-    if PBreakpoint(MainForm.fDebugger.Breakpoints.Items[Result])^.Editor = self then
-      if PBreakpoint(MainForm.fDebugger.Breakpoints.Items[result])^.Line = line_number then
+  for Result:= 0 to debugger.Breakpoints.Count - 1 do
+    if PBreakpoint(debugger.Breakpoints.Items[Result])^.Editor = self then
+      if PBreakpoint(debugger.Breakpoints.Items[result])^.Line = line_number then
         Exit;
 
   //Cannot find an entry
@@ -1108,6 +1109,53 @@ begin
       mtInformation, [mbOk], 0);
 end;
 
+procedure TEditor.SearchKeyNavigation(MoveForward:Boolean);
+var
+  Options: TSynSearchOptions;
+  return,MidCursorPos: integer;
+  s:String;
+  bSelected:boolean;
+begin
+  bSelected:=false;
+  if (fText.SelText = '') then
+    s := GetWordAtCursor
+  else
+  begin
+    s := fText.SelText;
+    bSelected:=true;
+  end;
+
+  SearchCenter.Editor := Self;
+  SearchCenter.AssignSearchEngine;
+  SearchCenter.FindText := s;
+
+  if not SearchCenter.SingleFile then exit;
+  if SearchCenter.FindText = '' then begin
+    exit;
+  end;
+  Options := SearchCenter.Options;
+  Exclude(Options, ssoEntireScope);
+
+  if (MoveForward) then
+    Exclude(Options, ssoBackwards)
+  else
+    Include(Options, ssoBackwards);
+
+  return := fText.SearchReplace(SearchCenter.FindText,SearchCenter.ReplaceText,Options);
+  if bSelected = false then
+  begin
+    if fText.SelEnd - fText.SelStart <> 1 then
+    begin
+      MidCursorPos := fText.SelEnd - ((fText.SelEnd-fText.SelStart) div 2);
+      fText.SelStart:= MidCursorPos;
+      fText.SelEnd:= MidCursorPos;
+    end;
+  end;
+
+  if return <> 0 then
+    Activate
+end;
+
 procedure TEditor.SetErrorFocus(const Col, Line: integer);
 begin
   fErrSetting := TRUE;
@@ -1261,7 +1309,6 @@ procedure TEditor.EditorKeyPress(Sender: TObject; var Key: Char);
 var
   P: TPoint;
 begin
-
   if Key = char($7F) then // happens when doing ctrl+backspace with completion on
     exit;
   if fCompletionBox.Enabled then
@@ -1350,6 +1397,18 @@ begin
       Abort;
     end;
   end;
+{$IFDEF GURUS_BUILD}
+{$IFDEF WIN32}
+  if Key = VK_F3 then
+{$ENDIF}
+{$IFDEF LINUX}
+  if Key = XK_F3 then
+{$ENDIF}
+    if ssShift in Shift then
+      SearchKeyNavigation(false)
+    else
+      SearchKeyNavigation(true);
+{$ENDIF} //GURUS_BUILD
 
   if fCompletionBox.Enabled then begin
     fCompletionBox.OnKeyPress := EditorKeyPress;
@@ -1616,7 +1675,7 @@ begin
       Exit;
     end;
 
-  if devEditor.ParserHints and  (not MainForm.fDebugger.Executing) then begin // editing - show declaration of word under cursor in a hint
+  if devEditor.ParserHints and (not MainForm.fDebugger.Executing) then begin // editing - show declaration of word under cursor in a hint
     p.Char := X;
     p.Line := Y;
     p := fText.DisplayToBufferPos(fText.PixelsToRowColumn(p.Char, p.Line));
