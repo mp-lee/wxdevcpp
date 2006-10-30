@@ -109,7 +109,6 @@ type
     fPaused: Boolean;
     fExecuting: Boolean;
     fDebugTree: TTreeView;
-    fBreakpoints: TList;
     fNextBreakpoint: Integer;
     IncludeDirs: TStringList;
     JumpToCurrentLine: Boolean;
@@ -144,7 +143,6 @@ type
 
   published
     property Busy: Boolean read fBusy;
-    property Breakpoints: TList read fBreakpoints;
     property Executing: Boolean read fExecuting;
     property Paused: Boolean read fPaused;
     property DebugTree: TTreeView read fDebugTree write fDebugTree;
@@ -309,6 +307,9 @@ type
     procedure SetAssemblySyntax(syntax: AssemblySyntax); override;
   end;
 
+var
+  Breakpoints: TList;
+
 implementation
 
 uses 
@@ -335,7 +336,6 @@ begin
   fBusy := False;
 
   JumpToCurrentLine := False;
-  fBreakpoints := TList.Create;
   CommandQueue := TList.Create;
   IncludeDirs := TStringList.Create;
   FileName := '';
@@ -347,9 +347,8 @@ begin
   if (Executing) then
     CloseDebugger(nil);
   CloseHandle(Event);
-  RemoveAllBreakpoints;
-  
-  fBreakpoints.Free;
+  RemoveAllBreakpoints; 
+
   CommandQueue.Free;
   IncludeDirs.Free;
   inherited Destroy;
@@ -391,6 +390,7 @@ begin
     self.Filename := Copy(Filename, 2, Length(Filename) - 2)
   else
     self.FileName := filename;
+  fExecuting := True;
   
   // Set up the security attributes struct.
   sa.nLength := sizeof(TSecurityAttributes);
@@ -681,10 +681,10 @@ var
   I: integer;
 begin
   Result := nil;
-  for I := 0 to fBreakpoints.Count - 1 do
-    if PBreakpoint(fBreakpoints[I])^.Index = index then
+  for I := 0 to Breakpoints.Count - 1 do
+    if PBreakpoint(Breakpoints[I])^.Index = index then
     begin
-      Result := PBreakpoint(fBreakpoints[I])^;
+      Result := PBreakpoint(Breakpoints[I])^;
       Exit;
     end;
 end;
@@ -904,7 +904,7 @@ begin
 
   New(aBreakpoint);
   aBreakpoint^ := breakpoint;
-  fBreakpoints.Add(aBreakpoint);
+  Breakpoints.Add(aBreakpoint);
   RefreshBreakpoint(aBreakpoint^);
 end;
 
