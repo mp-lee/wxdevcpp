@@ -1014,7 +1014,6 @@ type
     procedure SetupProjectView;
     procedure BuildOpenWith;
     procedure RebuildClassesToolbar;
-    procedure PrepareDebugger;
     procedure HideCodeToolTip;
 {$IFDEF WX_BUILD}
     procedure OnDockableFormClosed(Sender: TObject; var Action: TCloseAction);
@@ -1022,6 +1021,10 @@ type
     procedure SurroundWithClick(Sender: TObject);
     procedure DoCreateWxSpecificItems;
 {$ENDIF}
+    //Private debugger functions
+    procedure PrepareDebugger;
+    procedure InitializeDebugger;
+
   public
     procedure DoCreateEverything;
     procedure DoApplyWindowPlacement;
@@ -1959,11 +1962,7 @@ begin
   fCompiler.OnResOutput := CompResOutputProc;
   fCompiler.OnSuccess := CompSuccessProc;
 
-  fDebugger := TCDBDebugger.Create;
-  fDebugger.DebugTree := DebugTree;
-  fDebugger.OnCallStack := OnCallStack;
-  fDebugger.OnLocals := OnLocals;
-
+  InitializeDebugger;
   SearchCenter.SearchProc := MainSearchProc;
   SearchCenter.PageControl := PageControl;
 
@@ -2067,9 +2066,9 @@ end;
 
 procedure TMainForm.AddBreakPointToList(line_number: integer; e: TEditor);
 var
-  Breakpoint: debugger.TBreakpoint;
+  Breakpoint: TBreakpoint;
 begin
-  Breakpoint := debugger.TBreakpoint.Create;
+  Breakpoint := TBreakpoint.Create;
   with Breakpoint do
   begin
     Line := line_number;
@@ -2081,9 +2080,9 @@ end;
 
 procedure TMainForm.RemoveBreakPointFromList(line_number: integer; e:TEditor);
 var
-  Breakpoint: debugger.TBreakpoint;
+  Breakpoint: TBreakpoint;
 begin
-  Breakpoint := debugger.TBreakpoint.Create;
+  Breakpoint := TBreakpoint.Create;
   with Breakpoint do
   begin
     Line := line_number;
@@ -5282,11 +5281,44 @@ begin
   Application.ProcessMessages;
 end;
 
+procedure TMainForm.InitializeDebugger;
+  procedure Initialize;
+  begin
+    fDebugger.DebugTree := DebugTree;
+    fDebugger.OnCallStack := OnCallStack;
+    fDebugger.OnLocals := OnLocals;
+  end;
+begin
+  if devCompiler.CompilerType = ID_COMPILER_MINGW then
+  begin
+    if not (fDebugger is TGDBDebugger) then
+    begin
+      if Assigned(fDebugger) then
+        fDebugger.Free;
+      fDebugger := TGDBDebugger.Create;
+      Initialize;
+    end;
+  end
+  else if devCompiler.CompilerType in [ID_COMPILER_VC6, ID_COMPILER_VC2003, ID_COMPILER_VC2005] then
+  begin
+    if not (fDebugger is TCDBDebugger) then
+    begin
+      if Assigned(fDebugger) then
+        fDebugger.Free;
+      fDebugger := TCDBDebugger.Create;
+      Initialize;
+    end;
+  end;
+end;
+
 procedure TMainForm.PrepareDebugger;
 var
   idx: integer;
   sl: TStringList;
 begin
+  //Recreate the debugger object
+  InitializeDebugger;
+  
   actStopExecute.Execute;
   DebugOutput.Clear;
   LeftPageControl.ActivePage := DebugLeftSheet;
@@ -5336,7 +5368,7 @@ begin
     for idx := 0 to fProject.CurrentProfile.Includes.Count - 1 do
       fDebugger.AddIncludeDir(fProject.CurrentProfile.Includes[idx]);
 
-    fDebugger.Execute('"' + StringReplace(fProject.Executable, '\', '\\', [rfReplaceAll]) + '"');
+    fDebugger.Execute('"' + StringReplace(fProject.Executable, '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
     fDebugger.RefreshBreakpoints;
   end
   else
@@ -5353,7 +5385,7 @@ begin
           Abort; // if it's not saved, abort
       chdir(ExtractFilePath(e.FileName));
       
-      fDebugger.Execute(StringReplace(ChangeFileExt(ExtractFileName(e.FileName), EXE_EXT), '\', '\\', [rfReplaceAll]) + '"');
+      fDebugger.Execute(StringReplace(ChangeFileExt(ExtractFileName(e.FileName), EXE_EXT), '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
       fDebugger.RefreshBreakpoints;
     end;
   end;
@@ -8179,7 +8211,10 @@ begin
     ModifyVarForm.NameEdit.Text := s;
     ModifyVarForm.ValueEdit.Text := Val;
     if ModifyVarForm.ShowModal = mrOK then
+    begin
       fDebugger.ModifyVariable(ModifyVarForm.NameEdit.Text, ModifyVarForm.ValueEdit.Text);
+      fDebugger.RefreshContext;
+    end;
   finally
     ModifyVarForm.Free;
   end;
@@ -8197,10 +8232,7 @@ var
 begin
   node := DebugTree.TopItem;
   while Assigned(Node) do begin
-    try
-      fDebugger.RemoveWatch(IntToStr(integer(node.Data)));
-    except
-    end;
+    fDebugger.RemoveWatch(IntToStr(integer(node.Data)));
     DebugTree.Items.Delete(node);
     node := DebugTree.TopItem;
   end;
@@ -9139,17 +9171,30 @@ begin
   end;
   if nSlectedItem = -1 then
     exit;
-  if JvInspEvents.Root.Items[nSlectedItem].Data.AsString <> '' then
-    exit;
 
   JvInspEvents.Show;
   //If we dont select it then the Selection Event wont get fired
   JvInspEvents.SelectedIndex:=JvInspEvents.Root.Items[nSlectedItem].DisplayIndex;
-  JvInspEvents.OnDataValueChanged:=nil;
-  JvInspEvents.Root.Items[nSlectedItem].Data.AsString:='<Add New Function>';
-  JvInspEvents.Root.Items[nSlectedItem].DoneEdit(true);
-  JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
-  JvInspEventsDataValueChanged(nil,JvInspEvents.Root.Items[nSlectedItem].Data);  
+
+  if JvInspEvents.Root.Items[nSlectedItem].Data.AsString <> '' then
+  begin
+    strGlobalCurrentFunction:=JvInspEvents.Root.Items[nSlectedItem].Data.AsString;
+    JvInspEvents.OnDataValueChanged:=nil;
+    JvInspEvents.Root.Items[nSlectedItem].Data.AsString:='<Goto Function>';
+    JvInspEvents.Root.Items[nSlectedItem].DoneEdit(true);
+    JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
+    JvInspEventsDataValueChanged(nil,JvInspEvents.Root.Items[nSlectedItem].Data);
+    exit;
+  end
+  else
+  begin
+    JvInspEvents.OnDataValueChanged:=nil;
+    JvInspEvents.Root.Items[nSlectedItem].Data.AsString:='<Add New Function>';
+    JvInspEvents.Root.Items[nSlectedItem].DoneEdit(true);
+    JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
+    JvInspEventsDataValueChanged(nil,JvInspEvents.Root.Items[nSlectedItem].Data);
+    exit;
+  end;
 end;
 
 procedure TMainForm.ELDesigner1ControlInserting(Sender: TObject;
@@ -9888,7 +9933,9 @@ begin
       if not ClassBrowser1.Enabled then
       begin
         MessageDlg('Class Browser is not enabled.'+#13+#10+''+#13+#10+'Event handlers wont work', mtWarning, [mbOK], 0);
+        JvInspEvents.OnDataValueChanged:=nil;
         Data.AsString := '';
+        JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
         Exit;
       end;
 
@@ -9991,7 +10038,8 @@ begin
       begin
         str := trim(Data.AsString);
         LocateFunctionInEditor(Data,Trim(e.getDesigner().Wx_Name),SelectedComponent, str, JvInspEvents.Selected.DisplayName);
-        Exit;
+        fstrCppFileToOpen:=e.GetDesignerCPPEditor.FileName;
+        bOpenFile:=true;
       end;
     end;
 
@@ -10094,7 +10142,7 @@ end;
 
 function TMainForm.LocateFunctionInEditor(eventProperty:TJvCustomInspectorData;strClassName: string; SelComponent:TComponent; var strFunctionName: string; strEventFullName: string): Boolean;
 
-function isFunctionAvailableInEditor(intClassID:Integer;strFunctionName:String;intLineNum:Integer;strFname:String):boolean;
+function isFunctionAvailableInEditor(intClassID:Integer;strFunctionName:String;var intLineNum:Integer;var strFname:String):boolean;
 var
     i:Integer;
     St2 : PStatement;
@@ -10114,6 +10162,7 @@ begin
     if AnsiSameText(strFunctionName, St2._Command) then
     begin
       strFname:=St2._DeclImplFileName;
+      intLineNum:=St2._DeclImplLine;
       Result := True;
       Break;
     end;
@@ -10183,7 +10232,7 @@ begin
     begin
       //TODO: check for a valid line number
       e.Text.CaretX:=0;
-      e.Text.CaretX:=intLineNum;
+      e.Text.CaretY:=intLineNum;
       OpenFile(e.GetDesignerCPPFileName);
     end;
     boolInspectorDataClear:=False;
