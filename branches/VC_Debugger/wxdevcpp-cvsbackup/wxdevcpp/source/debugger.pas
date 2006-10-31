@@ -489,7 +489,7 @@ begin
     
     //Close the handles
     if (not CloseHandle(hPid)) then
-      DisplayError('CloseHandle - gdb process');
+      DisplayError('CloseHandle - process handle');
     if (not CloseHandle(hOutputRead)) then
       DisplayError('CloseHandle - output read');
     if (not CloseHandle(hInputWrite)) then

@@ -649,6 +649,7 @@ type
     ToolButton2: TToolButton;
     actRestartDebug: TAction;
     Restart1: TMenuItem;
+    ToolDebugItem: TMenuItem;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormDestroy(Sender: TObject);
@@ -963,6 +964,7 @@ type
     procedure PauseExecBtnClick(Sender: TObject);
     procedure actRestartDebugUpdate(Sender: TObject);
     procedure actRestartDebugExecute(Sender: TObject);
+    procedure actUpdateDebuggerPaused(Sender: TObject);
 
 {$ENDIF}
 
@@ -2025,6 +2027,7 @@ begin
   ToolMainItem.checked := devData.ToolbarMain;
   ToolEditItem.Checked := devData.ToolbarEdit;
   ToolCompileandRunItem.Checked := devData.ToolbarCompile;
+  ToolDebugItem.Checked := devData.ToolbarDebug;
   ToolProjectItem.Checked := devData.ToolbarProject;
   ToolOptionItem.Checked := devData.ToolbarOptions;
   ToolSpecialsItem.Checked := devData.ToolbarSpecials;
@@ -2038,6 +2041,8 @@ begin
   tbEdit.Top := devData.ToolbarEditY;
   tbCompile.Left := devData.ToolbarCompileX;
   tbCompile.Top := devData.ToolbarCompileY;
+  tbDebug.Left := devData.ToolbarDebugX;
+  tbDebug.Top := devData.ToolbarDebugY;
   tbProject.Left := devData.ToolbarProjectX;
   tbProject.Top := devData.ToolbarProjectY;
   tbOptions.Left := devData.ToolbarOptionsX;
@@ -2314,6 +2319,8 @@ begin
   devData.ToolbarEditY := tbEdit.Top;
   devData.ToolbarCompileX := tbCompile.Left;
   devData.ToolbarCompileY := tbCompile.Top;
+  devData.ToolbarDebugX := tbDebug.Left;
+  devData.ToolbarDebugY := tbDebug.Top;
   devData.ToolbarProjectX := tbProject.Left;
   devData.ToolbarProjectY := tbProject.Top;
   devData.ToolbarOptionsX := tbOptions.Left;
@@ -5506,11 +5513,17 @@ begin
   (Sender as TAction).Enabled := fDebugger.Executing;
 end;
 
+procedure TMainForm.actUpdateDebuggerPaused(Sender: TObject);
+begin
+  (Sender as TAction).Enabled := fDebugger.Executing and fDebugger.Paused;
+end;
+
 procedure TMainForm.ToolbarClick(Sender: TObject);
 begin
   tbMain.Visible := ToolMainItem.checked;
   tbEdit.Visible := ToolEditItem.Checked;
   tbCompile.Visible := ToolCompileandRunItem.Checked;
+  tbDebug.Visible := ToolDebugItem.Checked;
   tbProject.Visible := ToolProjectItem.Checked;
   tbOptions.Visible := ToolOptionItem.Checked;
   tbSpecials.Visible := ToolSpecialsItem.Checked;
@@ -5520,6 +5533,7 @@ begin
   devData.ToolbarMain := ToolMainItem.checked;
   devData.ToolbarEdit := ToolEditItem.Checked;
   devData.ToolbarCompile := ToolCompileandRunItem.Checked;
+  devData.ToolbarDebug := ToolDebugItem.Checked;
   devData.ToolbarProject := ToolProjectItem.Checked;
   devData.ToolbarOptions := ToolOptionItem.Checked;
   devData.ToolbarSpecials := ToolSpecialsItem.Checked;
@@ -5917,7 +5931,7 @@ end;
 
 procedure TMainForm.actRestartDebugExecute(Sender: TObject);
 begin
-  fDebugger.CloseDebugger(Sender);
+  actStopExecute.Execute;
   actDebug.Execute;
 end;
 

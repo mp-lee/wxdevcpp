@@ -581,7 +581,7 @@ object MainForm: TMainForm
           end
         end
         object tabBacktrace: TTabSheet
-          Caption = 'Backtrace'
+          Caption = 'Stack Trace'
           ImageIndex = 1
           object lvBacktrace: TListView
             Left = 0
@@ -1173,7 +1173,6 @@ object MainForm: TMainForm
         Left = 100
         Top = 0
         Action = actStepInto
-        ImageIndex = 57
       end
     end
   end
@@ -1665,6 +1664,12 @@ object MainForm: TMainForm
           Checked = True
           OnClick = ToolbarClick
         end
+        object ToolDebugItem: TMenuItem
+          AutoCheck = True
+          Caption = '&Debug'
+          Checked = True
+          OnClick = ToolbarClick
+        end
         object ToolProjectItem: TMenuItem
           AutoCheck = True
           Caption = '&Project'
@@ -1817,7 +1822,6 @@ object MainForm: TMainForm
       end
       object DbgStepInto: TMenuItem
         Action = actStepInto
-        ImageIndex = 57
         ShortCut = 8310
       end
       object RuntocursorItem: TMenuItem
@@ -2956,7 +2960,7 @@ object MainForm: TMainForm
       ImageIndex = 18
       ShortCut = 118
       OnExecute = actNextStepExecute
-      OnUpdate = actUpdateDebuggerRunning
+      OnUpdate = actUpdateDebuggerPaused
     end
     object actWatchItem: TAction
       Category = 'Debug'
@@ -3163,8 +3167,9 @@ object MainForm: TMainForm
     object actStepInto: TAction
       Category = 'Debug'
       Caption = '&Step Into'
+      ImageIndex = 57
       OnExecute = actStepSingleExecute
-      OnUpdate = actUpdateDebuggerRunning
+      OnUpdate = actUpdateDebuggerPaused
     end
     object actFileProperties: TAction
       Category = 'File'
