@@ -2695,6 +2695,7 @@ begin
     tbProject.Caption := Strings[ID_TOOLPROJECT];
     tbOptions.Caption := Strings[ID_TOOLOPTIONS];
     tbSpecials.Caption := Strings[ID_TOOLSPECIAL];
+    tbClasses.Caption := Strings[ID_LP_CLASSES];
     actViewToDoList.Caption := Strings[ID_VIEWTODO_MENUITEM];
     FloatingProjectManagerItem.Caption := Strings[ID_ITEM_FLOATPROJECT];
     FloatingReportWindowItem.Caption := Strings[ID_ITEM_FLOATREPORT];

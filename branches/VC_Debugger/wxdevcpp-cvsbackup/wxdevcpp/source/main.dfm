@@ -1081,11 +1081,14 @@ object MainForm: TMainForm
       Width = 466
       Height = 22
       AutoSize = True
-      Caption = 'tbClasses'
+      Caption = 'Classes'
+      DragKind = dkDock
       EdgeBorders = []
       EdgeInner = esNone
       EdgeOuter = esNone
       Flat = True
+      ParentShowHint = False
+      ShowHint = True
       TabOrder = 7
       object cmbClasses: TComboBox
         Left = 0
