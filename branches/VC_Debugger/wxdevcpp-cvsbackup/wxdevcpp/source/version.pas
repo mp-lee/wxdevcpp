@@ -43,7 +43,7 @@ const
 resourcestring
   // misc strings
   DEVCPP = 'wxDev-C++';
-  DEVCPP_VERSION    = '6.10';
+  DEVCPP_VERSION    = '6.11';
   DEFAULT_LANG_FILE = 'English.lng';
   HTTP = 'http://';
   DEV_INTERNAL_OPEN = '$__DEV_INTERNAL_OPEN';
@@ -289,24 +289,6 @@ const
 
   // GDB commands and Displays
 { GDB_ATTACH = 'attach';
-
-  T_PROMPT = 'prompt';
-  T_BREAKPOINT = 'breakpoint';
-  T_SOURCE = 'source';
-  T_DISPLAY_EXPRESSION = 'display-expression';
-  T_DISPLAY_BEGIN = 'display-begin';
-  T_DISPLAY_VALUE = 'display-value';
-  T_DISPLAY_END = 'display-end';
-  T_GDB_ERROR = 'error';
-  T_GDB_ERRORBEGIN = 'error-begin';
-  T_FRAME_ARGS = 'frame-args';
-  T_FRAME_ARG_BEGIN = 'arg-begin';
-  T_FRAME_ARG_NAME_END = 'arg-name-end';
-  T_FRAME_ARG_VALUE = 'arg-value';
-  T_FRAME_ARG_END = 'arg-end';
-  T_DUMP = 'Dump';
-  T_OF = 'of';
-  T_ASM = 'assembler';
   T_ARRAYSECTION_BEGIN = 'array-section-begin';
   T_ARRAYSECTION_END = 'array-section-end';}
 
