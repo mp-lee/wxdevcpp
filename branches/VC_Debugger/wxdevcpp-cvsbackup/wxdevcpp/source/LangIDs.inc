@@ -141,6 +141,7 @@ const
   // toolbars
   ID_TOOLMAIN                      = 191;
   ID_TOOLCOMPRUN                   = 192;
+  ID_TOOLDEBUG                     = 245;// ID_ITEM_DEBUG
   ID_TOOLPROJECT                   = 193;
   ID_TOOLOPTIONS                   = 194;
   ID_TOOLSPECIAL                   = 195;
@@ -206,8 +207,8 @@ const
   //debug menu
   ID_ITEM_DEBUG                    = 245; // moved from execute menu
   ID_ITEM_TOGGLEBREAK              = 246;
-  ID_ITEM_STEPNEXT                 = 247;
-  ID_ITEM_STEPOVER                 = 248;
+  ID_ITEM_STEPOVER                 = 247;
+  //248 is free
   ID_ITEM_WATCHADD                 = 249;
   ID_ITEM_WATCHITEMS               = 250;
   ID_ITEM_STOPEXECUTION            = 251;
