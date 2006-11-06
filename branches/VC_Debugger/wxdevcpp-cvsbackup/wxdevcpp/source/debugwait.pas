@@ -37,7 +37,6 @@ type
     EventReady: THandle;
     OutputCrit: TRTLCriticalSection;
     Output: string;
-    Idle: boolean;
 
   protected
     procedure Execute; override;

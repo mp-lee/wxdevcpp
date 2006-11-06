@@ -194,10 +194,6 @@ type
     procedure GetRegisters; virtual; abstract;
     procedure Disassemble; overload;
     procedure Disassemble(func: string); overload; virtual; abstract;
-
-    //Havn't looked at these
-    function WaitForIdle: Boolean;
-    function Idle: Boolean;
   end;
 
   TCDBDebugger = class(TDebugger)
@@ -358,30 +354,6 @@ begin
   inherited Destroy;
 end;
 
-function TDebugger.WaitForIdle: boolean;
-var
-  I : integer;
-begin
-  I := 0;
-  Result := false;
-  while not Reader.Idle do
-  begin
-    Sleep(20);
-    I := I + 1;
-    if (i = 200) then begin
-      MessageDlg('Timeout elapsed while waiting for previous debugger command to complete.'#10#13#10#13 +
-                 'Check if the debugger has hung.', mtError, [mbOK], MainForm.Handle);
-      Reader.Idle := True;
-      Result := true;
-    end;
-  end;
-end;
-
-function TDebugger.Idle: boolean;
-begin
-  result := Reader.Idle;
-end;
-
 procedure TDebugger.Execute(filename, arguments: string);
 var
   hOutputReadTmp, hOutputWrite,
@@ -459,7 +431,6 @@ begin
   Reader.EventReady := Event;
   Reader.OnTerminate := CloseDebugger;
   Reader.FreeOnTerminate := True;
-  Reader.Idle := True;
   InitializeCriticalSection(Reader.OutputCrit);
 
   // Create a thread that will notice when an output is ready to be sent for processing
