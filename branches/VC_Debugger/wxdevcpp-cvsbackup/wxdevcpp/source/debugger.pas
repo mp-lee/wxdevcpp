@@ -999,7 +999,6 @@ var
     Indent := 0;
     while I < Output.Count do
     begin
-      SendDebug(inttostr(i) + ': ' + Output[I]);
       if RegExp.Exec(Output[I], StructArrayExpr) then
       begin
         with DebugTree.Items.AddChild(ParentNode, RegExp.Substitute('[$2] $3')) do
@@ -1031,10 +1030,7 @@ var
               if Length(RegExp.Substitute('$1')) <= Indent then
                 Break
               else
-              begin
-                showmessage(inttostr(Length(RegExp.Substitute('$1'))) + '/' + inttostr(indent));
                 SubStructure.Add(Output[I]);
-              end;
                 
             Inc(I);
           end;
@@ -1124,9 +1120,7 @@ var
             ImageIndex := 21;
           end;
         end;
-      end
-      else
-        SendDebug(Output[i]);
+      end;
 
       //Increment I
       Inc(I);
@@ -1136,6 +1130,7 @@ var
   procedure ParseArray(Output: TStringList; ParentNode: TTreeNode);
   var
     SubStructure: TStringList;
+    Increment: Integer;
     I: Integer;
   begin
     I := 0;
@@ -1144,15 +1139,19 @@ var
       if RegExp.Exec(Output[I], ArrayExpr) then
       begin
         Inc(I, 2);
-        if Output[I] = '' then
+        Increment := 2;
+        while Trim(Output[I]) = '' do
+        begin
           Inc(I);
+          Inc(Increment);
+        end;
         
         //Are we an array (with a basic data type) or with a UDT?
         if RegExp.Exec(Output[I], StructExpr) then
         begin
           with TRegExpr.Create do
           begin
-            Exec(Output[I - 2], ArrayExpr);
+            Exec(Output[I - Increment], ArrayExpr);
             with DebugTree.Items.AddChild(ParentNode, Substitute('[$1]')) do
             begin
               SelectedIndex := 32;
