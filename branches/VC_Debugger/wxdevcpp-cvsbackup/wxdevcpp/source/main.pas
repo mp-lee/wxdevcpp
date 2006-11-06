@@ -7580,6 +7580,10 @@ begin
     actProjectManagerExecute(nil);
   end;
   LeftPageControl.ActivePageIndex := 0;
+  if frmProjMgrDock.Visible = false then
+  begin
+    FloatingProjectManagerItemClick(FloatingProjectManagerItem);
+  end;
   ProjectView.SetFocus;
 end;
 
@@ -7766,6 +7770,11 @@ begin
     actProjectManagerExecute(nil);
   end;
   LeftPageControl.ActivePageIndex := 1;
+  if frmProjMgrDock.Visible = false then
+  begin
+    FloatingProjectManagerItemClick(FloatingProjectManagerItem);
+  end;
+
   if ClassBrowser1.Visible And ClassBrowser1.Enabled then
     ClassBrowser1.SetFocus;
 end;
@@ -9735,16 +9744,16 @@ begin
             if Assigned(e) then
             begin
                 if UpperCase(SelectedComponent.ClassName) = UpperCase('TFrmNewForm') then
-                    GenerateXPMDirectly(TFrmNewForm(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_ICON.Bitmap,e.GetDesigner.Wx_Name,e.FileName);
+                    GenerateXPMDirectly(TFrmNewForm(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_ICON.Bitmap,e.GetDesigner.Wx_Name,'Self',e.FileName);
 
                 if UpperCase(SelectedComponent.ClassName) = UpperCase('TWxStaticBitmap') then
-                    GenerateXPMDirectly(TWxStaticBitmap(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Picture.Bitmap,SelectedComponent.Name,e.FileName);
+                    GenerateXPMDirectly(TWxStaticBitmap(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Picture.Bitmap,SelectedComponent.Name,e.GetDesigner.Wx_Name,e.FileName);
 
                 if UpperCase(SelectedComponent.ClassName) = UpperCase('TWxBitmapButton') then
-                    GenerateXPMDirectly(TWxBitmapButton(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_Bitmap.Bitmap,SelectedComponent.Name,e.FileName);
+                    GenerateXPMDirectly(TWxBitmapButton(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_Bitmap.Bitmap,SelectedComponent.Name,e.GetDesigner.Wx_Name,e.FileName);
 
                 if UpperCase(SelectedComponent.ClassName) = UpperCase('TWxToolButton') then
-                    GenerateXPMDirectly(TWxToolButton(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_Bitmap.Bitmap,SelectedComponent.Name,e.FileName);
+                    GenerateXPMDirectly(TWxToolButton(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_Bitmap.Bitmap,SelectedComponent.Name,e.GetDesigner.Wx_Name,e.FileName);
             end;
         end;
     end;
@@ -9793,7 +9802,7 @@ begin
                     begin
                         MessageDlg('Contructor Function(in Header) or Sometimes all the Functions(in Source)  might not be renamed. '+#13+#10+''+#13+#10+'Please rename them manually.'+#13+#10+''+#13+#10+'We hope to fix this bug asap.'+#13+#10+'Sorry for the trouble.', mtInformation, [mbOK], 0);
                         strDirName:=IncludeTrailingBackslash(ExtractFileDir(e.FileName));
-                        RenameFile(strDirName+'\'+PreviousStringValue+'_XPM.xpm',strDirName+'\'+TfrmNewForm(comp).Wx_Name+'_XPM.xpm');
+                        RenameFile(strDirName+'\'+'Self_'+PreviousStringValue+'_XPM.xpm',strDirName+'\'+'Self_'+TfrmNewForm(comp).Wx_Name+'_XPM.xpm');
                         GenerateXPM(e.GetDesigner,e.FileName,true);
                     end;
                 finally
