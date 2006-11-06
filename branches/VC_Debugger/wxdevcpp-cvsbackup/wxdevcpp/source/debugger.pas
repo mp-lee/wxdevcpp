@@ -32,6 +32,8 @@ uses
 
 type
   AssemblySyntax = (asATnT, asIntel);
+  ContextData = (cdLocals, cdStackTrace, cdWatches);
+  ContextDataSet = set of ContextData;
   TCallback = procedure(Output: TStringList) of object;
   
   TRegisters = class
@@ -174,15 +176,16 @@ type
     procedure Go; virtual; abstract;
     procedure Pause; virtual; abstract;
     procedure Next; virtual; abstract;
-    procedure Step; virtual; abstract; //fDebugger.SendCommand(GDB_STEP, '');
-    function GetVariableHint(name: string): string; virtual; abstract; //fDebugger.SendCommand(GDB_DISPLAY, fCurrentHint);
+    procedure Step; virtual; abstract;
+    procedure SetContext(frame: Integer); virtual; abstract;
+    function GetVariableHint(name: string): string; virtual; abstract;
 
     //Source lookup directories
     procedure AddIncludeDir(s: string); virtual; abstract;
     procedure ClearIncludeDirs; virtual; abstract;
 
     //Variable watches
-    procedure RefreshContext; virtual; abstract;
+    procedure RefreshContext(refresh: ContextDataSet = [cdLocals, cdStackTrace, cdWatches]); virtual; abstract;
     procedure AddWatch(varname: string); virtual; abstract;
     procedure RemoveWatch(varname: string); virtual; abstract;
     procedure ModifyVariable(varname, newvalue: string); virtual; abstract;
@@ -230,7 +233,7 @@ type
     procedure RefreshBreakpoint(var breakpoint: TBreakpoint); override;
 
     //Variable watches
-    procedure RefreshContext; override;
+    procedure RefreshContext(refresh: ContextDataSet = [cdLocals, cdStackTrace, cdWatches]); override;
     procedure AddWatch(varname: string); override;
     procedure RemoveWatch(varname: string); override;
 
@@ -239,6 +242,7 @@ type
     procedure Pause; override;
     procedure Next; override;
     procedure Step; override;
+    procedure SetContext(frame: Integer); override;
     function GetVariableHint(name: string): string; override;
 
     //Low-level stuff
@@ -289,7 +293,7 @@ type
     procedure RefreshBreakpoint(var breakpoint: TBreakpoint); override;
 
     //Variable watches
-    procedure RefreshContext; override;
+    procedure RefreshContext(refresh: ContextDataSet = [cdLocals, cdStackTrace, cdWatches]); override;
     procedure AddWatch(varname: string); override;
     procedure RemoveWatch(varname: string); override;
     procedure ModifyVariable(varname, newvalue: string); override;
@@ -941,7 +945,7 @@ begin
   end;
 end;
 
-procedure TCDBDebugger.RefreshContext;
+procedure TCDBDebugger.RefreshContext(refresh: ContextDataSet);
 var
   I: Integer;
   Node: TTreeNode;
@@ -951,17 +955,23 @@ begin
     Exit;
 
   //First send commands for stack tracing and locals
-  Command := TCommand.Create;
-  Command.Command := 'kp 512';
-  Command.OnResult := OnCallStack;
-  QueueCommand(Command);
-  Command := TCommand.Create;
-  Command.Command := 'dv /i /t /v';
-  Command.OnResult := OnLocals;
-  QueueCommand(Command);
+  if cdStackTrace in refresh then
+  begin
+    Command := TCommand.Create;
+    Command.Command := 'kp 512';
+    Command.OnResult := OnCallStack;
+    QueueCommand(Command);
+  end;
+  if cdLocals in refresh then
+  begin
+    Command := TCommand.Create;
+    Command.Command := 'dv /i /t /v';
+    Command.OnResult := OnLocals;
+    QueueCommand(Command);
+  end;
 
   //Then update the watches
-  if Assigned(DebugTree) then
+  if (cdWatches in refresh) and Assigned(DebugTree) then
   begin
     I := 0;
     while I < DebugTree.Items.Count do
@@ -1417,6 +1427,12 @@ begin
   JumpToCurrentLine := True;
   fPaused := False;
   fBusy := False;
+end;
+
+procedure TCDBDebugger.SetContext(frame: Integer);
+begin
+  QueueCommand('.frame', IntToStr(frame));
+  RefreshContext([cdLocals, cdWatches]);
 end;
 
 //------------------------------------------------------------------------------

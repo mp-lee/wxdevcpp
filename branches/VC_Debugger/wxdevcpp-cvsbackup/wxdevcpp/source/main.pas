@@ -556,10 +556,6 @@ type
     Logout1: TMenuItem;
     N66: TMenuItem;
     DebugSubPages: TPageControl;
-    tabVars: TTabSheet;
-    PanelDebug: TPanel;
-    AddWatchBtn: TSpeedButton;
-    RemoveWatchBtn: TSpeedButton;
     tabBacktrace: TTabSheet;
     lvBacktrace: TListView;
     tabDebugOutput: TTabSheet;
@@ -579,15 +575,6 @@ type
     cmbMembers: TComboBox;
     N17: TMenuItem;
     ToolClassesItem: TMenuItem;
-    DebugPanel: TPanel;
-    NextStepBtn: TSpeedButton;
-    StepIntoBtn: TSpeedButton;
-    DebugPanel2: TPanel;
-    StepOverBtn: TSpeedButton;
-    DebugPanel3: TPanel;
-    DDebugBtn: TSpeedButton;
-    RunToCursorBtn: TSpeedButton;
-    StopExecBtn: TSpeedButton;
     N67: TMenuItem;
     FloatingReportwindowItem: TMenuItem;
     N57: TMenuItem;
@@ -2203,27 +2190,6 @@ begin
       HelpPop.Images := CurrentTheme.HelpImages;
       DebugVarsPopup.Images := CurrentTheme.MenuImages;
       ClassBrowser1.Images := CurrentTheme.BrowserImages;
-
-      //this prevent a bug in the VCL
-      DDebugBtn.Glyph := nil;
-      NextStepBtn.Glyph := nil;
-      StepOverBtn.Glyph := nil;
-      StepIntoBtn.Glyph := nil;
-      AddWatchBtn.Glyph := nil;
-      RemoveWatchBtn.Glyph := nil;
-      RuntocursorBtn.Glyph := nil;
-      StopExecBtn.Glyph := nil;
-
-      CurrentTheme.MenuImages.GetBitmap(32, DDebugBtn.Glyph);
-      CurrentTheme.MenuImages.GetBitmap(18, NextStepBtn.Glyph);
-      CurrentTheme.MenuImages.GetBitmap(14, StepOverBtn.Glyph);
-      CurrentTheme.MenuImages.GetBitmap(14, StepIntoBtn.Glyph);
-      CurrentTheme.MenuImages.GetBitmap(21, AddWatchBtn.Glyph);
-      CurrentTheme.MenuImages.GetBitmap(5, RemoveWatchBtn.Glyph);
-      CurrentTheme.MenuImages.GetBitmap(24, RuntocursorBtn.Glyph);
-      CurrentTheme.MenuImages.GetBitmap(11, StopExecBtn.Glyph);
-
-      AddWatchBtn.Glyph.TransparentColor := clWhite;
     end;
   end;
 
@@ -2861,8 +2827,6 @@ actNewWxFrame.Caption := Strings[ID_TB_NEW] + ' wxFrame';
 
     lblSendCommandDebugger.Caption := Strings[ID_DEB_SENDDEBUGCOMMAND];
     GdbCommandBtn.Caption := Strings[ID_DEB_SEND];
-
-    tabVars.Caption := Strings[ID_SHEET_DEBUG];
     tabBacktrace.Caption := Strings[ID_DEB_BACKTRACE];
     tabDebugOutput.Caption := Strings[ID_DEB_OUTPUT];
 
@@ -7013,11 +6977,15 @@ var
   idx: integer;
   e: TEditor;
 begin
-  if Assigned(lvBacktrace.Selected) and (lvBackTrace.Selected.SubItems.Count >= 3) then begin
+  if Assigned(lvBacktrace.Selected) and (lvBackTrace.Selected.SubItems.Count >= 3) then
+  begin
     idx := StrToIntDef(lvBacktrace.Selected.SubItems[2], -1);
-    if idx <> -1 then begin
+    if idx <> -1 then
+    begin
       e := GetEditorFromFileName(CppParser1.GetFullFilename(lvBacktrace.Selected.SubItems[1]));
-      if Assigned(e) then begin
+      if Assigned(e) then
+      begin
+        fDebugger.SetContext(lvBacktrace.Selected.Index);
         e.GotoLineNr(idx);
         e.Activate;
       end;
