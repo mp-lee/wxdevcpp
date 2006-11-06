@@ -25,7 +25,7 @@ uses
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, Buttons, SynEdit, XPMenu, debugger,
-  SynEditHighlighter, SynHighlighterAsm;
+  SynEditHighlighter, SynHighlighterAsm, ExtCtrls;
 {$ENDIF}
 {$IFDEF LINUX}
   SysUtils, Variants, Classes, QGraphics, QControls, QForms,
@@ -35,9 +35,6 @@ uses
 type
   TCPUForm = class(TForm)
     gbAsm: TGroupBox;
-    gbSyntax: TGroupBox;
-    rbIntel: TRadioButton;
-    rbATT: TRadioButton;
     CloseBtn: TBitBtn;
     edFunc: TEdit;
     lblFunc: TLabel;
@@ -71,10 +68,11 @@ type
     ESText: TEdit;
     XPMenu: TXPMenu;
     SynAsmSyn1: TSynAsmSyn;
+    rgSyntax: TRadioGroup;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure rbSyntaxClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure edFuncKeyPress(Sender: TObject; var Key: Char);
+    procedure rgSyntaxClick(Sender: TObject);
 
   private
     ActiveLine: integer;
@@ -120,7 +118,7 @@ begin
   with Lang do begin
     Caption := Strings[ID_CPU_CAPTION];
     gbAsm.Caption := Strings[ID_CPU_ASMCODE];
-    gbSyntax.Caption := Strings[ID_CPU_SYNTAX];
+    rgSyntax.Caption := Strings[ID_CPU_SYNTAX];
     gbRegisters.Caption := Strings[ID_CPU_REGISTERS];
     lblFunc.Caption := Strings[ID_CPU_FUNC];
     CloseBtn.Caption := Strings[ID_BTN_CLOSE];
@@ -134,31 +132,41 @@ begin
   CPUForm := nil;
 end;
 
-procedure TCPUForm.edFuncKeyPress(Sender: TObject; var Key: Char);
+procedure TCPUForm.rgSyntaxClick(Sender: TObject);
 begin
-  if (Key = #13) and fDebugger.Executing then
-    fDebugger.Disassemble(edFunc.Text);
-end;
-
-procedure TCPUForm.rbSyntaxClick(Sender: TObject);
-var
-  cb : TCheckBox;
-begin
-  cb := TCheckBox(sender);
   if fDebugger.Executing then
   begin
-    if cb.Tag = 0 then
-      fDebugger.SetAssemblySyntax(asATnT)
+    if TRadioGroup(Sender).ItemIndex = 0 then
+      fDebugger.SetAssemblySyntax(asIntel)
     else
-      fDebugger.SetAssemblySyntax(asIntel);
+      fDebugger.SetAssemblySyntax(asATnT);
 
     //Reload the disassembly
     fDebugger.Disassemble;
   end;
 end;
 
+procedure TCPUForm.edFuncKeyPress(Sender: TObject; var Key: Char);
+begin
+  if (Key = #13) and fDebugger.Executing then
+    fDebugger.Disassemble(edFunc.Text);
+end;
+
 procedure TCPUForm.PopulateRegisters(debugger: TDebugger);
 begin
+  //Set the assembly syntax to be Intel's syntax (we ARE on x86, after all!)
+  //Now, some debuggers do not support the changing of assembly syntaxes and
+  //only support Intel's assembly syntax. So we surround the entire function with
+  //a try-catch, if we catch an AbstractError we disable the syntax switching radio group.
+{$WARNINGS OFF (EAbstractError is specific to a platform)}
+  try
+    debugger.SetAssemblySyntax(asIntel);
+  except
+    on E: EAbstractError do
+     rgSyntax.Enabled := False;
+  end;
+{$WARNINGS ON}
+  
   fDebugger := debugger;
   fDebugger.OnRegisters := OnRegisters;
   fDebugger.OnDisassemble := OnDisassembly;
