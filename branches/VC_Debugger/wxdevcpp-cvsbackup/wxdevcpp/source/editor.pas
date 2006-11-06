@@ -2029,7 +2029,6 @@ end;
 
 procedure TEditor.PaintMatchingBrackets(TransientType: TTransientType);
 const
-  BracketSet = ['{', '[', '(', '}', ']', ')'];
   OpenChars: array[0..2] of Char = ('{', '[', '(');
   CloseChars: array[0..2] of Char = ('}', ']', ')');
 
@@ -2038,30 +2037,87 @@ const
     Result:= fText.RowColumnToPixels(fText.BufferToDisplayPos(p));
   end;
 
+  procedure SetColors(Editor: TSynEdit; virtualCoord: TBufferCoord; Attri: TSynHighlighterAttributes);
+    function GetEditorBackgroundColor: TColor;
+    var
+      Attri: TSynHighlighterAttributes;
+      PhysicalIndex: Integer;
+    begin
+      PhysicalIndex := Editor.RowColToCharIndex(virtualCoord);
+
+      //Start by checking for selections
+      if (PhysicalIndex >= Editor.SelStart) and (PhysicalIndex < Editor.SelEnd) then
+        Result := Editor.SelectedColor.Background
+      else if (Editor.ActiveLineColor <> clNone) and (Editor.CaretY = virtualCoord.Line) then
+        Result := Editor.ActiveLineColor
+      else
+      begin
+        Result := Editor.Color;
+        if Editor.Highlighter <> nil then
+        begin
+          Attri := Editor.Highlighter.WhitespaceAttribute;
+          if (Attri <> nil) and (Attri.Background <> clNone) then
+            Result := Attri.Background;
+        end;
+      end;
+    end;
+
+    function GetEditorForegroundColor: TColor;
+    var
+      PhysicalIndex: Integer;
+    begin
+      PhysicalIndex := Editor.RowColToCharIndex(virtualCoord);
+
+      //Start by checking for selections
+      if (PhysicalIndex >= Editor.SelStart) and (PhysicalIndex < Editor.SelEnd) then
+        Result := Editor.SelectedColor.Foreground
+      else
+        Result := Editor.Font.Color;
+    end;
+  var
+    Special: Boolean;
+    Foreground, Background: TColor;
+  begin
+    //Initialize the editor colors to defaults
+    Foreground := GetEditorForegroundColor;
+    Background := GetEditorBackgroundColor;
+
+    Editor.OnSpecialLineColors(Self, virtualCoord.Line, Special, Foreground, Background);
+    Editor.Canvas.Brush.Style := bsSolid;
+    Editor.Canvas.Font.Assign(fText.Font);
+    Editor.Canvas.Font.Style := Attri.Style;
+    if TransientType = ttAfter then
+      fText.Canvas.Font.Style := Editor.Canvas.Font.Style + [fsBold];
+
+    Editor.Canvas.Brush.Color := Background;
+    Editor.Canvas.Font.Color := Foreground;
+  end;
+
 var
-    P: TBufferCoord;
-    Pix: TPoint;
-    S: String;
+  P: TBufferCoord;
+  Pix: TPoint;
+  S: String;
   I: Integer;
   Attri: TSynHighlighterAttributes;
 begin
   P := fText.CaretXY;
   fText.GetHighlighterAttriAtRowCol(P, S, Attri);
   if Assigned(Attri) and (fText.Highlighter.SymbolAttribute = Attri) and
-      (fText.CaretX<=length(fText.LineText) + 1) then begin
-    for i := 0 to 2 do begin
-      if (S = OpenChars[i]) or (S = CloseChars[i]) then begin
+     (fText.CaretX <= length(fText.LineText) + 1) then
+  begin
+    for i := 0 to 2 do
+    begin
+      if (S = OpenChars[i]) or (S = CloseChars[i]) then
+      begin
+        //Draw the brackets
+        SetColors(fText, P, Attri);
         Pix := CharToPixels(P);
-        fText.Canvas.Brush.Style := bsSolid;
-        fText.Canvas.Font.Assign(fText.Font);
-        fText.Canvas.Font.Style := Attri.Style;
-
-        if (TransientType = ttAfter) then
-          fText.Canvas.Font.Style := [fsBold];
         fText.Canvas.TextOut(Pix.X, Pix.Y, S);
-        P := fText.GetMatchingBracketEx(P);
 
-        if (P.Char > 0) and (P.Line > 0) then begin
+        P := fText.GetMatchingBracketEx(P);
+        if (P.Char > 0) and (P.Line > 0) then
+        begin
+          SetColors(fText, P, Attri);
           Pix := CharToPixels(P);
           if S = OpenChars[i] then
             fText.Canvas.TextOut(Pix.X, Pix.Y, CloseChars[i])
@@ -2085,17 +2141,12 @@ end;
 procedure TEditor.FunctionArgsExecute(Kind: SynCompletionType; Sender: TObject;
   var AString: String; var x, y: Integer; var CanExecute: Boolean);
 var
+  TmpX, savepos, StartX, ParenCounter: Integer;
   locline, lookup: String;
-  TmpX, savepos, StartX,
-  ParenCounter{,
-  TmpLocation}    : Integer;
   FoundMatch: Boolean;
-  {P: PStatement;}
   sl: TList;
 begin
-
   sl := nil;
-  {P := nil;}
   try
     with TSynCompletionProposal(Sender).Editor do
     begin
@@ -2108,14 +2159,13 @@ begin
       else
         dec(TmpX);
       FoundMatch := False;
-      {TmpLocation := 0;}
+
       while (TmpX > 0) and not (FoundMatch) do
       begin
-        if LocLine[TmpX] = ',' then begin
-          {inc(TmpLocation);}
-          dec(TmpX);
-        end
-        else if LocLine[TmpX] = ')' then begin
+        if LocLine[TmpX] = ',' then
+          Dec(TmpX)
+        else if LocLine[TmpX] = ')' then
+        begin
           //We found a close, go till it's opening paren
           ParenCounter := 1;
           dec(TmpX);
@@ -2146,7 +2196,6 @@ begin
                   sl := fLastParamFunc;
             end;
             if not Assigned(sl) then begin
-              //P:=MainForm.CppParser1.Locate(lookup, False);  // we should really avoid a Locate for each char typed, this call takes a long time to execute when the cache is huge
               sl := TList.Create;
               if MainForm.CppParser1.FillListOf(Lookup, False, sl) then begin  // and try to use only a minimum of FillListOf
                 if Assigned(fLastParamFunc) then
