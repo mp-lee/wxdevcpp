@@ -127,6 +127,7 @@ type
     Event: THandle;
     Wait: TDebugWait;
     Reader: TDebugReader;
+    CurOutput: TStringList;
 
     procedure DisplayError(s: string);
     function GetBreakpointFromIndex(index: integer): TBreakpoint;
@@ -254,7 +255,6 @@ type
     OverrideHandler: TCallback;
     RegistersFilled: Integer;
     Registers: TRegisters;
-    CurOutput: TStringList;
     Started: Boolean;
 
   protected
@@ -330,6 +330,7 @@ end;
 
 constructor TDebugger.Create;
 begin
+  CurOutput := TStringList.Create;
   SentCommand := False;
   fNextBreakpoint := 0;
   fExecuting := False;
@@ -349,6 +350,7 @@ begin
   CloseHandle(Event);
   RemoveAllBreakpoints; 
 
+  CurOutput.Free;
   CommandQueue.Free;
   IncludeDirs.Free;
   inherited Destroy;
@@ -762,7 +764,6 @@ procedure TCDBDebugger.OnOutput(Output: string);
 var
   RegExp: TRegExpr;
   CurLine: String;
-  CurOutput: TStringList;
 
   procedure ParseError(const line: string);
   begin
@@ -828,7 +829,6 @@ var
 begin
   //Update the memo
   SentCommand := False;
-  CurOutput := TStringList.Create;
   RegExp := TRegExpr.Create;
   
   while Pos(#10, Output) > 0 do
@@ -852,7 +852,6 @@ begin
 
   //Clean up
   RegExp.Free;
-  CurOutput.Free;
 end;
 
 procedure TCDBDebugger.AddIncludeDir(s: string);
@@ -936,7 +935,7 @@ begin
   if cdLocals in refresh then
   begin
     Command := TCommand.Create;
-    Command.Command := 'dv /i /t /v';
+    Command.Command := 'dv -i -t -v';
     Command.OnResult := OnLocals;
     QueueCommand(Command);
   end;
@@ -956,7 +955,9 @@ begin
 
         //Decide what command we should send - dv for locals, dt for structures
         if Pos('.', Name) > 0 then
-          Command.Command := 'dt -r ' + Copy(name, 1, Pos('.', name) - 1)
+          Command.Command := 'dt -r -b ' + Copy(name, 1, Pos('.', name) - 1)
+        else if Pos('[', Name) > 0 then
+          Command.Command := 'dt -a -r -b ' + Copy(name, 1, Pos('[', name) - 1)
         else
           Command.Command := 'dv ' + name;
 
@@ -976,6 +977,10 @@ begin
 end;
 
 procedure TCDBDebugger.OnRefreshContext(Output: TStringList);
+const
+  StructExpr = '( +)\+0x([0-9a-fA-F]{1,8}) ([^ ]*)?( +): (.*)';
+  ArrayExpr = '\[([0-9a-fA-F]*)\] @ ([0-9a-fA-F]*)';
+  StructArrayExpr = '( *)\[([0-9a-fA-F]*)\] (.*)';
 var
   NeedsRefresh: Boolean;
   Expanded: Boolean;
@@ -983,19 +988,89 @@ var
   Node: TTreeNode;
   J: Integer;
 
+  procedure ParseStructure(Output: TStringList; ParentNode: TTreeNode); forward;
+  procedure ParseStructArray(Output: TStringList; ParentNode: TTreeNode);
+  var
+    I: Integer;
+    Indent: Integer;
+    SubStructure: TStringList;
+  begin
+    I := 0;
+    Indent := 0;
+    while I < Output.Count do
+    begin
+      SendDebug(inttostr(i) + ': ' + Output[I]);
+      if RegExp.Exec(Output[I], StructArrayExpr) then
+      begin
+        with DebugTree.Items.AddChild(ParentNode, RegExp.Substitute('[$2] $3')) do
+        begin
+          SelectedIndex := 21;
+          ImageIndex := 21;
+        end;
+
+        Inc(I);
+        if I >= Output.Count then
+           Continue;
+
+        if RegExp.Exec(Output[I], StructExpr) then
+        begin
+          if Indent = 0 then
+            Indent := Length(RegExp.Substitute('$1'));
+
+          SubStructure := TStringList.Create;
+          while I < Output.Count do
+          begin
+            if RegExp.Exec(Output[I], StructExpr) then
+            begin
+              if Length(RegExp.Substitute('$1')) < Indent then
+                Break
+              else
+                SubStructure.Add(Output[I]);
+            end
+            else if RegExp.Exec(Output[I], StructArrayExpr) then
+              if Length(RegExp.Substitute('$1')) <= Indent then
+                Break
+              else
+              begin
+                showmessage(inttostr(Length(RegExp.Substitute('$1'))) + '/' + inttostr(indent));
+                SubStructure.Add(Output[I]);
+              end;
+                
+            Inc(I);
+          end;
+          Indent := 0;
+
+          //Process it
+          with ParentNode.Item[ParentNode.Count - 1] do
+          begin
+            SelectedIndex := 32;
+            ImageIndex := 32;
+          end;
+
+          //Determine if it is a structure or an array
+          ParseStructure(SubStructure, ParentNode.Item[ParentNode.Count - 1]);
+          ParentNode.Item[ParentNode.Count - 1].Expand(false);
+          SubStructure.Free;
+          Dec(I);
+        end;
+      end;
+
+      Inc(I);
+    end;
+  end;
+
   procedure ParseStructure(Output: TStringList; ParentNode: TTreeNode);
-  const
-    VariableExpr = '( +)\+0x([0-9a-fA-F]{1,8}) ([^ ]*)?( +): (.*)';
   var
     SubStructure: TStringList;
     Indent: Integer;
+    Node: TTreeNode;
     I: Integer;
   begin
     I := 0;
     Indent := 0;
     while I < Output.Count do
     begin
-      if RegExp.Exec(Output[I], VariableExpr) then
+      if RegExp.Exec(Output[I], StructExpr) or RegExp.Exec(Output[I], StructArrayExpr) then
       begin
         if Indent = 0 then
           Indent := Length(RegExp.Substitute('$1'));
@@ -1005,10 +1080,11 @@ var
         begin
           //Populate the substructure string list
           SubStructure := TStringList.Create;
+
           while I < Output.Count do
           begin
-            if RegExp.Exec(Output[I], VariableExpr) then
-              if Length(RegExp.Substitute('$1')) = Indent then
+            if RegExp.Exec(Output[I], StructArrayExpr) or RegExp.Exec(Output[I], StructExpr) then
+              if Length(RegExp.Substitute('$1')) <= Indent then
                 Break
               else
                 SubStructure.Add(Output[I]);
@@ -1021,6 +1097,80 @@ var
             SelectedIndex := 32;
             ImageIndex := 32;
           end;
+
+          //Determine if it is a structure or an array
+          if SubStructure.Count <> 0 then
+            if Trim(SubStructure[0])[1] = '[' then
+              ParseStructArray(SubStructure, ParentNode.Item[ParentNode.Count - 1])
+            else
+              ParseStructure(SubStructure, ParentNode.Item[ParentNode.Count - 1]);
+          ParentNode.Item[ParentNode.Count - 1].Expand(false);
+          SubStructure.Free;
+
+          //Decrement I, since we will increment one at the end of the loop
+          Dec(I);
+        end
+        //Otherwise just add the value
+        else
+        begin
+          if RegExp.Substitute('$5') = '' then
+            Node := DebugTree.Items.AddChild(ParentNode, RegExp.Substitute('$3'))
+          else
+            Node := DebugTree.Items.AddChild(ParentNode, RegExp.Substitute('$3 = $5'));
+
+          with Node do
+          begin
+            SelectedIndex := 21;
+            ImageIndex := 21;
+          end;
+        end;
+      end
+      else
+        SendDebug(Output[i]);
+
+      //Increment I
+      Inc(I);
+    end;
+  end;
+
+  procedure ParseArray(Output: TStringList; ParentNode: TTreeNode);
+  var
+    SubStructure: TStringList;
+    I: Integer;
+  begin
+    I := 0;
+    while I < Output.Count do
+    begin
+      if RegExp.Exec(Output[I], ArrayExpr) then
+      begin
+        Inc(I, 2);
+        if Output[I] = '' then
+          Inc(I);
+        
+        //Are we an array (with a basic data type) or with a UDT?
+        if RegExp.Exec(Output[I], StructExpr) then
+        begin
+          with TRegExpr.Create do
+          begin
+            Exec(Output[I - 2], ArrayExpr);
+            with DebugTree.Items.AddChild(ParentNode, Substitute('[$1]')) do
+            begin
+              SelectedIndex := 32;
+              ImageIndex := 32;
+            end;
+
+            Free;
+          end;
+
+          //Populate the substructure string list
+          SubStructure := TStringList.Create;
+          while (I < Output.Count) and (Output[I] <> '') do
+          begin
+            SubStructure.Add(Output[I]);
+            Inc(I);
+          end;
+
+          //Process it
           ParseStructure(SubStructure, ParentNode.Item[ParentNode.Count - 1]);
           ParentNode.Item[ParentNode.Count - 1].Expand(false);
           SubStructure.Free;
@@ -1028,10 +1178,8 @@ var
           //Decrement I, since we will increment one at the end of the loop
           Dec(I);
         end
-
-        //Otherwise just add the value
         else
-          with DebugTree.Items.AddChild(ParentNode, RegExp.Substitute('$3 = $5')) do
+          with DebugTree.Items.AddChild(ParentNode, RegExp.Substitute('[$1]') + ' = ' + Output[I]) do
           begin
             SelectedIndex := 21;
             ImageIndex := 21;
@@ -1046,10 +1194,21 @@ begin
   NeedsRefresh := False;
   RegExp := TRegExpr.Create;
   Node := TTreeNode(CurrentCommand.Data);
-
+  
   //Set the type of the structure/class/whatever
   with PWatch(Node.Data)^ do
-    if RegExp.Exec(Output[0], '(.*) (.*) @ 0x([0-9a-fA-F]{1,8}) Type (.*)') then
+    if RegExp.Exec(Output[0], '(.*) (.*) @ 0x([0-9a-fA-F]{1,8}) Type (.*)\[\]') then
+    begin
+      Expanded := Node.Expanded;
+      Node.Text := RegExp.Substitute(Copy(name, 1, Pos('[', name) - 1) + ' = $4 (0x$3)');
+      Node.SelectedIndex := 32;
+      Node.ImageIndex := 32;
+      ParseArray(Output, Node);
+
+      if Expanded then
+        Node.Expand(True);
+    end
+    else if RegExp.Exec(Output[0], '(.*) (.*) @ 0x([0-9a-fA-F]{1,8}) Type (.*)') then
     begin
       Expanded := Node.Expanded;
       Node.Text := RegExp.Substitute(Copy(name, 1, Pos('.', name) - 1) + ' = $4 (0x$3)');
@@ -1062,13 +1221,17 @@ begin
     end
     else
       for J := 0 to Output.Count - 1 do
-        if RegExp.Exec(Output[J], '( +)' + name + ' = (struct|class|union) (.*)') then
+        if RegExp.Exec(Output[J], '( +)' + name + ' = (.*) \[(.*)\]') then
+        begin
+          PWatch(Node.Data)^.Name := PWatch(Node.Data)^.Name + '[';
+          NeedsRefresh := True;
+        end
+        else if RegExp.Exec(Output[J], '( +)' + name + ' = (struct|class|union) (.*)') then
         begin
           PWatch(Node.Data)^.Name := PWatch(Node.Data)^.Name + '.';
           NeedsRefresh := True;
         end
-        else
-        if RegExp.Exec(Output[J], '( +)' + name + ' = (.*)') then
+        else if RegExp.Exec(Output[J], '( +)' + name + ' = (.*)') then
           Node.Text := Trim(Output[J]);
 
   //Do we have to refresh the entire thing?
@@ -1412,14 +1575,12 @@ end;
 constructor TGDBDebugger.Create;
 begin
   inherited;
-  CurOutput := TStringList.Create;
   OverrideHandler := nil;
   Started := False;
 end;
 
 destructor TGDBDebugger.Destroy;
 begin
-  CurOutput.Free;
   inherited;
 end;
 
@@ -1482,6 +1643,5 @@ var
 
   procedure ParseOutput(const line: string);
   begin
-    Assert((Pos(#10, line) = 0) and (Pos(#13, line) = 0));
     //Exclude these miscellaneous messages
     if (line = '
