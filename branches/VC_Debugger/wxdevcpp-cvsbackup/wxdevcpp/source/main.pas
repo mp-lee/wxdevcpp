@@ -4672,9 +4672,13 @@ begin
         actWxPropertyInspectorPaste.Execute
       else   // Otherwise form component is selected so paste whole component (control and code)
         actDesignerPaste.Execute
+    else if e.Text.Focused then
+      e.Text.PasteFromClipboard
     else
-      e.Text.PasteFromClipboard;
-   end;
+      SendMessage(GetFocus, WM_PASTE, 0, 0);
+   end
+   else
+      SendMessage(GetFocus, WM_PASTE, 0, 0);
 end;
 
 procedure TMainForm.actSelectAllExecute(Sender: TObject);
@@ -5570,7 +5574,7 @@ begin
         else
           Clipboard.AsText := LogOutput.Lines.Text;
     cDebugTab:
-      if DebugSubPages.ActivePageIndex = 3 then
+      if DebugSubPages.ActivePage = tabDebugOutput then
         Clipboard.AsText := DebugOutput.SelText;
     cFindTab:
       if assigned(FindOutput.Selected) then
@@ -5587,7 +5591,7 @@ begin
    cResTab:  ResourceOutput.Items.Clear;
    cLogTab:  LogOutput.Clear;
    cDebugTab:
-     if DebugSubPages.ActivePageIndex = 3 then
+     if DebugSubPages.ActivePage = tabDebugOutput then
        DebugOutput.Clear;
    cFindTab: FindOutput.Items.Clear;
   end;
@@ -5773,7 +5777,7 @@ end;
 
 procedure TMainForm.MessagePopupPopup(Sender: TObject);
 begin
-  if (MessageControl.ActivePage = DebugSheet) and (DebugSubPages.ActivePageIndex <> 3) then begin
+  if (MessageControl.ActivePage = DebugSheet) and (DebugSubPages.ActivePage <> tabDebugOutput) then begin
     MsgCopyItem.Enabled := false;
     MsgClearItem.Enabled := false;
   end
