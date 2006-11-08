@@ -1640,7 +1640,829 @@ var
   RegExp: TRegExpr;
   CurLine: String;
 
+  procedure StripCtrlChars(var line: string);
+  var
+    Idx: Integer;
+  begin
+    Idx := Pos(#26, line);
+    while Idx <> 0 do
+    begin
+      Delete(line, Idx, 1);
+      Idx := Pos(#26, line);
+    end;
+  end;
+
   procedure ParseOutput(const line: string);
   begin
     //Exclude these miscellaneous messages
-    if (line = '
+    if (line = 'pre-prompt') or (line = 'prompt') or (line = 'post-prompt') or
+       (line = 'frames-invalid') then
+      Exit
+    //Empty lines
+    else if Trim(line) = '' then
+      Exit
+    else if Pos('(gdb) ', line) = 1 then
+    begin
+      //The debugger is waiting for input, we're paused!
+      SentCommand := False;
+      fPaused := True;
+      fBusy := False;
+
+      //Because we are here, we probably are a side-effect of a previous instruction
+      //Execute the process function for the command.
+      if Assigned(OverrideHandler) then
+      begin
+        OverrideHandler(CurOutput);
+        OverrideHandler := nil;
+      end
+      else if (CurOutput.Count <> 0) and (CurrentCommand <> nil) and Assigned(CurrentCommand.OnResult) then
+        CurrentCommand.OnResult(CurOutput);
+
+      if CurrentCommand <> nil then
+      begin
+        if (CurrentCommand.Command = 'run'#10) or (CurrentCommand.Command = 'next'#10) or
+           (CurrentCommand.Command = 'step'#10) or (CurrentCommand.Command = '') then
+        begin
+          RefreshContext;
+          Application.BringToFront;
+        end;
+      end;
+      CurOutput.Clear;
+
+      //Send the command, and do not send any more
+      SendCommand;
+
+      //Make sure we don't save the current line!
+      Exit;
+    end
+    else if (Pos('no debugging symbols found', line) > 0) or (Pos('No symbol table is loaded', line) > 0) then
+      OnNoDebuggingSymbolsFound
+    else if Pos('file is more recent than executable', line) > 0 then
+      OnSourceMoreRecent
+    else if line = 'signal' then
+      OverrideHandler := OnSignal 
+    else if RegExp.Exec(line, 'Breakpoint ([0-9]+),') then
+      with GetBreakpointFromIndex(StrToInt(RegExp.Substitute('$1'))) do
+        MainForm.GotoBreakpoint(Filename, Line)
+    else if Pos('exited ', line) = 1 then
+      CloseDebugger(nil);
+
+    CurOutput.Add(Line);
+  end;
+begin
+  //Update the memo
+  SentCommand := False;
+  RegExp := TRegExpr.Create;
+
+  while Pos(#13, Output) > 0 do
+  begin
+    //Extract the current line
+    CurLine := Copy(Output, 0, Pos(#13, Output) - 1);
+
+    //Process the output
+    StripCtrlChars(CurLine);
+    MainForm.DebugOutput.Lines.Add(CurLine);
+    ParseOutput(CurLine);
+
+    //Remove those that we've already processed
+    Delete(Output, 1, Pos(#10, Output));
+  end;
+
+  if Length(Output) > 0 then
+  begin
+    MainForm.DebugOutput.Lines.Add(Output);
+    ParseOutput(Output);
+  end;
+
+  //Clean up
+  RegExp.Free;
+end;
+
+procedure TGDBDebugger.OnSignal(Output: TStringList);
+var
+  I: Integer;
+begin
+  for I := 0 to Output.Count - 1 do
+  begin
+    if Output[I] = 'signal-name' then
+      if Output[I + 1] = 'SIGSEGV' then
+        OnAccessViolation
+      else;
+  end;
+end;
+
+procedure TGDBDebugger.OnSourceMoreRecent;
+begin
+  if (MessageDlg(Lang[ID_MSG_SOURCEMORERECENT], mtConfirmation, [mbYes, mbNo], 0) = mrYes) then begin
+    CloseDebugger(nil);
+    MainForm.actCompileExecute(nil);
+  end;
+end;
+
+procedure TGDBDebugger.AddIncludeDir(s: string);
+begin
+  IncludeDirs.Add(s);
+end;
+
+procedure TGDBDebugger.ClearIncludeDirs;
+begin
+  IncludeDirs.Clear;
+end;
+
+procedure TGDBDebugger.AddBreakpoint(breakpoint: TBreakpoint);
+var
+  aBreakpoint: PBreakpoint;
+begin
+  if (not Paused) and Executing then
+  begin
+    MessageDlg('Cannot add a breakpoint while the debugger is executing.', mtError, [mbOK], MainForm.Handle);
+    Exit;
+  end;
+
+  New(aBreakpoint);
+  aBreakpoint^ := breakpoint;
+  Breakpoints.Add(aBreakpoint);
+  RefreshBreakpoint(aBreakpoint^);
+end;
+
+procedure TGDBDebugger.RemoveBreakpoint(breakpoint: TBreakpoint);
+var
+  I: Integer;
+begin
+  if (not Paused) and Executing then
+  begin
+    MessageDlg('Cannot remove a breakpoint while the debugger is executing.', mtError, [mbOK], MainForm.Handle);
+    Exit;
+  end;
+
+  for i := 0 to Breakpoints.Count - 1 do
+  begin
+    if (PBreakPoint(Breakpoints.Items[i])^.line = breakpoint.Line) and (PBreakPoint(Breakpoints.Items[i])^.editor = breakpoint.Editor) then
+    begin
+      if Executing then
+        QueueCommand('delete', IntToStr(PBreakpoint(Breakpoints.Items[i])^.Index));
+      Dispose(Breakpoints.Items[i]);
+      Breakpoints.Delete(i);
+      Break;
+    end;
+  end;
+end;
+
+procedure TGDBDebugger.RefreshBreakpoint(var breakpoint: TBreakpoint);
+begin
+  if Executing then
+  begin
+    Inc(fNextBreakpoint);
+    breakpoint.Index := fNextBreakpoint;
+    QueueCommand('break', Format('"%s:%d"', [ExtractFileName(breakpoint.Filename), breakpoint.Line]));
+  end;
+end;
+
+procedure TGDBDebugger.RefreshContext(refresh: ContextDataSet);
+var
+  I: Integer;
+  Node: TTreeNode;
+  Command: TCommand;
+begin
+  if not Executing then
+    Exit;
+
+  //First send commands for stack tracing and locals
+  if cdStackTrace in refresh then
+  begin
+    Command := TCommand.Create;
+    Command.Command := 'bt';
+    Command.OnResult := OnCallStack;
+    QueueCommand(Command);
+  end;
+  if cdLocals in refresh then
+  begin
+    Command := TCommand.Create;
+    Command.Command := 'info locals 1';
+    Command.OnResult := OnLocals;
+    QueueCommand(Command);
+  end;
+
+  //Then update the watches
+  if (cdWatches in refresh) and Assigned(DebugTree) then
+  begin
+    I := 0;
+    while I < DebugTree.Items.Count do
+    begin
+      Node := DebugTree.Items[I];
+      if Node.Data = nil then
+        Continue;
+      with PWatch(Node.Data)^ do
+      begin
+        Command := TCommand.Create;
+
+        //Decide what command we should send - dv for locals, dt for structures
+        if Pos('.', Name) > 0 then
+          Command.Command := 'display ' + Copy(name, 1, Pos('.', name) - 1)
+        else
+          Command.Command := 'display ' + name;
+
+        //Fill in the other data
+        Command.Data := Node;
+        Command.OnResult := OnRefreshContext;
+        Node.DeleteChildren;
+
+        //Then send it
+        QueueCommand(Command);
+      end;
+
+      //Increment our counter
+      Inc(I);
+    end;
+  end;
+end;
+
+procedure TGDBDebugger.OnRefreshContext(Output: TStringList);
+var
+  I: Integer;
+  Node: TTreeNode;
+
+  procedure RecurseStructure(Parent: TTreeNode; var I: Integer);
+  var
+    Child: TTreeNode;
+  begin
+    while I < Output.Count - 4 do
+      if Output[I] = '}' then
+        Exit
+      else if Output[I + 4] <> '{' then
+      begin
+        with DebugTree.Items.AddChild(Parent, Output[I] + ' = ' + Output[I + 4]) do
+        begin
+          SelectedIndex := 21;
+          ImageIndex := 21;
+        end;
+        Inc(I, 8);
+      end
+      else
+      begin
+        Child := DebugTree.Items.AddChild(Parent, Output[I]);
+        with Child do
+        begin
+          SelectedIndex := 32;
+          ImageIndex := 32;
+        end;
+        Inc(I, 6);
+        RecurseStructure(Child, I);
+      end;
+  end;
+
+  procedure RecurseArray(Parent: TTreeNode; var I: Integer);
+  var
+    RegExp: TRegExpr;
+    Value: String;
+  begin
+    RegExp := TRegExpr.Create;
+    while (I < Output.Count - 2) do
+    begin
+      if Output[I] = '}' then
+        Break
+      else if (Trim(Output[I]) <> '') and (Output[I] <> 'array-section-end') then
+      begin
+        if RegExp.Exec(Output[I], ', (.*)') then
+          Value := RegExp.Substitute('$1')
+        else
+          Value := Output[I];
+        
+        with DebugTree.Items.AddChild(Parent, Format('[%d] = %s', [Parent.Count, Value])) do
+        begin
+          SelectedIndex := 21;
+          ImageIndex := 21;
+        end;
+      end;
+
+      Inc(I, 2);
+    end;
+
+    RegExp.Free;
+  end;
+begin
+  I := 0;
+  Node := TTreeNode(CurrentCommand.Data);
+  
+  while I < Output.Count do
+  begin
+    if Output[I] = 'display-expression' then
+    begin
+      Node.Text := Output[I + 1];
+      Node.SelectedIndex := 32;
+      Node.ImageIndex := 32;
+      
+      if Output[I + 5] = '{' then
+      begin
+        Inc(I, 7);
+
+        //Determine if it is a structure of an array
+        if Pos('array-section-begin', Output[I - 1]) = 1 then
+          RecurseArray(Node, I)
+        else
+          RecurseStructure(Node, I);
+      end
+      else
+        Node.Text := Output[I + 1] + ' = ' + Output[I + 5];
+      Break;
+    end;
+    Inc(I);
+  end
+end;
+
+procedure TGDBDebugger.AddWatch(varname: string);
+var
+  Watch: PWatch;
+begin
+  with DebugTree.Items.Add(nil, varname + ' = (unknown)') do
+  begin
+    ImageIndex := 21;
+    SelectedIndex := 21;
+    New(Watch);
+    Watch^.Name := varname;
+    Data := Watch;
+  end;
+end;
+
+procedure TGDBDebugger.RemoveWatch(varname: string);
+var
+  node: TTreeNode;
+begin
+  //Find the top-most node
+  node := DebugTree.Selected;
+  while Assigned(node) and (Assigned(node.Parent)) do
+    node := node.Parent;
+
+  //Then clean it up
+  if Assigned(node) then
+  begin
+    Dispose(node.Data);
+    DebugTree.Items.Delete(node);
+  end;
+end;
+
+procedure TGDBDebugger.ModifyVariable(varname, newvalue: string);
+begin
+  QueueCommand('set variable', varname + ' = ' + newvalue);
+end;
+
+procedure TGDBDebugger.OnCallStack(Output: TStringList);
+var
+  I: Integer;
+  CallStack: TList;
+  RegExp: TRegExpr;
+  StackFrame: PStackFrame;
+begin
+  StackFrame := nil;
+  CallStack := TList.Create;
+  RegExp := TRegExpr.Create;
+
+  I := 0;
+  while I < Output.Count do
+  begin
+    if Pos('frame-begin', Output[I]) = 1 then
+    begin
+      //Stack frame with source information
+      New(StackFrame);
+      CallStack.Add(StackFrame);
+    end
+    else if Output[I] = 'frame-function-name' then
+    begin
+      Inc(I);
+      StackFrame^.FuncName := Output[I]; 
+    end
+    else if Output[I] = 'frame-args' then
+    begin
+      Inc(I);
+
+      //Make sure it's valid
+      if Output[I] <> ' (' then
+      begin
+        Inc(I);
+        Continue;
+      end
+      else
+        Inc(I);
+
+      while (I < Output.Count - 6) do
+      begin
+        if Output[I] = 'arg-begin' then
+        begin
+          if StackFrame^.Args <> '' then
+            StackFrame^.Args := StackFrame^.Args + ', ';
+          StackFrame^.Args := StackFrame^.Args + Output[I + 1] + ' = ' + Output[I + 5];
+        end;
+        Inc(I, 6);
+
+        //Do we stop?
+        if Trim(Output[I + 1]) <> ',' then
+          Break
+        else
+          Inc(I, 2);
+      end;
+    end
+    else if Output[I] = 'frame-source-file' then
+    begin
+      Inc(I);
+      StackFrame^.Filename := Output[I];
+    end
+    else if Output[I] = 'frame-source-line' then
+    begin
+      Inc(I);
+      StackFrame^.Line := StrToInt(Output[I]);
+    end;
+    Inc(I);
+  end;
+
+  //Now that we have the entire callstack loaded into our list, call the function
+  //that wants it
+  if Assigned(TDebugger(Self).OnCallStack) then
+    TDebugger(Self).OnCallStack(CallStack);
+
+  //Do we show the new execution point?
+  if JumpToCurrentLine then
+  begin
+    JumpToCurrentLine := False;
+    MainForm.GotoTopOfStackTrace;
+  end;
+
+  //Clean up
+  RegExp.Free;
+  CallStack.Free;
+end;
+
+procedure TGDBDebugger.OnLocals(Output: TStringList);
+var
+  I: Integer;
+  RegExp: TRegExpr;
+  Local: PVariable;
+  Locals: TList;
+
+  function SynthesizeIndent(Indent: Integer): string;
+  var
+    I: Integer;
+  begin
+    Result := '';
+    for I := 0 to Indent - 1 do
+      Result := Result + ' ';
+  end;
+
+  procedure RecurseStructure(Indent: Integer; var I: Integer);
+  begin
+    while I < Output.Count - 4 do
+      if Output[I] = '}' then
+        Exit
+      else if Output[I + 4] <> '{' then
+      begin
+        New(Local);
+        Locals.Add(Local);
+        with Local^ do
+        begin
+          Name := SynthesizeIndent(Indent) + Output[I];
+          Value := Output[I + 4];
+        end;
+        
+        Inc(I, 8);
+      end
+      else
+      begin
+        New(Local);
+        Locals.Add(Local);
+        with Local^ do
+        begin
+          Name := SynthesizeIndent(Indent) + Output[I];
+          Value := '';
+        end;
+        
+        Inc(I, 6);
+        RecurseStructure(Indent + 4, I);
+      end;
+  end;
+
+  procedure RecurseArray(Indent: Integer; var I: Integer);
+  var
+    RegExp: TRegExpr;
+    Count: Integer;
+  begin
+    Count := 0;
+    RegExp := TRegExpr.Create;
+    while (I < Output.Count - 2) do
+    begin
+      if Output[I] = '}' then
+        Break
+      else if (Trim(Output[I]) <> '') and (Output[I] <> 'array-section-end') then
+      begin
+        New(Local);
+        Locals.Add(Local);
+        with Local^ do
+        begin
+          Name := Format('%s[%d]', [SynthesizeIndent(Indent), Count]);
+          if RegExp.Exec(Output[I], ', (.*)') then
+            Value := RegExp.Substitute('$1')
+          else
+            Value := Output[I];
+        end;
+        Inc(Count);
+      end;
+
+      Inc(I, 2);
+    end;
+
+    RegExp.Free;
+  end;
+begin
+  RegExp := TRegExpr.Create;
+  Locals := TList.Create;
+
+  I := 0;
+  while I < Output.Count do
+  begin
+    if RegExp.Exec(Output[I], '(.*) = (.*)') then
+    begin
+      New(Local);
+      Locals.Add(Local);
+      
+      if RegExp.Substitute('$2') = '{' then
+      begin
+        with Local^ do
+        begin
+          Name := RegExp.Substitute('$1');
+          Value := '';
+        end;
+
+        Inc(I, 2);
+        //Determine if it is a structure of an array
+        if Pos('array-section-begin', Output[I - 1]) = 1 then
+          RecurseArray(4, I)
+        else
+          RecurseStructure(4, I);
+      end
+      else
+      begin
+        //Fill the fields
+        with Local^ do
+        begin
+          Name := RegExp.Substitute('$1');
+          Value := RegExp.Substitute('$2');
+        end;
+      end;
+    end;
+    Inc(I);
+  end;
+
+  //Pass the locals list to the callback function that wants it
+  if Assigned(TDebugger(Self).OnLocals) then
+    TDebugger(Self).OnLocals(Locals);
+
+  //Clean up
+  Locals.Free;
+  RegExp.Free;
+end;
+
+procedure TGDBDebugger.GetRegisters;
+var
+  Command: TCommand;
+begin
+  if (not Executing) or (not Paused) then
+    Exit;
+
+  RegistersFilled := 0;
+  Registers := TRegisters.Create;
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $eax';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $ebx';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $ecx';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $edx';
+  Command.OnResult := OnRegisters;
+
+  QueueCommand(Command);
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $esi';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $edi';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $ebp';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $esp';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $eip';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $cs';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $ds';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $ss';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+
+  Command := TCommand.Create;
+  Command.Command := 'displ/x $es';
+  Command.OnResult := OnRegisters;
+  QueueCommand(Command);
+end;
+
+procedure TGDBDebugger.OnRegisters(Output: TStringList);
+var
+  I: Integer;
+  Reg: String;
+  RegExp: TRegExpr;
+begin
+  RegExp := TRegExpr.Create;
+
+  I := 0;
+  while I < Output.Count do
+  begin
+    if Output[I] = ' = ' then
+    begin
+      Inc(I, 2);
+
+      //Determine the register
+      if RegExp.Exec(CurrentCommand.Command, 'displ/x \$(.*)') then
+      begin
+        Inc(RegistersFilled);
+        Reg := Trim(RegExp.Substitute('$1'));
+        if Reg = 'eax' then
+          Registers.EAX := Output[I]
+        else if Reg = 'ebx' then
+          Registers.EBX := Output[I]
+        else if Reg = 'ecx' then
+          Registers.ECX := Output[I]
+        else if Reg = 'edx' then
+          Registers.EDX := Output[I]
+        else if Reg = 'esi' then
+          Registers.ESI := Output[I]
+        else if Reg = 'edi' then
+          Registers.EDI := Output[I]
+        else if Reg = 'ebp' then
+          Registers.EBP := Output[I]
+        else if Reg = 'eip' then
+          Registers.EIP := Output[I]
+        else if Reg = 'esp' then
+          Registers.ESP := Output[I]
+        else if Reg = 'cs' then
+          Registers.CS := Output[I]
+        else if Reg = 'ds' then
+          Registers.DS := Output[I]
+        else if Reg = 'ss' then
+          Registers.SS := Output[I]
+        else if Reg = 'es' then
+          Registers.ES := Output[I]
+        else
+          Dec(RegistersFilled);
+      end;
+    end;
+    Inc(I);
+  end;
+
+  //Pass the locals list to the callback function that wants it
+  if (RegistersFilled = 13) and Assigned(TDebugger(Self).OnRegisters) then
+  begin
+    TDebugger(Self).OnRegisters(Registers);
+    Registers.Free;
+  end;
+
+  //Clean up
+  RegExp.Free;
+end;
+
+procedure TGDBDebugger.Disassemble(func: string);
+var
+  Command: TCommand;
+begin
+  if (not Executing) or (not Paused) then
+    Exit;
+
+  Command := TCommand.Create;
+  Command.Command := 'disas ' + func;
+  Command.OnResult := OnDisassemble;
+  QueueCommand(Command);
+end;
+
+procedure TGDBDebugger.OnDisassemble(Output: TStringList);
+begin
+  //Pass the disassembly to the callback function that wants it
+  if Assigned(TDebugger(Self).OnDisassemble) then
+    TDebugger(Self).OnDisassemble(Output.Text);
+end;
+
+procedure TGDBDebugger.SetAssemblySyntax(syntax: AssemblySyntax);
+begin
+  case syntax of
+   asIntel: QueueCommand('set disassembly-flavor', 'intel');
+   asATnT:  QueueCommand('set disassembly-flavor', 'att');
+  end;
+end;
+
+function TGDBDebugger.GetVariableHint(name: string): string;
+var
+  Command: TCommand;
+begin
+  if (not Executing) or (not Paused) then
+    Exit;
+
+  Command := TCommand.Create;
+  Command.Data := TObject(name);
+  Command.OnResult := OnVariableHint;
+  Command.Command := 'print ' + name;
+
+  //Send the command;
+  QueueCommand(Command);
+end;
+
+procedure TGDBDebugger.OnVariableHint(Output: TStringList);
+begin
+  //Call the callback
+  if Assigned(TDebugger(Self).OnVariableHint) then
+    TDebugger(Self).OnVariableHint(Output[0]);
+end;
+
+procedure TGDBDebugger.Go;
+var
+  Command: TCommand;
+begin
+  Command := TCommand.Create;
+  if not Started then
+    Command.Command := 'run'
+  else
+    Command.Command := 'continue';
+  Command.Callback := OnGo;
+  QueueCommand(Command);
+end;
+
+procedure TGDBDebugger.OnGo;
+begin
+  inherited;
+  Started := True;
+end;
+
+procedure TGDBDebugger.Pause;
+begin
+end;
+
+procedure TGDBDebugger.Next;
+var
+  Command: TCommand;
+begin
+  Command := TCommand.Create;
+  Command.Command := 'next';
+  Command.Callback := OnTrace;
+  QueueCommand(Command);
+end;
+
+procedure TGDBDebugger.Step;
+var
+  Command: TCommand;
+begin
+  Command := TCommand.Create;
+  Command.Command := 'step';
+  Command.Callback := OnTrace;
+  QueueCommand(Command);
+end;
+
+procedure TGDBDebugger.OnTrace;
+begin
+  JumpToCurrentLine := True;
+  fPaused := False;
+  fBusy := False;
+end;
+
+initialization
+  Breakpoints := TList.Create;
+
+finalization
+  Breakpoints.Free;
+
+end.
