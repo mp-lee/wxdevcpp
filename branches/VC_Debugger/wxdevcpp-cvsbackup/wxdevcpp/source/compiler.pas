@@ -65,7 +65,6 @@ type
     procedure DoResOutput(const s, s2, s3: string);
     function GetMakeFile: string;
     function GetCompiling: Boolean;
-    procedure RunTerminate(Sender: TObject);
     procedure InitProgressForm(Status: string);
     procedure EndProgressForm;
     procedure ReleaseProgressForm;
@@ -74,12 +73,11 @@ type
     procedure SwitchToOriginalCompilerSet; // switches the original compiler set to index
     procedure SetProject(Project: TProject);
   public
+    OnCompilationEnded: procedure(Sender: TObject) of object;
+
     procedure BuildMakeFile;
     procedure CheckSyntax; virtual;
     procedure Compile(SingleFile: string = ''); virtual;
-    procedure Run; virtual;
-    procedure CompileAndRun; virtual;
-    procedure Debug; virtual;
     function Clean: Boolean; virtual;
     function RebuildAll: Boolean; virtual;
     procedure ShowResults; virtual;
@@ -111,7 +109,6 @@ type
     fBinDirs: string;
     fUserParams: string;
     fDevRun: TDevRun;
-    fRunAfterCompileFinish: boolean;
     fAbortThread: boolean;
     
     procedure CreateMakefile; virtual;
@@ -900,7 +897,6 @@ var
 begin
   cCmdLine := devCompiler.SingleCompile;
   fSingleFile := SingleFile <> '';
-  fRunAfterCompileFinish := FALSE;
   if Assigned(fDevRun) then
   begin
     MessageDlg(Lang[ID_MSG_ALREADYCOMP], mtInformation, [mbOK], 0);
@@ -1002,64 +998,6 @@ begin
     end;
     LaunchThread(cmdline, ExtractFilePath(fSourceFile));
   end;
-end;
-
-procedure TCompiler.RunTerminate(Sender: TObject);
-begin
-  Application.Restore;
-end;
-
-procedure TCompiler.Run;
-begin
-  if fTarget = ctNone then  exit;
-  if fTarget = ctProject then
-  begin
-    if fProject.CurrentProfile.typ = dptStat then
-      MessageDlg(Lang[ID_ERR_NOTEXECUTABLE], mtError, [mbOK], 0)
-    else if not FileExists(fProject.Executable) then
-      MessageDlg(Lang[ID_ERR_PROJECTNOTCOMPILED], mtWarning, [mbOK], 0)
-    else if fProject.CurrentProfile.typ = dptDyn then begin
-      if fProject.CurrentProfile.HostApplication = '' then
-        MessageDlg(Lang[ID_ERR_HOSTMISSING], mtWarning, [mbOK], 0)
-      else if not FileExists(fProject.CurrentProfile.HostApplication) then
-        MessageDlg(Lang[ID_ERR_HOSTNOTEXIST], mtWarning, [mbOK], 0)
-      else begin // execute DLL's host application
-        if devData.MinOnRun then
-          Application.Minimize;
-        devExecutor.ExecuteAndWatch(fProject.CurrentProfile.HostApplication, fRunParams,
-         						 ExtractFileDir(fProject.CurrentProfile.HostApplication), True, INFINITE, RunTerminate);
-      end;
-    end
-    else begin // execute normally
-      if devData.MinOnRun then
-        Application.Minimize;
-      devExecutor.ExecuteAndWatch(fProject.Executable, fRunParams,
-        ExtractFileDir(fProject.Executable), True, INFINITE, RunTerminate);
-    end;
-  end
-  else
-  begin
-    if not FileExists(ChangeFileExt(fSourceFile, EXE_EXT)) then
-      MessageDlg(Lang[ID_ERR_SRCNOTCOMPILED], mtWarning, [mbOK], 0)
-    else
-    begin
-      if devData.MinOnRun then
-        Application.Minimize;
-      devExecutor.ExecuteAndWatch(ChangeFileExt(fSourceFile, EXE_EXT),fRunParams,
-        ExtractFilePath(fSourceFile), True, INFINITE, RunTerminate);
-    end;
-  end;
-end;
-
-procedure TCompiler.CompileAndRun;
-begin
-  Compile;
-  fRunAfterCompileFinish := TRUE;
-end;
-
-procedure TCompiler.Debug;
-begin
-
 end;
 
 function TCompiler.Clean: Boolean;
@@ -1194,16 +1132,13 @@ begin
   else if (fErrCount = 0) and (fDevRun.ExitCode = 0) then
   begin
     DoLogEntry(Lang[ID_COMPILESUCCESS]);
-    if (fRunAfterCompileFinish) then
-    begin
-      ReleaseProgressForm;
-      Run;
-    end;
+    Application.ProcessMessages;
+    if Assigned(OnCompilationEnded) then
+      OnCompilationEnded(Self);
   end;
 
   //Clean up
   fDevRun := nil;
-  fRunAfterCompileFinish := False;
   Application.ProcessMessages;
 end;
 

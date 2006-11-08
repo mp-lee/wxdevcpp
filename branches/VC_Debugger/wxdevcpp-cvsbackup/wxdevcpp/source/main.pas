@@ -906,6 +906,8 @@ type
     procedure actDesignerPasteExecute(Sender: TObject);
     procedure actDesignerDeleteExecute(Sender: TObject);
     function isFileOpenedinEditor(strFile: string): Boolean;
+    procedure OnCompileTerminated(Sender: TObject);
+    procedure doDebugAfterCompile(Sender: TObject);
 
 {$IFDEF WX_BUILD}
     procedure Panel2Resize(Sender: TObject);
@@ -5195,6 +5197,11 @@ begin
   Result := True;
 end;
 
+procedure TMainForm.OnCompileTerminated(Sender: TObject);
+begin
+  Application.Restore;
+end;
+
 procedure TMainForm.actCompileExecute(Sender: TObject);
 begin
   if fCompiler.Compiling then
@@ -5211,23 +5218,46 @@ var
   e: TEditor;
 begin
   e := GetEditor;
-  fCompiler.Target := ctNone;
-
   if assigned(fProject) then
   begin
-    if assigned(e) and (not e.InProject) then
-      fCompiler.Target := ctFile
+    if fProject.CurrentProfile.typ = dptStat then
+      MessageDlg(Lang[ID_ERR_NOTEXECUTABLE], mtError, [mbOK], Handle)
+    else if not FileExists(fProject.Executable) then
+      MessageDlg(Lang[ID_ERR_PROJECTNOTCOMPILED], mtWarning, [mbOK], Handle)
+    else if fProject.CurrentProfile.typ = dptDyn then
+    begin
+      if fProject.CurrentProfile.HostApplication = '' then
+        MessageDlg(Lang[ID_ERR_HOSTMISSING], mtWarning, [mbOK], Handle)
+      else if not FileExists(fProject.CurrentProfile.HostApplication) then
+        MessageDlg(Lang[ID_ERR_HOSTNOTEXIST], mtWarning, [mbOK], Handle)
+      else
+      begin
+        if devData.MinOnRun then
+          Application.Minimize;
+        devExecutor.ExecuteAndWatch(fProject.CurrentProfile.HostApplication, fProject.CmdLineArgs,
+                                    ExtractFileDir(fProject.CurrentProfile.HostApplication), True, INFINITE, OnCompileTerminated);
+      end;
+    end
     else
-      fCompiler.Target := ctProject;
+    begin
+      if devData.MinOnRun then
+        Application.Minimize;
+      devExecutor.ExecuteAndWatch(fProject.Executable, fProject.CmdLineArgs,
+                                  ExtractFileDir(fProject.Executable), True, INFINITE, OnCompileTerminated);
+    end;
   end
-  else
-  if assigned(e) then
-    fCompiler.Target := ctFile;
-
-  if fCompiler.Target = ctFile then
-    fCompiler.SourceFile := e.FileName;
-
-  fCompiler.Run;
+  else if assigned(e) then
+  begin
+    if not FileExists(ChangeFileExt(e.FileName, EXE_EXT)) then
+      MessageDlg(Lang[ID_ERR_SRCNOTCOMPILED], mtWarning, [mbOK], Handle)
+    else
+    begin
+      if devData.MinOnRun then
+        Application.Minimize;
+      devExecutor.ExecuteAndWatch(ChangeFileExt(e.FileName, EXE_EXT), '',
+                                  ExtractFilePath(e.FileName), True, INFINITE, OnCompileTerminated);
+    end;
+  end;
 end;
 
 procedure TMainForm.actCompRunExecute(Sender: TObject);
@@ -5238,7 +5268,10 @@ begin
     Exit;
   end;
   if PrepareForCompile(false) then
-    fCompiler.CompileAndRun;
+  begin
+    fCompiler.Compile;
+    fCompiler.OnCompilationEnded := actRunExecute;
+  end;
 end;
 
 procedure TMainForm.actRebuildExecute(Sender: TObject);
@@ -5324,72 +5357,81 @@ begin
   end;
 end;
 
-procedure TMainForm.actDebugExecute(Sender: TObject);
+procedure TMainForm.doDebugAfterCompile(Sender: TObject);
 var
   e: TEditor;
   idx, idx2: integer;
   s: string;
 begin
-  if not fDebugger.Executing then
+  PrepareDebugger;
+  if assigned(fProject) then
   begin
-    PrepareDebugger;
-    if assigned(fProject) then
-    begin
-      if not FileExists(fProject.Executable) then begin
-        MessageDlg(Lang[ID_ERR_PROJECTNOTCOMPILED], mtWarning, [mbOK], 0);
+    if not FileExists(fProject.Executable) then begin
+      MessageDlg(Lang[ID_ERR_PROJECTNOTCOMPILED], mtWarning, [mbOK], 0);
+      exit;
+    end;
+    if fProject.CurrentProfile.typ = dptDyn then begin
+      if fProject.CurrentProfile.HostApplication = '' then begin
+        MessageDlg(Lang[ID_ERR_HOSTMISSING], mtWarning, [mbOK], 0);
+        exit;
+      end
+      else if not FileExists(fProject.CurrentProfile.HostApplication) then begin
+        MessageDlg(Lang[ID_ERR_HOSTNOTEXIST], mtWarning, [mbOK], 0);
         exit;
       end;
-      if fProject.CurrentProfile.typ = dptDyn then begin
-        if fProject.CurrentProfile.HostApplication = '' then begin
-          MessageDlg(Lang[ID_ERR_HOSTMISSING], mtWarning, [mbOK], 0);
-          exit;
-        end
-        else if not FileExists(fProject.CurrentProfile.HostApplication) then begin
-          MessageDlg(Lang[ID_ERR_HOSTNOTEXIST], mtWarning, [mbOK], 0);
-          exit;
-        end;
-      end;
+    end;
 
-      // add to the debugger the project include dirs
-      for idx := 0 to fProject.CurrentProfile.Includes.Count - 1 do
-        fDebugger.AddIncludeDir(fProject.CurrentProfile.Includes[idx]);
+    // add to the debugger the project include dirs
+    for idx := 0 to fProject.CurrentProfile.Includes.Count - 1 do
+      fDebugger.AddIncludeDir(fProject.CurrentProfile.Includes[idx]);
 
-      fDebugger.Execute('"' + StringReplace(fProject.Executable, '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
-      fDebugger.RefreshBreakpoints;
-    end
-    else
+    fDebugger.Execute('"' + StringReplace(fProject.Executable, '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
+    fDebugger.RefreshBreakpoints;
+  end
+  else
+  begin
+    e := GetEditor;
+    if assigned(e) then
     begin
-      e := GetEditor;
-      if assigned(e) then
-      begin
-        if not FileExists(ChangeFileExt(e.FileName, EXE_EXT)) then begin
-          MessageDlg(Lang[ID_ERR_SRCNOTCOMPILED], mtWarning, [mbOK], 0);
-          exit;
-        end;
-        if e.Modified then // if file is modified
-          if not SaveFile(e) then // save it first
-            Abort; // if it's not saved, abort
-        chdir(ExtractFilePath(e.FileName));
-
-        fDebugger.Execute(StringReplace(ChangeFileExt(ExtractFileName(e.FileName), EXE_EXT), '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
-        fDebugger.RefreshBreakpoints;
+      if not FileExists(ChangeFileExt(e.FileName, EXE_EXT)) then begin
+        MessageDlg(Lang[ID_ERR_SRCNOTCOMPILED], mtWarning, [mbOK], 0);
+        exit;
       end;
-    end;
+      if e.Modified then // if file is modified
+        if not SaveFile(e) then // save it first
+          Abort; // if it's not saved, abort
+      chdir(ExtractFilePath(e.FileName));
 
-    for idx := 0 to DebugTree.Items.Count - 1 do begin
-      idx2 := AnsiPos('=', DebugTree.Items[idx].Text);
-      if (idx2 > 0) then begin
-        s := DebugTree.Items[idx].Text;
-        Delete(s, idx2 + 1, length(s) - idx2);
-        DebugTree.Items[idx].Text := s + ' ?';
-      end;
+      fDebugger.Execute(StringReplace(ChangeFileExt(ExtractFileName(e.FileName), EXE_EXT), '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
+      fDebugger.RefreshBreakpoints;
     end;
+  end;
+
+  for idx := 0 to DebugTree.Items.Count - 1 do begin
+    idx2 := AnsiPos('=', DebugTree.Items[idx].Text);
+    if (idx2 > 0) then begin
+      s := DebugTree.Items[idx].Text;
+      Delete(s, idx2 + 1, length(s) - idx2);
+      DebugTree.Items[idx].Text := s + ' ?';
+    end;
+  end;
+
+  //Then run the debuggee
+  fDebugger.Go;
+end;
+
+procedure TMainForm.actDebugExecute(Sender: TObject);
+begin
+  if not fDebugger.Executing then
+  begin
+    fCompiler.OnCompilationEnded := doDebugAfterCompile;
+    actCompile.Execute;
   end
   else if fDebugger.Paused then
+  begin
     RemoveActiveBreakpoints;
-
-  // Run the debugger
-  fDebugger.Go;
+    fDebugger.Go;
+  end;
 end;
 
 procedure TMainForm.actEnviroOptionsExecute(Sender: TObject);
@@ -5900,7 +5942,7 @@ end;
 
 procedure TMainForm.actRestartDebugExecute(Sender: TObject);
 begin
-  actStopExecute.Execute;
+  doDebugAfterCompile(Sender);
   actDebug.Execute;
 end;
 
