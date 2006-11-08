@@ -429,11 +429,10 @@ begin
 
   // Create a thread that will read the child's output.
   Reader := TDebugReader.Create(true);
-  Reader.hPipeRead := hOutputRead;
-  Reader.EventReady := Event;
+  Reader.Pipe := hOutputRead;
+  Reader.Event := Event;
   Reader.OnTerminate := CloseDebugger;
   Reader.FreeOnTerminate := True;
-  InitializeCriticalSection(Reader.OutputCrit);
 
   // Create a thread that will notice when an output is ready to be sent for processing
   Wait := TDebugWait.Create(true);
@@ -451,9 +450,14 @@ end;
 
 procedure TDebugger.CloseDebugger(Sender: TObject);
 begin
-  if Executing then begin
+  if Executing then
+  begin
     fPaused := false;
     fExecuting := false;
+
+    // First don't let us be called twice. Set the secondary threads to not call
+    // us when they terminate
+    Reader.OnTerminate := nil;
 
     // Force the read on the input to return by closing the stdin handle.
     Wait.Stop := True;

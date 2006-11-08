@@ -32,14 +32,17 @@ uses
 
 type
   TDebugReader = class(TThread)
-  public
-    hPipeRead: THandle;
-    EventReady: THandle;
-    OutputCrit: TRTLCriticalSection;
-    Output: string;
-
   protected
+    fEvent: THandle;
+    hInputPipe: THandle;
+    OutputCrit: TRTLCriticalSection;
     procedure Execute; override;
+
+  public
+    Output: string;
+    property Event: THandle write fEvent;
+    property Pipe: THandle write hInputPipe;
+    constructor Create(start: Boolean);
   end;
 
   TDebugWait = class(TThread)
@@ -59,6 +62,12 @@ implementation
 uses 
   main, devcfg, utils, dbugintf, debugger;
 
+constructor TDebugReader.Create(start: Boolean);
+begin
+  inherited;
+  InitializeCriticalSection(OutputCrit);
+end;
+
 procedure TDebugReader.Execute;
 var
   Buffer: array[0..1024] of char;
@@ -67,7 +76,7 @@ begin
   while True do
   begin
     FillChar(Buffer, sizeof(Buffer), 0);
-    if not ReadFile(hPipeRead, Buffer, sizeof(Buffer), LastRead, nil) then
+    if not ReadFile(hInputPipe, Buffer, sizeof(Buffer), LastRead, nil) then
       Break;
 
     //Now that we have read the data from the pipe, copy the contents
@@ -76,7 +85,7 @@ begin
     LeaveCriticalSection(OutputCrit);
 
     //Then pass control to our other half.
-    SetEvent(EventReady);
+    SetEvent(fEvent);
   end;
 end;
 
