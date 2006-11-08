@@ -736,7 +736,7 @@ begin
     Executable := DBG_PROGRAM(devCompiler.CompilerType);
   
   //Create the command line
-  Executable := Format('%s -lines -2 -y "%s" "%s" %s', [Executable, ExtractFilePath(Filename), FileName, arguments]);
+  Executable := Format('%s -lines -2 -G -y "%s" "%s" %s', [Executable, ExtractFilePath(Filename), FileName, arguments]);
 
   //Launch the process
   if not CreateProcess(nil, PChar(Executable), nil, nil, True, CREATE_NEW_CONSOLE,

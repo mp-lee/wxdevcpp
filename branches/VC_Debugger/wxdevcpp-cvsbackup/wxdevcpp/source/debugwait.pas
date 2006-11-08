@@ -43,6 +43,7 @@ type
     property Event: THandle write fEvent;
     property Pipe: THandle write hInputPipe;
     constructor Create(start: Boolean);
+    destructor Destroy; override;
   end;
 
   TDebugWait = class(TThread)
@@ -66,6 +67,12 @@ constructor TDebugReader.Create(start: Boolean);
 begin
   inherited;
   InitializeCriticalSection(OutputCrit);
+end;
+
+destructor TDebugReader.Destroy;
+begin
+  DeleteCriticalSection(OutputCrit);
+  inherited;
 end;
 
 procedure TDebugReader.Execute;
