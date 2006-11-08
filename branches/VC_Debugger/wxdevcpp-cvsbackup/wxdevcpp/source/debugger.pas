@@ -772,19 +772,13 @@ var
   procedure ParseError(const line: string);
   begin
     if RegExp.Exec(line, '\((.*)\): Access Violation - code c0000005 \((.*)\)') then
-    begin
-      JumpToCurrentLine := True;
-      OnAccessViolation;
-    end
+      OnAccessViolation
     else if RegExp.Exec(line, '\((.*)\): Control-C exception - code 40010005 \((.*)\)') then
     else if RegExp.Exec(line, '\((.*)\): Break instruction exception - code 80000003 \((.*)\)') then
       if IgnoreBreakpoint then
         IgnoreBreakpoint := False
       else
-      begin
-        JumpToCurrentLine := True;
         OnBreakpoint;
-      end;
   end;
 
   procedure ParseOutput(const line: string);
