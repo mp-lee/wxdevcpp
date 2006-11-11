@@ -299,6 +299,7 @@ type
     procedure Pause; override;
     procedure Next; override;
     procedure Step; override;
+    procedure SetContext(frame: Integer); override;
     function GetVariableHint(name: string): string; override;
 
     //Low-level stuff
@@ -2455,6 +2456,12 @@ begin
   JumpToCurrentLine := True;
   fPaused := False;
   fBusy := False;
+end;
+
+procedure TGDBDebugger.SetContext(frame: Integer);
+begin
+  QueueCommand('frame', IntToStr(frame));
+  RefreshContext([cdLocals, cdWatches]);
 end;
 
 initialization
