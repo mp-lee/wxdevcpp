@@ -103,7 +103,7 @@ Ver=1
 
 #Execute menu
 210=&Compile
-211=&Run
+211=&Run without Debugging
 212=C&ompile && Run
 213=&Rebuild All
 214=C&lean
@@ -137,10 +137,10 @@ Ver=1
 243=&Help on wxDev-C++
 
 #Debug Menu
-245=&Debug
+245=&Run
 246=&Toggle Breakpoint
-247=&Next Step
-248=&Continue
+247=&Step Over
+#248=&Continue
 249=&Add Watch
 250=&Watch Variables
 251=Stop Execution
