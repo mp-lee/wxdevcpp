@@ -71,6 +71,7 @@ end;
 
 destructor TDebugReader.Destroy;
 begin
+  EnterCriticalSection(OutputCrit);
   DeleteCriticalSection(OutputCrit);
   inherited;
 end;

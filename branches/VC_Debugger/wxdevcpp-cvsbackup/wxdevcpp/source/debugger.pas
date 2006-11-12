@@ -1587,6 +1587,8 @@ var
   ProcessInfo: TProcessInformation;
   StartupInfo: TStartupInfo;
   Executable: string;
+  Includes: string;
+  I: Integer;
 begin
   //Reset our variables
   fExecuting := True;
@@ -1607,6 +1609,12 @@ begin
   else
     Executable := DBG_PROGRAM(devCompiler.CompilerType);
   Executable := Executable + ' --annotate=2 --silent';
+
+  //Add in the include paths
+  for I := 0 to IncludeDirs.Count - 1 do
+    Includes := Includes + '--directory=' + GetShortName(IncludeDirs[I]) + ' ';
+  if Includes <> '' then
+    Executable := Executable + ' ' + Includes;
 
   //Launch the process
   if not CreateProcess(nil, PChar(Executable), nil, nil, True, CREATE_NEW_CONSOLE,
