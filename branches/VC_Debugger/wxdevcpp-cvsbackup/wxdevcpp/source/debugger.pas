@@ -1907,7 +1907,7 @@ var
     while I < Output.Count - 4 do
       if Output[I] = '}' then
         Exit
-      else if Output[I + 4] <> '{' then
+      else if Pos('{', Output[I + 4]) <> 1 then
       begin
         with DebugTree.Items.AddChild(Parent, Output[I] + ' = ' + Output[I + 4]) do
         begin
@@ -1916,7 +1916,7 @@ var
         end;
 
         Inc(I, 6);
-        if Trim(Output[I]) = ',' then
+        if (I < Output.Count) and (Pos(',', Output[I]) <> 0) then
           Inc(I, 2);
       end
       else
@@ -1953,7 +1953,7 @@ var
       else if Pos(',', Output[I]) = 1 then
         Output[I] := Trim(Copy(Output[I], 2, Length(Output[I])));
 
-      if (Trim(Output[I]) = '{') or (Trim(Output[I]) = ', {') then
+      if Pos('{', Output[I]) = 1 then
       begin
         Child := DebugTree.Items.AddChild(Parent, Format('[%d]', [Count]));
         with Child do
@@ -1995,7 +1995,7 @@ begin
       Node.SelectedIndex := 32;
       Node.ImageIndex := 32;
       
-      if Output[I + 5] = '{' then
+      if Pos('{', Output[I + 5]) = 1 then
       begin
         Inc(I, 7);
 
@@ -2156,7 +2156,7 @@ var
     while I < Output.Count - 4 do
       if Output[I] = '}' then
         Exit
-      else if Output[I + 4] <> '{' then
+      else if Pos('{', Output[I + 4]) <> 1 then
       begin
         New(Local);
         Locals.Add(Local);
@@ -2167,7 +2167,7 @@ var
         end;
 
         Inc(I, 6);
-        if Trim(Output[I]) = ',' then
+        if (I < Output.Count) and (Pos(',', Output[I]) <> 0) then
           Inc(I, 2);
       end
       else
@@ -2204,7 +2204,7 @@ var
       else if Pos(',', Output[I]) = 1 then
         Output[I] := Trim(Copy(Output[I], 2, Length(Output[I])));
 
-      if Trim(Output[I]) = '{' then
+      if Pos('{', Output[I]) = 1 then
       begin
         New(Local);
         Locals.Add(Local);
