@@ -302,6 +302,7 @@ object CPUForm: TCPUForm
     Top = 8
     Width = 137
     Height = 57
+    Anchors = [akTop, akRight]
     Caption = 'Assembly Syntax'
     ItemIndex = 0
     Items.Strings = (
