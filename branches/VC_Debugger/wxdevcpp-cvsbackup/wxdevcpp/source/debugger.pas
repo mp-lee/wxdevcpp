@@ -2114,6 +2114,7 @@ var
       Result := Result + ' ';
   end;
 
+  procedure RecurseArray(Indent: Integer; var I: Integer); forward;
   procedure RecurseStructure(Indent: Integer; var I: Integer);
   begin
     while I < Output.Count - 4 do
@@ -2128,8 +2129,10 @@ var
           Name := SynthesizeIndent(Indent) + Output[I];
           Value := Output[I + 4];
         end;
-        
-        Inc(I, 8);
+
+        Inc(I, 6);
+        if Trim(Output[I]) = ',' then
+          Inc(I, 2);
       end
       else
       begin
@@ -2142,7 +2145,14 @@ var
         end;
         
         Inc(I, 6);
-        RecurseStructure(Indent + 4, I);
+        if Pos('array-section-begin', Output[I - 1]) = 1 then
+          RecurseArray(Indent + 4, I)
+        else
+          RecurseStructure(Indent + 4, I);
+
+        Inc(I, 2);
+        if (I < Output.Count) and (Pos(',', Output[I]) = 1) then
+          Inc(I, 2);
       end;
   end;
 
@@ -2157,6 +2167,19 @@ var
     begin
       if Output[I] = '}' then
         Break
+      else if Pos(',', Output[I]) = 1 then
+        Output[I] := Trim(Copy(Output[I], 1, Length(Output[I])));
+
+      if (Trim(Output[I]) = '{') or (Trim(Output[I]) = ', {') then
+      begin
+        New(Local);
+        Locals.Add(Local);
+        with Local^ do
+          Name := Format('%s[%d]', [SynthesizeIndent(Indent), Count]);
+        
+        Inc(I, 2);
+        RecurseStructure(Indent + 4, I);
+      end
       else if (Trim(Output[I]) <> '') and (Output[I] <> 'array-section-end') then
       begin
         New(Local);
@@ -2169,9 +2192,14 @@ var
           else
             Value := Output[I];
         end;
-        Inc(Count);
+      end
+      else
+      begin
+        Inc(I);
+        Continue;
       end;
 
+      Inc(Count);
       Inc(I, 2);
     end;
 

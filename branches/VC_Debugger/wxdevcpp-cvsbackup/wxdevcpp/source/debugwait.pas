@@ -113,10 +113,13 @@ begin
 end;
 
 procedure TDebugWait.Update;
+var
+  LastNewline: Integer;
 begin
   EnterCriticalSection(Reader.OutputCrit);
-  OnOutput(Reader.Output);
-  Reader.Output := '';
+  LastNewLine := GetLastPos(#10, Reader.Output);
+  OnOutput(Copy(Reader.Output, 0, LastNewLine));
+  Reader.Output := Copy(Reader.Output, LastNewLine + 1, Length(Reader.Output));
   LeaveCriticalSection(Reader.OutputCrit);
 end;
 
