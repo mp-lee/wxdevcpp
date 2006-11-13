@@ -140,10 +140,10 @@ Ver=1
 245=&Run
 246=&Toggle Breakpoint
 247=&Step Over
-#248=&Continue
+248=&Pause Excution
 249=&Add Watch
 250=&Watch Variables
-251=Stop Execution
+251=St&op Execution
 252=&Edit watch
 253=&Remove watch
 254=Step &Into
@@ -152,6 +152,7 @@ Ver=1
 257=A&ttach to process...
 258=&Modify value
 259=&Clear all
+265=R&estart
 
 #context menus
 # project menu

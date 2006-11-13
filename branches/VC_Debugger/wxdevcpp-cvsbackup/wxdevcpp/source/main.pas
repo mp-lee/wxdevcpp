@@ -628,7 +628,7 @@ type
     TabLocals: TTabSheet;
     lvLocals: TListView;
     tbDebug: TToolBar;
-    DebugRestartButton: TToolButton;
+    DebugRestartBtn: TToolButton;
     ToolButton1: TToolButton;
     DebugStepOver: TToolButton;
     DebugStepInto: TToolButton;
@@ -636,6 +636,9 @@ type
     actRestartDebug: TAction;
     Restart1: TMenuItem;
     ToolDebugItem: TMenuItem;
+    Pause1: TMenuItem;
+    actPauseDebug: TAction;
+    DebugPauseBtn: TToolButton;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormDestroy(Sender: TObject);
@@ -950,9 +953,10 @@ type
     procedure ProjectViewKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure tmrInspectorHelperTimer(Sender: TObject);
     procedure PauseExecBtnClick(Sender: TObject);
-    procedure actRestartDebugUpdate(Sender: TObject);
     procedure actRestartDebugExecute(Sender: TObject);
     procedure actUpdateDebuggerPaused(Sender: TObject);
+    procedure actPauseDebugUpdate(Sender: TObject);
+    procedure actPauseDebugExecute(Sender: TObject);
 
 {$ENDIF}
 
@@ -2687,6 +2691,8 @@ begin
 
     // Debug menu
     actDebug.Caption := Strings[ID_ITEM_DEBUG];
+    actPauseDebug.Caption := Strings[ID_ITEM_PAUSE];
+    actRestartDebug.Caption := Strings[ID_ITEM_RESTART];
     actBreakPoint.Caption := Strings[ID_ITEM_TOGGLEBREAK];
     actAddWatch.Caption := Strings[ID_ITEM_WATCHADD];
     actEditWatch.Caption := Strings[ID_ITEM_WATCHEDIT];
@@ -5429,6 +5435,17 @@ begin
   end;
 end;
 
+procedure TMainForm.actPauseDebugExecute(Sender: TObject);
+begin
+  if fDebugger.Executing then
+    fDebugger.Pause;
+end;
+
+procedure TMainForm.actPauseDebugUpdate(Sender: TObject);
+begin
+  (Sender as TAction).Enabled := fDebugger.Executing and not fDebugger.Paused;
+end;
+
 procedure TMainForm.actEnviroOptionsExecute(Sender: TObject);
 begin
   with TEnviroForm.Create(Self) do
@@ -5510,11 +5527,6 @@ begin
 end;
 
 procedure TMainForm.actUpdateDebuggerRunning(Sender: TObject);
-begin
-  (Sender as TAction).Enabled := fDebugger.Executing;
-end;
-
-procedure TMainForm.actRestartDebugUpdate(Sender: TObject);
 begin
   (Sender as TAction).Enabled := fDebugger.Executing;
 end;

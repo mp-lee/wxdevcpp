@@ -208,7 +208,7 @@ const
   ID_ITEM_DEBUG                    = 245; // moved from execute menu
   ID_ITEM_TOGGLEBREAK              = 246;
   ID_ITEM_STEPOVER                 = 247;
-  //248 is free
+  ID_ITEM_PAUSE                    = 248;
   ID_ITEM_WATCHADD                 = 249;
   ID_ITEM_WATCHITEMS               = 250;
   ID_ITEM_STOPEXECUTION            = 251;
@@ -220,6 +220,7 @@ const
   ID_ITEM_ATTACHPROCESS            = 257;
   ID_ITEM_MODIFYVALUE              = 258;
   ID_ITEM_CLEARALL                 = 259;
+  ID_ITEM_RESTART                  = 265;
 
   //free to 259 for menu items
 
@@ -230,6 +231,7 @@ const
   ID_POP_REMOVEFILE                = 262;
   ID_POP_PRJOPTIONS                = 263;
   ID_POP_EDITRES                   = 264;
+  //265 is used by the debug menu
   //free to 269 for project popup
 
   //unit popup

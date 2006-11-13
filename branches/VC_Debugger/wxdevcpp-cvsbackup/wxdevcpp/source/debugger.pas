@@ -27,7 +27,7 @@ uses
   Windows, ShellAPI, Dialogs, Controls, ComCtrls;
 {$ENDIF}
 {$IFDEF LINUX}
-  QDialogs, QControls, debugwait, QComCtrls;
+  QDialogs, QControls, QComCtrls;
 {$ENDIF}
 
 type
@@ -113,6 +113,7 @@ type
     fDebugTree: TTreeView;
     fNextBreakpoint: Integer;
     IncludeDirs: TStringList;
+    IgnoreBreakpoint: Boolean;
     JumpToCurrentLine: Boolean;
 
     hInputWrite: THandle;
@@ -175,7 +176,7 @@ type
 
     //Debugger control funtions
     procedure Go; virtual; abstract;
-    procedure Pause; virtual; abstract;
+    procedure Pause; virtual;
     procedure Next; virtual; abstract;
     procedure Step; virtual; abstract;
     procedure SetContext(frame: Integer); virtual; abstract;
@@ -200,9 +201,6 @@ type
   TCDBDebugger = class(TDebugger)
     constructor Create; override;
     destructor Destroy; override;
-
-  protected
-    IgnoreBreakpoint: Boolean;
 
   protected
     procedure Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
@@ -236,7 +234,6 @@ type
 
     //Debugger control
     procedure Go; override;
-    procedure Pause; override;
     procedure Next; override;
     procedure Step; override;
     procedure SetContext(frame: Integer); override;
@@ -296,7 +293,6 @@ type
 
     //Debugger control
     procedure Go; override;
-    procedure Pause; override;
     procedure Next; override;
     procedure Step; override;
     procedure SetContext(frame: Integer); override;
@@ -699,12 +695,58 @@ begin
   Disassemble('');
 end;
 
+function GenerateCtrlCEvent(PGenerateConsoleCtrlEvent: Pointer): DWORD; stdcall;
+begin
+  Result := 0;
+  if PGenerateConsoleCtrlEvent <> nil then
+  begin
+    asm
+      //Call assembly code! We just want to get the console function thingo
+      push 0;
+      push 0;
+      call PGenerateConsoleCtrlEvent;
+    end;
+    Result := 1;
+  end;
+end;
+
+procedure TDebugger.Pause;
+const
+  CodeSize = 1024;
+var
+  Thread: THandle;
+  BytesWritten, ThreadID, ExitCode: DWORD;
+  WriteAddr: Pointer;
+begin
+  WriteAddr := VirtualAllocEx(hPid, nil, CodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  if WriteAddr <> nil then
+  begin
+    WriteProcessMemory(hPid, WriteAddr, @GenerateCtrlCEvent, CodeSize, BytesWritten);
+    if BytesWritten = CodeSize then
+    begin
+      //Create and run the thread and wait for its termination
+      Thread := CreateRemoteThread(hPid, nil, 0, WriteAddr, GetProcAddress(LoadLibrary('kernel32.dll'), 'GenerateConsoleCtrlEvent'), 0, ThreadID);
+      WaitForSingleObject(Thread, INFINITE);  //wait for the thread to execute
+
+      //Free the memory we injected
+      VirtualFreeEx(hPid, WriteAddr, 0, MEM_RELEASE); // free the memory we allocated
+
+      //And see if it succeeded
+      GetExitCodeThread(Thread, ExitCode);
+      if ExitCode <> 0 then
+        //We've triggered a breakpoint, so yes, ignore it
+        IgnoreBreakpoint := True;
+    end;
+  end;
+end;
+
 //------------------------------------------------------------------------------
 // TCDBDebugger
 //------------------------------------------------------------------------------
 constructor TCDBDebugger.Create;
 begin
   inherited;
+  IgnoreBreakpoint := True;
 end;
 
 destructor TCDBDebugger.Destroy;
@@ -722,10 +764,6 @@ var
   Srcpath: string;
   I: Integer;
 begin
-  //Set this to true for CDB and WinDbg will have an initial process initialization
-  //breakpoint. We do not want to raise false alarms when starting the debugger
-  IgnoreBreakpoint := True;
-
   //Tell the wait function that another valid output terminator is the 0:0000 prompt
   Wait.OutputTerminators.Add(InputPrompt);
   
@@ -1557,10 +1595,6 @@ begin
   QueueCommand(Command);
 end;
 
-procedure TCDBDebugger.Pause;
-begin
-end;
-
 procedure TCDBDebugger.Next;
 var
   Command: TCommand;
@@ -1600,6 +1634,7 @@ end;
 constructor TGDBDebugger.Create;
 begin
   inherited;
+  IgnoreBreakpoint := False;
   OverrideHandler := nil;
   Started := False;
 end;
@@ -2511,10 +2546,6 @@ procedure TGDBDebugger.OnGo;
 begin
   inherited;
   Started := True;
-end;
-
-procedure TGDBDebugger.Pause;
-begin
 end;
 
 procedure TGDBDebugger.Next;

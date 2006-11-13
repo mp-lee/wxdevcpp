@@ -70,7 +70,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -108,7 +108,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelKind = bkSoft
         BorderStyle = bsNone
@@ -126,7 +126,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 225
-        Height = 97
+        Height = 98
         Align = alLeft
         Caption = 'Information :'
         TabOrder = 0
@@ -181,18 +181,18 @@ object MainForm: TMainForm
         Left = 225
         Top = 0
         Width = 393
-        Height = 97
+        Height = 98
         Align = alClient
         Caption = 'Compile log :'
         TabOrder = 1
         DesignSize = (
           393
-          97)
+          98)
         object LogOutput: TMemo
           Left = 7
           Top = 16
           Width = 638
-          Height = 86
+          Height = 87
           Anchors = [akLeft, akTop, akRight, akBottom]
           ReadOnly = True
           ScrollBars = ssVertical
@@ -208,7 +208,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         ActivePage = tabBacktrace
         Align = alClient
         Style = tsFlatButtons
@@ -255,7 +255,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 66
+            Height = 67
             Align = alClient
             Columns = <
               item
@@ -339,7 +339,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -519,7 +519,7 @@ object MainForm: TMainForm
       end
     end
     object tbOptions: TToolBar
-      Left = 299
+      Left = 317
       Top = 30
       Width = 46
       Height = 22
@@ -663,7 +663,7 @@ object MainForm: TMainForm
       end
     end
     object tbSpecials: TToolBar
-      Left = 358
+      Left = 376
       Top = 30
       Width = 243
       Height = 22
@@ -764,7 +764,7 @@ object MainForm: TMainForm
     object tbDebug: TToolBar
       Left = 154
       Top = 30
-      Width = 132
+      Width = 150
       Height = 22
       AutoSize = True
       Caption = 'Debug'
@@ -783,18 +783,23 @@ object MainForm: TMainForm
         Top = 0
         Action = actDebug
       end
-      object DebugStopBtn: TToolButton
+      object DebugPauseBtn: TToolButton
         Left = 23
+        Top = 0
+        Action = actPauseDebug
+      end
+      object DebugStopBtn: TToolButton
+        Left = 46
         Top = 0
         Action = actStopExecute
       end
-      object DebugRestartButton: TToolButton
-        Left = 46
+      object DebugRestartBtn: TToolButton
+        Left = 69
         Top = 0
         Action = actRestartDebug
       end
       object ToolButton1: TToolButton
-        Left = 69
+        Left = 92
         Top = 0
         Width = 8
         Caption = 'ToolButton1'
@@ -802,12 +807,12 @@ object MainForm: TMainForm
         Style = tbsSeparator
       end
       object DebugStepOver: TToolButton
-        Left = 77
+        Left = 100
         Top = 0
         Action = actStepOver
       end
       object DebugStepInto: TToolButton
-        Left = 100
+        Left = 123
         Top = 0
         Action = actStepInto
       end
@@ -1438,8 +1443,8 @@ object MainForm: TMainForm
         Tag = 10
         Action = actDebug
       end
-      object AttachtoprocessItem: TMenuItem
-        Action = actAttachProcess
+      object Pause1: TMenuItem
+        Action = actPauseDebug
       end
       object StopExecution1: TMenuItem
         Action = actStopExecute
@@ -1447,6 +1452,9 @@ object MainForm: TMainForm
       end
       object Restart1: TMenuItem
         Action = actRestartDebug
+      end
+      object AttachtoprocessItem: TMenuItem
+        Action = actAttachProcess
       end
       object N18: TMenuItem
         Caption = '-'
@@ -1473,13 +1481,16 @@ object MainForm: TMainForm
       end
       object WatchItem: TMenuItem
         Action = actWatchItem
+        GroupIndex = 9
       end
       object ViewCPUItem: TMenuItem
         Action = actViewCPU
+        GroupIndex = 9
       end
     end
     object ToolsMenu: TMenuItem
       Action = actToolsMenu
+      GroupIndex = 9
       object CompileroptionsItem: TMenuItem
         Tag = 11
         Action = actCompOptions
@@ -1543,6 +1554,7 @@ object MainForm: TMainForm
     end
     object mnuCVS: TMenuItem
       Caption = 'CVS'
+      GroupIndex = 9
       OnClick = mnuCVSClick
       object mnuCVSCurrent: TMenuItem
         Caption = 'Current File...'
@@ -1628,6 +1640,7 @@ object MainForm: TMainForm
     end
     object WindowMenu: TMenuItem
       Action = actWindowMenu
+      GroupIndex = 9
       object CloseAllItem: TMenuItem
         Action = actCloseAll
       end
@@ -3015,7 +3028,14 @@ object MainForm: TMainForm
       ImageIndex = 56
       ShortCut = 8311
       OnExecute = actRestartDebugExecute
-      OnUpdate = actRestartDebugUpdate
+      OnUpdate = actUpdateDebuggerRunning
+    end
+    object actPauseDebug: TAction
+      Category = 'Debug'
+      Caption = 'Pause Execution'
+      ImageIndex = 58
+      OnExecute = actPauseDebugExecute
+      OnUpdate = actPauseDebugUpdate
     end
   end
   object ApplicationEvents1: TApplicationEvents
