@@ -1081,7 +1081,6 @@ var
     Indent := 0;
     while I < Output.Count do
     begin
-      SendDebug(Inttostr(I));
       if RegExp.Exec(Output[I], StructExpr) or RegExp.Exec(Output[I], StructArrayExpr) then
       begin
         if Indent = 0 then
@@ -1118,6 +1117,7 @@ var
               ParseStructure(SubStructure, ParentNode.Item[ParentNode.Count - 1]);
           ParentNode.Item[ParentNode.Count - 1].Expand(false);
           SubStructure.Free;
+          Indent := 0;
 
           //Decrement I, since we will increment one at the end of the loop
           Dec(I);
@@ -1233,7 +1233,10 @@ begin
     else if RegExp.Exec(Output[0], '(.*) (.*) @ 0x([0-9a-fA-F]{1,8}) Type (.*)') then
     begin
       Expanded := Node.Expanded;
-      Node.Text := RegExp.Substitute(Copy(name, 1, Pos('.', name) - 1) + ' = $4 (0x$3)');
+      if Pos('.', name) <> 0 then
+        Node.Text := RegExp.Substitute(Copy(name, 1, Pos('.', name) - 1) + ' = $4 (0x$3)')
+      else
+        Node.Text := RegExp.Substitute(name + ' = $4 (0x$3)');
       Node.SelectedIndex := 32;
       Node.ImageIndex := 32;
       ParseStructure(Output, Node);
@@ -1306,7 +1309,7 @@ begin
   for I := 0 to Output.Count - 1 do
     if RegExp.Exec(Output[I], 'ChildEBP RetAddr') then
       Continue
-    else if RegExp.Exec(Output[I], '([0-9a-fA-F]{1,8}) ([0-9a-fA-F]{1,8}) (.*)!([^ ]*)\((.*)\)(|.*) \[(.*) @ ([0-9]*)\]') then
+    else if RegExp.Exec(Output[I], '([0-9a-fA-F]{1,8}) ([0-9a-fA-F]{1,8}) (.*)!(.*)\((.*)\)(|.*) \[(.*) @ ([0-9]*)\]') then
     begin
       //Stack frame with source information
       New(StackFrame);
@@ -1321,7 +1324,7 @@ begin
         Args := RegExp.Substitute('$5');
       end;
     end
-    else if RegExp.Exec(Output[I], '([0-9a-fA-F]{1,8}) ([0-9a-fA-F]{1,8}) (.*)!([^ ]*)(|\((.*)\))(.*)') then
+    else if RegExp.Exec(Output[I], '([0-9a-fA-F]{1,8}) ([0-9a-fA-F]{1,8}) (.*)!(.*)(|\((.*)\))(.*)') then
     begin
       //Stack frame without source information
       New(StackFrame);
