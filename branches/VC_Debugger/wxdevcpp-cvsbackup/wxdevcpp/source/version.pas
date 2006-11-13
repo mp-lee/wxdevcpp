@@ -29,6 +29,7 @@ uses xprocs,SysUtils,Registry,Windows,Classes,utils;
 var
   LIB_EXT: string;
   OBJ_EXT: string;
+  PCH_EXT: string;
   
 const
   GCC_VERSION          = '3.4.2';
@@ -268,7 +269,6 @@ const
   CP2_EXT = '.c++';
   CP_EXT = '.cp';
   H_EXT = '.h';
-  PCH_EXT = '.pch';
   HPP_EXT = '.hpp';
   RC_EXT = '.rc';
   RES_EXT = '.res';
