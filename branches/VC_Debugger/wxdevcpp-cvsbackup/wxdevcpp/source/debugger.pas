@@ -839,7 +839,8 @@ begin
   //Update the memo
   SentCommand := False;
   RegExp := TRegExpr.Create;
-  
+  MainForm.DebugOutput.Lines.BeginUpdate;
+
   while Pos(#10, Output) > 0 do
   begin
     //Extract the current line
@@ -860,6 +861,9 @@ begin
   end;
 
   //Clean up
+  MainForm.DebugOutput.Lines.EndUpdate;
+  SendMessage(MainForm.DebugOutput.Handle, $00B6 {EM_LINESCROLL}, 0,
+              MainForm.DebugOutput.Lines.Count);
   RegExp.Free;
 end;
 
@@ -967,6 +971,8 @@ begin
           Command.Command := 'dt -r -b ' + Copy(name, 1, Pos('.', name) - 1)
         else if Pos('[', Name) > 0 then
           Command.Command := 'dt -a -r -b ' + Copy(name, 1, Pos('[', name) - 1)
+        else if AnsiStartsStr('*', name) then
+          Command.Command := 'dt -r -b ' + Copy(name, Pos('*', name) + 1, Length(name))
         else
           Command.Command := 'dv ' + name;
 
@@ -987,7 +993,7 @@ end;
 
 procedure TCDBDebugger.OnRefreshContext(Output: TStringList);
 const
-  StructExpr = '( +)\+0x([0-9a-fA-F]{1,8}) ([^ ]*)?( +): (.*)';
+  StructExpr = '( +)[\+|=]0x([0-9a-fA-F]{1,8}) ([^ ]*)?( +): (.*)';
   ArrayExpr = '\[([0-9a-fA-F]*)\] @ ([0-9a-fA-F]*)';
   StructArrayExpr = '( *)\[([0-9a-fA-F]*)\] (.*)';
 var
@@ -1075,6 +1081,7 @@ var
     Indent := 0;
     while I < Output.Count do
     begin
+      SendDebug(Inttostr(I));
       if RegExp.Exec(Output[I], StructExpr) or RegExp.Exec(Output[I], StructArrayExpr) then
       begin
         if Indent = 0 then
@@ -1187,10 +1194,16 @@ var
           Dec(I);
         end
         else
-          with DebugTree.Items.AddChild(ParentNode, RegExp.Substitute('[$1]') + ' = ' + Output[I]) do
+          with TRegExpr.Create do
           begin
-            SelectedIndex := 21;
-            ImageIndex := 21;
+            Exec(Output[I - Increment], ArrayExpr);
+            with DebugTree.Items.AddChild(ParentNode, Substitute('[$1]') + ' = ' + Output[I]) do
+            begin
+              SelectedIndex := 21;
+              ImageIndex := 21;
+            end;
+
+            Free;
           end;
       end;
 
@@ -1202,6 +1215,7 @@ begin
   NeedsRefresh := False;
   RegExp := TRegExpr.Create;
   Node := TTreeNode(CurrentCommand.Data);
+  Output.SaveToFile('D:\Output.txt');
   
   //Set the type of the structure/class/whatever
   with PWatch(Node.Data)^ do
@@ -1730,6 +1744,7 @@ begin
   //Update the memo
   SentCommand := False;
   RegExp := TRegExpr.Create;
+  MainForm.DebugOutput.Lines.BeginUpdate;
 
   while Pos(#13, Output) > 0 do
   begin
@@ -1752,6 +1767,9 @@ begin
   end;
 
   //Clean up
+  MainForm.DebugOutput.Lines.EndUpdate;
+  SendMessage(MainForm.DebugOutput.Handle, $00B6 {EM_LINESCROLL}, 0,
+              MainForm.DebugOutput.Lines.Count);
   RegExp.Free;
 end;
 
