@@ -1899,6 +1899,7 @@ var
   I: Integer;
   Node: TTreeNode;
 
+  procedure RecurseArray(Parent: TTreeNode; var I: Integer); forward;
   procedure RecurseStructure(Parent: TTreeNode; var I: Integer);
   var
     Child: TTreeNode;
@@ -1913,7 +1914,10 @@ var
           SelectedIndex := 21;
           ImageIndex := 21;
         end;
-        Inc(I, 8);
+
+        Inc(I, 6);
+        if Trim(Output[I]) = ',' then
+          Inc(I, 2);
       end
       else
       begin
@@ -1923,39 +1927,61 @@ var
           SelectedIndex := 32;
           ImageIndex := 32;
         end;
+        
         Inc(I, 6);
-        RecurseStructure(Child, I);
+        if Pos('array-section-begin', Output[I - 1]) = 1 then
+          RecurseArray(Child, I)
+        else
+          RecurseStructure(Child, I);
+
+        Inc(I, 2);
+        if (I < Output.Count) and (Pos(',', Output[I]) = 1) then
+          Inc(I, 2);
       end;
   end;
 
   procedure RecurseArray(Parent: TTreeNode; var I: Integer);
   var
-    RegExp: TRegExpr;
-    Value: String;
+    Child: TTreeNode;
+    Count: Integer;
   begin
-    RegExp := TRegExpr.Create;
+    Count := 0;
     while (I < Output.Count - 2) do
     begin
       if Output[I] = '}' then
         Break
+      else if Pos(',', Output[I]) = 1 then
+        Output[I] := Trim(Copy(Output[I], 2, Length(Output[I])));
+
+      if (Trim(Output[I]) = '{') or (Trim(Output[I]) = ', {') then
+      begin
+        Child := DebugTree.Items.AddChild(Parent, Format('[%d]', [Count]));
+        with Child do
+        begin
+          SelectedIndex := 32;
+          ImageIndex := 32;
+        end;
+        
+        Inc(I, 2);
+        RecurseStructure(Child, I);
+      end
       else if (Trim(Output[I]) <> '') and (Output[I] <> 'array-section-end') then
       begin
-        if RegExp.Exec(Output[I], ', (.*)') then
-          Value := RegExp.Substitute('$1')
-        else
-          Value := Output[I];
-        
-        with DebugTree.Items.AddChild(Parent, Format('[%d] = %s', [Parent.Count, Value])) do
+        with DebugTree.Items.AddChild(Parent, Format('[%d]', [Count]) + ' = ' + Output[I]) do
         begin
           SelectedIndex := 21;
           ImageIndex := 21;
         end;
+      end
+      else
+      begin
+        Inc(I);
+        Continue;
       end;
 
+      Inc(Count);
       Inc(I, 2);
     end;
-
-    RegExp.Free;
   end;
 begin
   I := 0;
@@ -2168,19 +2194,17 @@ var
 
   procedure RecurseArray(Indent: Integer; var I: Integer);
   var
-    RegExp: TRegExpr;
     Count: Integer;
   begin
     Count := 0;
-    RegExp := TRegExpr.Create;
     while (I < Output.Count - 2) do
     begin
       if Output[I] = '}' then
         Break
       else if Pos(',', Output[I]) = 1 then
-        Output[I] := Trim(Copy(Output[I], 1, Length(Output[I])));
+        Output[I] := Trim(Copy(Output[I], 2, Length(Output[I])));
 
-      if (Trim(Output[I]) = '{') or (Trim(Output[I]) = ', {') then
+      if Trim(Output[I]) = '{' then
       begin
         New(Local);
         Locals.Add(Local);
@@ -2197,10 +2221,7 @@ var
         with Local^ do
         begin
           Name := Format('%s[%d]', [SynthesizeIndent(Indent), Count]);
-          if RegExp.Exec(Output[I], ', (.*)') then
-            Value := RegExp.Substitute('$1')
-          else
-            Value := Output[I];
+          Value := Output[I];
         end;
       end
       else
@@ -2212,8 +2233,6 @@ var
       Inc(Count);
       Inc(I, 2);
     end;
-
-    RegExp.Free;
   end;
 begin
   RegExp := TRegExpr.Create;
