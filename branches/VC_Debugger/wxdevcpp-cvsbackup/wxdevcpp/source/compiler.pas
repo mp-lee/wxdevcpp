@@ -2076,6 +2076,13 @@ begin
         if not schk then
           act := 'Compiling';
         OK := True;
+
+        //Is it a header file being compiled?
+        if (ExtractFileExt(fil) = H_EXT) or (ExtractFileExt(fil) = HPP_EXT) then
+        begin
+          act := 'Precompiling';
+          prog := 1;
+        end;
         Break;
       end;
     end;
