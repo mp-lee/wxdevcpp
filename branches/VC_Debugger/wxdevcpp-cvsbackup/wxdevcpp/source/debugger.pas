@@ -415,6 +415,20 @@ begin
   if (not CloseHandle(hInputWriteTmp)) then
     DisplayError('CloseHandle');
 
+  // Create a thread that will read the child's output.
+  Reader := TDebugReader.Create(true);
+  Reader.Pipe := hOutputRead;
+  Reader.Event := Event;
+  Reader.OnTerminate := CloseDebugger;
+  Reader.FreeOnTerminate := True;
+
+  // Create a thread that will notice when an output is ready to be sent for processing
+  Wait := TDebugWait.Create(true);
+  Wait.OnOutput := OnOutput;
+  Wait.Reader := Reader;
+  Wait.Event := Event;
+
+  // Call the derived class' launch function to actually start execution
   Launch(arguments, hOutputWrite, hInputRead, hErrorWrite);
 
   // Close pipe handles (do not continue to modify the parent).
@@ -428,18 +442,7 @@ begin
   if (not CloseHandle(hErrorWrite)) then
     DisplayError('CloseHandle');
 
-  // Create a thread that will read the child's output.
-  Reader := TDebugReader.Create(true);
-  Reader.Pipe := hOutputRead;
-  Reader.Event := Event;
-  Reader.OnTerminate := CloseDebugger;
-  Reader.FreeOnTerminate := True;
-
-  // Create a thread that will notice when an output is ready to be sent for processing
-  Wait := TDebugWait.Create(true);
-  Wait.OnOutput := OnOutput;
-  Wait.Reader := Reader;
-  Wait.Event := Event;
+  //Run both wait threads
   Wait.Resume;
   Reader.Resume;
 end;
@@ -710,6 +713,8 @@ begin
 end;
 
 procedure TCDBDebugger.Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle);
+const
+  InputPrompt = '^([0-9]+):([0-9]+)>';
 var
   ProcessInfo: TProcessInformation;
   StartupInfo: TStartupInfo;
@@ -720,6 +725,9 @@ begin
   //Set this to true for CDB and WinDbg will have an initial process initialization
   //breakpoint. We do not want to raise false alarms when starting the debugger
   IgnoreBreakpoint := True;
+
+  //Tell the wait function that another valid output terminator is the 0:0000 prompt
+  Wait.OutputTerminators.Add(InputPrompt);
   
   //Set up the start up info structure.
   FillChar(StartupInfo, sizeof(TStartupInfo), 0);
@@ -766,6 +774,8 @@ begin
 end;
 
 procedure TCDBDebugger.OnOutput(Output: string);
+const
+  InputPrompt = '^([0-9]+):([0-9]+)>';
 var
   RegExp: TRegExpr;
   CurLine: String;
@@ -784,7 +794,7 @@ var
 
   procedure ParseOutput(const line: string);
   begin
-    if RegExp.Exec(line, '^([0-9]+):([0-9]+)>') then
+    if RegExp.Exec(line, InputPrompt) then
     begin
       //The debugger is waiting for input, we're paused!
       SentCommand := False;

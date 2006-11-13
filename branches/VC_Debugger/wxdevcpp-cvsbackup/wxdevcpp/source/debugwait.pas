@@ -52,6 +52,10 @@ type
     Event: THandle;
     Reader: TDebugReader;
     OnOutput: procedure(s: string) of object;
+    OutputTerminators: TStringList;
+
+    constructor Create(start: Boolean);
+    destructor Destroy; override;
 
   protected
     procedure Execute; override;
@@ -61,7 +65,7 @@ type
 implementation
 
 uses 
-  main, devcfg, utils, dbugintf, debugger;
+  main, devcfg, utils, dbugintf, debugger, RegExpr;
 
 constructor TDebugReader.Create(start: Boolean);
 begin
@@ -85,7 +89,10 @@ begin
   begin
     FillChar(Buffer, sizeof(Buffer), 0);
     if not ReadFile(hInputPipe, Buffer, sizeof(Buffer), LastRead, nil) then
+    begin
+      SetEvent(fEvent);
       Break;
+    end;
 
     //Now that we have read the data from the pipe, copy the contents
     EnterCriticalSection(OutputCrit);
@@ -95,6 +102,20 @@ begin
     //Then pass control to our other half.
     SetEvent(fEvent);
   end;
+end;
+
+constructor TDebugWait.Create(start: Boolean);
+begin
+  inherited;
+  OutputTerminators := TStringList.Create;
+  OutputTerminators.Add(#13);
+  OutputTerminators.Add(#10);
+end;
+
+destructor TDebugWait.Destroy;
+begin
+  OutputTerminators.Free;
+  inherited;
 end;
 
 procedure TDebugWait.Execute;
@@ -114,12 +135,39 @@ end;
 
 procedure TDebugWait.Update;
 var
+  I: Integer;
+  RegExp: TRegExpr;
+  StopIndex : Integer;
   LastNewline: Integer;
+  LastCarriageReturn: Integer;
 begin
   EnterCriticalSection(Reader.OutputCrit);
+
+  //First determine where we should stop the output and wait for more
   LastNewLine := GetLastPos(#10, Reader.Output);
-  OnOutput(Copy(Reader.Output, 0, LastNewLine));
-  Reader.Output := Copy(Reader.Output, LastNewLine + 1, Length(Reader.Output));
+  LastCarriageReturn := GetLastPos(#13, Reader.Output);
+  if LastNewLine > LastCarriageReturn then
+    StopIndex := LastNewLine
+  else
+    StopIndex := LastCarriageReturn;
+
+  //Then call the handler
+  OnOutput(Copy(Reader.Output, 0, StopIndex));
+  Reader.Output := Copy(Reader.Output, StopIndex + 1, Length(Reader.Output));
+
+  //See if what we have left should be sent over
+  RegExp := TRegExpr.Create;
+  try
+    for I := 0 to OutputTerminators.Count - 1 do
+      if RegExp.Exec(Reader.Output, OutputTerminators[I]) then
+      begin
+        OnOutput(Reader.Output);
+        Reader.Output := '';
+      end;
+  finally
+    RegExp.Free;
+  end;
+  
   LeaveCriticalSection(Reader.OutputCrit);
 end;
 
