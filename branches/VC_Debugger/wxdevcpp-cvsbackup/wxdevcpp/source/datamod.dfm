@@ -381,7 +381,7 @@ object dmMain: TdmMain
       000000000000}
   end
   object MenuImages_Gnome: TImageList
-    Left = 149
+    Left = 150
     Top = 184
     Bitmap = {
       494C01013B004000040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
