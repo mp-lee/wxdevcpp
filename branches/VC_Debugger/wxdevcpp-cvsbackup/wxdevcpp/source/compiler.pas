@@ -771,15 +771,11 @@ begin
     AppendStr(fCompileParams, fUserParams);
     AppendStr(fCppCompileParams, fUserParams);
 
-    for I := 0 to devCompiler.OptionsCount - 1 do
+    for I := 0 to OptionsCount - 1 do
       // consider project specific options for the compiler
-      if (
-        Assigned(fProject) and
-        (I < Length(fProject.CurrentProfile.CompilerOptions)) and
-        not (fProject.CurrentProfile.typ in devCompiler.Options[I].optExcludeFromTypes)
-        ) or
-        // else global compiler options
-      (not Assigned(fProject) and (devCompiler.Options[I].optValue > 0)) then
+      if (Assigned(fProject) and (I < Length(fProject.CurrentProfile.CompilerOptions)) and
+           not (fProject.CurrentProfile.typ in devCompiler.Options[I].optExcludeFromTypes)) or
+         (not Assigned(fProject) and (Options[I].optValue > 0)) then
       begin
         if devCompiler.Options[I].optIsC then begin
           if Assigned(devCompiler.Options[I].optChoices) then begin
