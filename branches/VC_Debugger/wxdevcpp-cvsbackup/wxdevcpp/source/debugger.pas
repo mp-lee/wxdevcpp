@@ -758,7 +758,6 @@ end;
 constructor TCDBDebugger.Create;
 begin
   inherited;
-  IgnoreBreakpoint := True;
 end;
 
 destructor TCDBDebugger.Destroy;
@@ -778,6 +777,9 @@ var
 begin
   //Tell the wait function that another valid output terminator is the 0:0000 prompt
   Wait.OutputTerminators.Add(InputPrompt);
+
+  //Heck about the breakpoint thats coming.
+  IgnoreBreakpoint := True;
   
   //Set up the start up info structure.
   FillChar(StartupInfo, sizeof(TStartupInfo), 0);
@@ -1701,7 +1703,6 @@ end;
 constructor TGDBDebugger.Create;
 begin
   inherited;
-  IgnoreBreakpoint := False;
   OverrideHandler := nil;
   Started := False;
 end;
@@ -1722,6 +1723,7 @@ begin
   //Reset our variables
   fExecuting := True;
   fNextBreakpoint := 0;
+  IgnoreBreakpoint := False;
 
   //Set up the start up info structure.
   FillChar(StartupInfo, sizeof(TStartupInfo), 0);
