@@ -5514,7 +5514,7 @@ end;
 procedure TMainForm.actDebugUpdate(Sender: TObject);
 begin
   (Sender as TCustomAction).Enabled := (assigned(fProject) or (PageControl.PageCount > 0)) and
-    (not devExecutor.Running) and ((not fDebugger.Executing) or fDebugger.Paused);
+    (not devExecutor.Running) and ((not fDebugger.Executing) or fDebugger.Paused) and (not fCompiler.Compiling);
 end;
 
 procedure TMainForm.actCompileUpdate(Sender: TObject);
