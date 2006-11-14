@@ -876,15 +876,13 @@ begin
   strLst := TStringList.Create;
   strTokenToStrings(devDirs.RC, ';', strLst);
   cRCString := '';
-  for i := 0 to strLst.Count-1 do
-  begin
+  for i := 0 to strLst.Count - 1 do
     cRCString := cRCString + GetShortName(strLst.Strings[i]) + ';';
-  end;
   fRcIncludesParams := CommaStrToStr(cRCString, '%s ' + devCompiler.ResourceIncludeFormat);
-  
   strLst.Destroy;
-  	
-  if (fTarget = ctProject) and assigned(fProject) then begin
+
+  if (fTarget = ctProject) and assigned(fProject) then
+  begin
     for i := 0 to pred(fProject.CurrentProfile.Includes.Count) do
       if directoryExists(fProject.CurrentProfile.Includes[i]) then begin
         fIncludesParams := format(cAppendStr, [fIncludesParams, fProject.CurrentProfile.Includes[i]]);
