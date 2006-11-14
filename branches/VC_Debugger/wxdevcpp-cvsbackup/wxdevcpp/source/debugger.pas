@@ -32,7 +32,7 @@ uses
 
 type
   AssemblySyntax = (asATnT, asIntel);
-  ContextData = (cdLocals, cdStackTrace, cdWatches);
+  ContextData = (cdLocals, cdCallStack, cdWatches, cdThreads);
   ContextDataSet = set of ContextData;
   TCallback = procedure(Output: TStringList) of object;
   
@@ -70,6 +70,25 @@ type
     Args: string;
   end;
 
+  PVariable = ^TVariable;
+  TVariable = packed record
+    Name: string;
+    Value: string;
+    Location: string;
+  end;
+
+  PWatch = ^TWatch;
+  TWatch = packed record
+    Name: string;
+    Address: string;
+  end;
+
+  PDebuggerThread = ^TDebuggerThread;
+  TDebuggerThread = packed record
+    Active: Boolean;
+    ID: string;
+  end;
+
   PCommand = ^TCommand;
   TCommand = class
   public
@@ -87,19 +106,6 @@ type
   public
     Event: THandle;
     Result: TStringList;
-  end;
-
-  PVariable = ^TVariable;
-  TVariable = packed record
-    Name: string;
-    Value: string;
-    Location: string;
-  end;
-
-  PWatch = ^TWatch;
-  TWatch = packed record
-    Name: string;
-    Address: string;
   end;
 
   TDebugger = class
@@ -157,6 +163,7 @@ type
     OnDisassemble: procedure(Disassembly: string) of object;
     OnRegisters: procedure(Registers: TRegisters) of object;
     OnCallStack: procedure(Callstack: TList) of object;
+    OnThreads: procedure(Threads: TList) of object;
     OnLocals: procedure(Locals: TList) of object;
 
     //Debugger basics
@@ -179,6 +186,7 @@ type
     procedure Pause; virtual;
     procedure Next; virtual; abstract;
     procedure Step; virtual; abstract;
+    procedure SetThread(thread: Integer); virtual; abstract;
     procedure SetContext(frame: Integer); virtual; abstract;
     function GetVariableHint(name: string): string; virtual; abstract;
 
@@ -187,7 +195,7 @@ type
     procedure ClearIncludeDirs; virtual; abstract;
 
     //Variable watches
-    procedure RefreshContext(refresh: ContextDataSet = [cdLocals, cdStackTrace, cdWatches]); virtual; abstract;
+    procedure RefreshContext(refresh: ContextDataSet = [cdLocals, cdCallStack, cdWatches, cdThreads]); virtual; abstract;
     procedure AddWatch(varname: string); virtual; abstract;
     procedure RemoveWatch(varname: string); virtual; abstract;
     procedure ModifyVariable(varname, newvalue: string); virtual; abstract;
@@ -215,6 +223,7 @@ type
     procedure OnDisassemble(Output: TStringList);
     procedure OnCallStack(Output: TStringList);
     procedure OnRegisters(Output: TStringList);
+    procedure OnThreads(Output: TStringList);
     procedure OnLocals(Output: TStringList);
 
   public
@@ -228,7 +237,7 @@ type
     procedure RefreshBreakpoint(var breakpoint: TBreakpoint); override;
 
     //Variable watches
-    procedure RefreshContext(refresh: ContextDataSet = [cdLocals, cdStackTrace, cdWatches]); override;
+    procedure RefreshContext(refresh: ContextDataSet = [cdLocals, cdCallStack, cdWatches, cdThreads]); override;
     procedure AddWatch(varname: string); override;
     procedure RemoveWatch(varname: string); override;
 
@@ -236,6 +245,7 @@ type
     procedure Go; override;
     procedure Next; override;
     procedure Step; override;
+    procedure SetThread(thread: Integer); override;
     procedure SetContext(frame: Integer); override;
     function GetVariableHint(name: string): string; override;
 
@@ -270,6 +280,7 @@ type
     procedure OnDisassemble(Output: TStringList);
     procedure OnCallStack(Output: TStringList);
     procedure OnRegisters(Output: TStringList);
+    procedure OnThreads(Output: TStringList);
     procedure OnLocals(Output: TStringList);
 
   public
@@ -286,7 +297,7 @@ type
     procedure RefreshBreakpoint(var breakpoint: TBreakpoint); override;
 
     //Variable watches
-    procedure RefreshContext(refresh: ContextDataSet = [cdLocals, cdStackTrace, cdWatches]); override;
+    procedure RefreshContext(refresh: ContextDataSet = [cdLocals, cdCallStack, cdWatches, cdThreads]); override;
     procedure AddWatch(varname: string); override;
     procedure RemoveWatch(varname: string); override;
     procedure ModifyVariable(varname, newvalue: string); override;
@@ -295,6 +306,7 @@ type
     procedure Go; override;
     procedure Next; override;
     procedure Step; override;
+    procedure SetThread(thread: Integer); override;
     procedure SetContext(frame: Integer); override;
     function GetVariableHint(name: string): string; override;
 
@@ -975,8 +987,8 @@ begin
   if not Executing then
     Exit;
 
-  //First send commands for stack tracing and locals
-  if cdStackTrace in refresh then
+  //First send commands for stack tracing, locals and the threads list
+  if cdCallStack in refresh then
   begin
     Command := TCommand.Create;
     Command.Command := 'kp 512';
@@ -988,6 +1000,13 @@ begin
     Command := TCommand.Create;
     Command.Command := 'dv -i -t -v';
     Command.OnResult := OnLocals;
+    QueueCommand(Command);
+  end;
+  if cdThreads in refresh then
+  begin
+    Command := TCommand.Create;
+    Command.Command := '~';
+    Command.OnResult := OnThreads;
     QueueCommand(Command);
   end;
 
@@ -1394,6 +1413,48 @@ begin
   CallStack.Free;
 end;
 
+procedure TCDBDebugger.OnThreads(Output: TStringList);
+var
+  I: Integer;
+  Thread: PDebuggerThread;
+  Threads: TList;
+  RegExp: TRegExpr;
+  Suspended, Frozen: Boolean;
+begin
+  Threads := TList.Create;
+  RegExp := TRegExpr.Create;
+  
+  for I := 0 to Output.Count - 1 do
+    if RegExp.Exec(Output[I], '([.#]*)( +)([0-9]*)( +)Id: ([0-9a-fA-F]*)\.([0-9a-fA-F]*) Suspend: ([0-9a-fA-F]*) Teb: ([0-9a-fA-F]{1,8}) (.*)') then
+    begin
+      New(Thread);
+      Threads.Add(Thread);
+
+      //Fill the fields
+      with Thread^ do
+      begin
+        Active := RegExp.Substitute('$1') = '.';
+        ID := RegExp.Substitute('$5.$6');
+        Suspended := RegExp.Substitute('$7') <> '0';
+        Frozen := RegExp.Substitute('$9') = 'frozen';
+        if Suspended and Frozen then
+          ID := ID + ' (Suspended, Frozen)'
+        else if Suspended then
+          ID := ID + ' (Suspended)'
+        else if Frozen then
+          ID := ID + ' (Frozen)'
+      end;
+    end;
+
+  //Pass the locals list to the callback function that wants it
+  if Assigned(TDebugger(Self).OnThreads) then
+    TDebugger(Self).OnThreads(Threads);
+
+  //Clean up
+  Threads.Free;
+  RegExp.Free;
+end;
+
 procedure TCDBDebugger.OnLocals(Output: TStringList);
 var
   I: Integer;
@@ -1620,6 +1681,12 @@ begin
   JumpToCurrentLine := True;
   fPaused := False;
   fBusy := False;
+end;
+
+procedure TCDBDebugger.SetThread(thread: Integer);
+begin
+  QueueCommand('~' + IntToStr(thread), 's');
+  RefreshContext([cdLocals, cdWatches, cdCallStack, cdThreads]);
 end;
 
 procedure TCDBDebugger.SetContext(frame: Integer);
@@ -1900,8 +1967,8 @@ begin
   if not Executing then
     Exit;
 
-  //First send commands for stack tracing and locals
-  if cdStackTrace in refresh then
+  //First send commands for stack tracing, locals and threads
+  if cdCallStack in refresh then
   begin
     Command := TCommand.Create;
     Command.Command := 'bt';
@@ -1913,6 +1980,13 @@ begin
     Command := TCommand.Create;
     Command.Command := 'info locals 1';
     Command.OnResult := OnLocals;
+    QueueCommand(Command);
+  end;
+  if cdThreads in refresh then
+  begin
+    Command := TCommand.Create;
+    Command.Command := 'info threads';
+    Command.OnResult := OnThreads;
     QueueCommand(Command);
   end;
 
@@ -2339,6 +2413,37 @@ begin
   RegExp.Free;
 end;
 
+procedure TGDBDebugger.OnThreads(Output: TStringList);
+var
+  I: Integer;
+  RegExp: TRegExpr;
+  Thread: PDebuggerThread;
+  Threads: TList;
+begin
+  RegExp := TRegExpr.Create;
+  Threads := TList.Create;
+
+  for I := 0 to Output.Count - 1 do
+    if RegExp.Exec(Output[I], '(\**)( +)([0-9]+)( +)thread ([0-9a-fA-F]*).0x([0-9a-fA-F]*)') then
+    begin
+      New(Thread);
+      Threads.Insert(0, Thread);
+
+      with Thread^ do
+      begin
+        Active := RegExp.Substitute('$1') = '*';
+        ID := RegExp.Substitute('$5.$6');
+      end;
+    end;
+
+  //Call the callback function to list the threads
+  if Assigned(TDebugger(Self).OnThreads) then
+    TDebugger(Self).OnThreads(Threads);
+
+  Threads.Free;
+  RegExp.Free;
+end;
+
 procedure TGDBDebugger.GetRegisters;
 var
   Command: TCommand;
@@ -2573,6 +2678,12 @@ begin
   JumpToCurrentLine := True;
   fPaused := False;
   fBusy := False;
+end;
+
+procedure TGDBDebugger.SetThread(thread: Integer);
+begin
+  QueueCommand('thread', IntToStr(thread + 1));
+  RefreshContext([cdLocals, cdWatches, cdCallStack, cdThreads]);
 end;
 
 procedure TGDBDebugger.SetContext(frame: Integer);

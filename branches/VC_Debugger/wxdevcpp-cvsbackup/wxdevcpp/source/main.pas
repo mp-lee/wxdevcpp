@@ -625,7 +625,7 @@ type
     DebugLeftSheet: TTabSheet;
     DebugTree: TTreeView;
     pnlBrowsers: TPanel;
-    TabLocals: TTabSheet;
+    tabLocals: TTabSheet;
     lvLocals: TListView;
     tbDebug: TToolBar;
     DebugRestartBtn: TToolButton;
@@ -639,6 +639,8 @@ type
     Pause1: TMenuItem;
     actPauseDebug: TAction;
     DebugPauseBtn: TToolButton;
+    tabThreads: TTabSheet;
+    lvThreads: TListView;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormDestroy(Sender: TObject);
@@ -952,11 +954,11 @@ type
     procedure ApplicationEvents1Activate(Sender: TObject);
     procedure ProjectViewKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure tmrInspectorHelperTimer(Sender: TObject);
-    procedure PauseExecBtnClick(Sender: TObject);
     procedure actRestartDebugExecute(Sender: TObject);
     procedure actUpdateDebuggerPaused(Sender: TObject);
     procedure actPauseDebugUpdate(Sender: TObject);
     procedure actPauseDebugExecute(Sender: TObject);
+    procedure lvThreadsDblClick(Sender: TObject);
 
 {$ENDIF}
 
@@ -1045,6 +1047,7 @@ type
     procedure AddBreakPointToList(line_number: integer; e: TEditor);
     procedure RemoveBreakPointFromList(line_number: integer; e:TEditor);
     procedure OnCallStack(Callstack: TList);
+    procedure OnThreads(Threads: TList);
     procedure OnLocals(Locals: TList);
 
 {$IFDEF WX_BUILD}
@@ -2111,6 +2114,28 @@ begin
       Data := CppParser1.Locate(Caption, True);
     end;
   lvBacktrace.Items.EndUpdate;
+end;
+
+procedure TMainForm.OnThreads(Threads: TList);
+var
+  I: Integer;
+begin
+  lvThreads.Items.BeginUpdate;
+  lvThreads.Items.Clear;
+
+  for I := 0 to Threads.Count - 1 do
+    with lvThreads.Items.Add do
+    begin
+      if PDebuggerThread(Threads[I])^.Active then
+      begin
+        Caption := '*';
+        lvThreads.Selected := lvThreads.Items[Index];
+      end
+      else
+        Caption := '';
+      SubItems.Add(PDebuggerThread(Threads[I])^.ID);
+    end;
+  lvThreads.Items.EndUpdate;
 end;
 
 procedure TMainForm.OnLocals(Locals: TList);
@@ -5304,6 +5329,7 @@ procedure TMainForm.InitializeDebugger;
   begin
     fDebugger.DebugTree := DebugTree;
     fDebugger.OnCallStack := OnCallStack;
+    fDebugger.OnThreads := OnThreads;
     fDebugger.OnLocals := OnLocals;
   end;
 begin
@@ -5939,12 +5965,6 @@ procedure TMainForm.actStopExecuteExecute(Sender: TObject);
 begin
   if fDebugger.Executing then
     fDebugger.CloseDebugger(sender);
-end;
-
-procedure TMainForm.PauseExecBtnClick(Sender: TObject);
-begin
-  if fDebugger.Executing then
-    fDebugger.Pause;
 end;
 
 procedure TMainForm.actRestartDebugExecute(Sender: TObject);
@@ -7091,6 +7111,11 @@ begin
     else
       Cursor := crDefault;
   end;
+end;
+
+procedure TMainForm.lvThreadsDblClick(Sender: TObject);
+begin
+  fDebugger.SetThread(lvThreads.Selected.Index);
 end;
 
 procedure TMainForm.devFileMonitor1NotifyChange(Sender: TObject;

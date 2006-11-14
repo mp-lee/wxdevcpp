@@ -70,7 +70,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 98
+        Height = 97
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -108,7 +108,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 98
+        Height = 97
         Align = alClient
         BevelKind = bkSoft
         BorderStyle = bsNone
@@ -126,7 +126,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 225
-        Height = 98
+        Height = 97
         Align = alLeft
         Caption = 'Information :'
         TabOrder = 0
@@ -181,18 +181,18 @@ object MainForm: TMainForm
         Left = 225
         Top = 0
         Width = 393
-        Height = 98
+        Height = 97
         Align = alClient
         Caption = 'Compile log :'
         TabOrder = 1
         DesignSize = (
           393
-          98)
+          97)
         object LogOutput: TMemo
           Left = 7
           Top = 16
           Width = 638
-          Height = 87
+          Height = 86
           Anchors = [akLeft, akTop, akRight, akBottom]
           ReadOnly = True
           ScrollBars = ssVertical
@@ -208,8 +208,8 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 98
-        ActivePage = tabBacktrace
+        Height = 97
+        ActivePage = tabThreads
         Align = alClient
         Style = tsFlatButtons
         TabOrder = 0
@@ -220,7 +220,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 67
+            Height = 66
             Align = alClient
             Columns = <
               item
@@ -248,14 +248,14 @@ object MainForm: TMainForm
             OnMouseMove = lvBacktraceMouseMove
           end
         end
-        object TabLocals: TTabSheet
+        object tabLocals: TTabSheet
           Caption = 'Local Variables'
           ImageIndex = 3
           object lvLocals: TListView
             Left = 0
             Top = 0
             Width = 610
-            Height = 67
+            Height = 66
             Align = alClient
             Columns = <
               item
@@ -274,6 +274,30 @@ object MainForm: TMainForm
             RowSelect = True
             TabOrder = 0
             ViewStyle = vsReport
+          end
+        end
+        object tabThreads: TTabSheet
+          Caption = 'Threads'
+          ImageIndex = 3
+          object lvThreads: TListView
+            Left = 0
+            Top = 0
+            Width = 610
+            Height = 66
+            Align = alClient
+            Columns = <
+              item
+                Width = 25
+              end
+              item
+                Caption = 'Thread ID'
+                Width = 575
+              end>
+            ReadOnly = True
+            RowSelect = True
+            TabOrder = 0
+            ViewStyle = vsReport
+            OnDblClick = lvThreadsDblClick
           end
         end
         object tabDebugOutput: TTabSheet
@@ -339,7 +363,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 98
+        Height = 97
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
