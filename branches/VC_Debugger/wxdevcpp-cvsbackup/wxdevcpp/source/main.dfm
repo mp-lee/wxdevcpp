@@ -187,12 +187,12 @@ object MainForm: TMainForm
         TabOrder = 1
         DesignSize = (
           393
-          97)
+          98)
         object LogOutput: TMemo
           Left = 7
           Top = 16
           Width = 638
-          Height = 86
+          Height = 87
           Anchors = [akLeft, akTop, akRight, akBottom]
           ReadOnly = True
           ScrollBars = ssVertical
@@ -208,8 +208,8 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
-        ActivePage = tabThreads
+        Height = 98
+        ActivePage = tabDebugOutput
         Align = alClient
         Style = tsFlatButtons
         TabOrder = 0
@@ -220,7 +220,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 66
+            Height = 67
             Align = alClient
             Columns = <
               item
@@ -255,7 +255,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 66
+            Height = 67
             Align = alClient
             Columns = <
               item
@@ -283,7 +283,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 610
-            Height = 66
+            Height = 67
             Align = alClient
             Columns = <
               item
@@ -307,7 +307,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 22
             Width = 610
-            Height = 44
+            Height = 45
             Align = alClient
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clWindowText

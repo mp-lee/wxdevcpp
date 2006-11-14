@@ -7115,7 +7115,8 @@ end;
 
 procedure TMainForm.lvThreadsDblClick(Sender: TObject);
 begin
-  fDebugger.SetThread(lvThreads.Selected.Index);
+  if lvThreads.Selected <> nil then
+    fDebugger.SetThread(lvThreads.Selected.Index);
 end;
 
 procedure TMainForm.devFileMonitor1NotifyChange(Sender: TObject;
