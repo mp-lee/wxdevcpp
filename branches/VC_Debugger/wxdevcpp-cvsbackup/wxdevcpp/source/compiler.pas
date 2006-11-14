@@ -534,7 +534,8 @@ begin
       end
       else
       begin
-        if (PCHObj <> '') and (I <> fProject.PchSource) then
+        if (PCHObj <> '') and (((devCompiler.CompilerType in ID_COMPILER_VC) and
+           (I <> fProject.PchSource)) or (not (devCompiler.CompilerType in ID_COMPILER_VC))) then
           tmp := PCHObj + ' '
         else
           tmp := '';
@@ -2078,7 +2079,7 @@ begin
         OK := True;
 
         //Is it a header file being compiled?
-        if (ExtractFileExt(fil) = H_EXT) or (ExtractFileExt(fil) = HPP_EXT) then
+        if GetFileTyp(fil) = utHead then
         begin
           act := 'Precompiling';
           prog := 1;
