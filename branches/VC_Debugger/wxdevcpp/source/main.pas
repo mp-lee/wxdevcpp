@@ -1918,19 +1918,6 @@ begin
 {$IFDEF WX_BUILD}
   SetSplashStatus('Loading wxWidgets extensions');
   DoCreateWxSpecificItems;
-
-  //TODO: lowjoel: Add Layout retrieval from the INI file.
-{  JvAppIniFileStorage := TJvAppIniFileStorage.Create(Application);
-  JvAppIniFileStorage.FileName := ExtractFilePath(devData.INIFile) + 'layout' + INI_EXT;
-  JvAppIniFileStorage.Location := flCustom;
-  JvAppIniFileStorage.Reload;
-  JvAppIniFileStorage.BeginUpdate;
-  try
-    LoadDockTreeFromAppStorage(JvAppIniFileStorage);
-  finally
-    JvAppIniFileStorage.EndUpdate;
-    JvAppIniFileStorage.Destroy;
-  end;}
 {$ENDIF}
   fFirstShow := TRUE;
 
@@ -2166,6 +2153,12 @@ begin
   else if not CacheCreated then // this is so weird, but the following call seems to take a lot of time to execute
     Self.Position := poScreenCenter;
 
+  //Load the window layout from the INI file
+  //TODO: lowjoel: What if the layout.ini file is invalid?
+  if FileExists(ExtractFilePath(devData.INIFile) + 'layout' + INI_EXT) then
+    LoadDockTreeFromFile(ExtractFilePath(devData.INIFile) + 'layout' + INI_EXT);
+
+  //Show the main form
   Show;
 end;
 
