@@ -220,7 +220,7 @@ const
   ID_ITEM_ATTACHPROCESS            = 257;
   ID_ITEM_MODIFYVALUE              = 258;
   ID_ITEM_CLEARALL                 = 259;
-  ID_ITEM_RESTART                  = 265;
+  ID_ITEM_RESTART                  = 390;
 
   //free to 259 for menu items
 

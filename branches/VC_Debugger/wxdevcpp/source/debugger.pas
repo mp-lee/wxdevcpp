@@ -146,7 +146,7 @@ type
     //Instruction callbacks
     procedure OnGo;
 
-    //I don't know what these do... yet
+    //Common events
     procedure OnNoDebuggingSymbolsFound;
     procedure OnAccessViolation;
     procedure OnBreakpoint;
@@ -736,19 +736,26 @@ begin
     WriteProcessMemory(hPid, WriteAddr, @GenerateCtrlCEvent, CodeSize, BytesWritten);
     if BytesWritten = CodeSize then
     begin
-      //Create and run the thread and wait for its termination
+      //Create and run the thread
       Thread := CreateRemoteThread(hPid, nil, 0, WriteAddr, GetProcAddress(LoadLibrary('kernel32.dll'), 'GenerateConsoleCtrlEvent'), 0, ThreadID);
-      WaitForSingleObject(Thread, INFINITE);  //wait for the thread to execute
+      if Thread <> 0 then
+      begin
+        //Wait for its termination
+        WaitForSingleObject(Thread, INFINITE);
 
-      //Free the memory we injected
-      VirtualFreeEx(hPid, WriteAddr, 0, MEM_RELEASE); // free the memory we allocated
+        //And see if it succeeded
+        GetExitCodeThread(Thread, ExitCode);
+        if ExitCode <> 0 then
+          //We've triggered a breakpoint, so yes, ignore it
+          IgnoreBreakpoint := True;
 
-      //And see if it succeeded
-      GetExitCodeThread(Thread, ExitCode);
-      if ExitCode <> 0 then
-        //We've triggered a breakpoint, so yes, ignore it
-        IgnoreBreakpoint := True;
+        //Destroy the thread
+        CloseHandle(Thread);
+      end;
     end;
+
+    //Free the memory we injected
+    VirtualFreeEx(hPid, WriteAddr, 0, MEM_RELEASE); // free the memory we allocated
   end;
 end;
 
