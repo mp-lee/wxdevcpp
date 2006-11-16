@@ -306,6 +306,7 @@ type
     procedure Go; override;
     procedure Next; override;
     procedure Step; override;
+    procedure Pause; override;
     procedure SetThread(thread: Integer); override;
     procedure SetContext(frame: Integer); override;
     function GetVariableHint(name: string): string; override;
@@ -2687,6 +2688,11 @@ begin
   JumpToCurrentLine := True;
   fPaused := False;
   fBusy := False;
+end;
+
+procedure TGDBDebugger.Pause;
+begin
+  //Do nothing. GDB does not support break-ins.
 end;
 
 procedure TGDBDebugger.SetThread(thread: Integer);

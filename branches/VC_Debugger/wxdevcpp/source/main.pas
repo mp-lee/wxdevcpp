@@ -5462,7 +5462,8 @@ end;
 
 procedure TMainForm.actPauseDebugUpdate(Sender: TObject);
 begin
-  (Sender as TAction).Enabled := fDebugger.Executing and not fDebugger.Paused;
+  (Sender as TAction).Enabled := fDebugger.Executing and not fDebugger.Paused and
+    (fDebugger is TCDBDebugger);
 end;
 
 procedure TMainForm.actEnviroOptionsExecute(Sender: TObject);
