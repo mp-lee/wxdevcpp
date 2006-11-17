@@ -288,9 +288,7 @@ const
   resTypes: array[0..3] of string[4] = (RES_EXT, RC_EXT, RH_EXT, XRC_EXT);
 
   // GDB commands and Displays
-{ GDB_ATTACH = 'attach';
-  T_ARRAYSECTION_BEGIN = 'array-section-begin';
-  T_ARRAYSECTION_END = 'array-section-end';}
+{ GDB_ATTACH = 'attach';}
 
   // GPROF commands and displays
   GPROF_CHECKFILE = 'gmon.out';

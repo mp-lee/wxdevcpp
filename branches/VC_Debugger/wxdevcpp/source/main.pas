@@ -5507,8 +5507,14 @@ end;
 
 procedure TMainForm.actDebugUpdate(Sender: TObject);
 begin
-  (Sender as TCustomAction).Enabled := (assigned(fProject) or (PageControl.PageCount > 0)) and
-    (not devExecutor.Running) and ((not fDebugger.Executing) or fDebugger.Paused) and (not fCompiler.Compiling);
+  if Assigned(fProject) then
+    (Sender as TCustomAction).Enabled := not (fProject.CurrentProfile.typ = dptStat) and
+      (PageControl.PageCount > 0) and (not devExecutor.Running) and ((not fDebugger.Executing) or
+      fDebugger.Paused) and (not fCompiler.Compiling)
+  else
+    (Sender as TCustomAction).Enabled := (PageControl.PageCount > 0) and
+      (PageControl.PageCount > 0) and (not devExecutor.Running) and ((not fDebugger.Executing) or
+      fDebugger.Paused) and (not fCompiler.Compiling);
 end;
 
 procedure TMainForm.actCompileUpdate(Sender: TObject);
@@ -6355,6 +6361,9 @@ end;
 procedure TMainForm.CppParser1TotalProgress(Sender: TObject;
   FileName: String; Total, Current: Integer);
 begin
+  if Assigned(SplashForm) then
+    SplashForm.StatusBar.SimpleText := 'Loading code completion cache... ' + FormatFloat('0.00%', Current / Total * 100);
+
   if FileName <> '' then
   begin
     StatusBar.Panels[3].Text := 'Parsing ' + Filename;
