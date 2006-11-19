@@ -134,7 +134,7 @@ implementation
 
 uses
   MultiLangSupport, devcfg, Macros, devExec, CompileProgressFm, StrUtils, RegExpr,
-  DbugIntf;
+  DbugIntf, SynEdit, SynEditHighlighter, SynEditTypes, datamod;
 
 constructor TCompiler.Create;
 begin
@@ -369,12 +369,11 @@ end;
 
 function TCompiler.FindDeps(TheFile: String; var VisitedFiles: TStringList): String;
 var
-  i: integer;
-  path: string;
-  start: integer;
-  tempstr: string;
-  Lines: TStringList;
+  Editor: TSynEdit;
+  i, Start: integer;
   Includes: TStringList;
+  Token, Quote, FilePath: string;
+  Attri: TSynHighlighterAttributes;
 
   function StartsStr(start: string; str: string) : Boolean;
   var
@@ -394,56 +393,68 @@ var
   end;
 begin;
   Result := '';
-  Lines := nil;
   Includes := nil;
-  path := Copy(TheFile, 0, GetLastPos('\', TheFile));
 
   //First check that we have not been visited
   if VisitedFiles.IndexOf(TheFile) <> -1 then
     Exit;
 
   //Otherwise mark ourselves as visited
+  Editor := TSynEdit.Create(Application);
+  Editor.Highlighter := dmMain.Cpp;
   VisitedFiles.Add(TheFile);
   Application.ProcessMessages;
   
   try
     //Load the lines of the file
-    Lines := TStringList.Create;
     Includes := TStringList.Create;
-    Lines.LoadFromFile(TheFile);
+    Editor.Lines.LoadFromFile(TheFile);
 
     //Iterate over the lines of the file
-    for i := 0 to Lines.Count - 1 do
-    begin
-      if StartsStr('#', Lines[i]) then
+    for i := 0 to Editor.Lines.Count - 1 do
+      if StartsStr('#', Editor.Lines[i]) then
       begin
-        start := Pos('#', Lines[i]);
+        Start := Pos('#', Editor.Lines[i]);
+        Editor.GetHighlighterAttriAtRowCol(BufferCoord(start, i + 1), Token, Attri);
 
-        //It's a preprocessor directive, yes, but is it an include?
-        if AnsiStartsStr('include', Copy(Lines[i], start + 1, Length(Lines[i]))) then
-        begin
-          tempstr := Copy(Lines[i], start + 1, Length(Lines[i])); //copy after #
-          tempstr := Copy(tempstr, Pos('include', tempstr) + 7, Length(tempstr)); //copy after 'include'
-          tempstr := Trim(tempstr);
-          tempstr := Copy(tempstr, 2, Length(tempstr) - 2); //Remove "" or <>
+        //Is it a preprocessor directive?
+        if Attri.Name <> 'Preprocessor' then
+          Continue;
 
-          //Now that tempstr contains the path, does it exist, hence we can depend on it?
-          if FileExists(GetRealPath(tempstr, path)) then
-          begin
-            Result := Result + ' ' + GenMakePath2(ExtractRelativePath(fProject.Directory, GetRealPath(tempstr, path)));
+        //Is it an include?
+        Token := Trim(Copy(Token, 2, Length(Token))); //copy after #
+        if not AnsiStartsStr('include', Token) then
+          Continue;
 
-            //Now that we have it, recurse!
-            Result := result + FindDeps(GetRealPath(tempstr, path), VisitedFiles);
-          end;
-        end;
+        //Extract the include filename
+        Token := Copy(Token, Pos('include', Token) + 7, Length(Token)); //copy after 'include'
+        Token := Trim(Token);
+
+        //Extract the type of closing quote
+        quote := Token[1];
+        if quote = '<' then
+          quote := '>';
+
+        //Remove the start and close quotes
+        Token := Copy(Token, 2, Length(Token));
+        Token := Copy(Token, 1, Pos(quote, Token) - 1); //Remove "" or <>
+
+        //Now that tempstr contains the path, does it exist, hence we can depend on it?
+        FilePath := GetRealPath(Token, ExtractFilePath(TheFile));
+        if not FileExists(FilePath) then
+          Continue;
+
+        //When we do get here, the file does exist. Convert the path to the one relative to the makefile
+        Result := Result + ' ' + GenMakePath2(ExtractRelativePath(fProject.Directory, FilePath));
+
+        //Recurse into the include
+        Result := result + FindDeps(FilePath, VisitedFiles);
       end;
-    end;
 
   finally
-    if Assigned (Lines) then
-      Lines.Destroy;
     if Assigned (Includes) then
       Includes.Destroy;
+    Editor.Free;
   end;
 end;
 
