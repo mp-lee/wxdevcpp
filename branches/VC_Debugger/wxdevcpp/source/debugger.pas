@@ -355,8 +355,7 @@ end;
 
 destructor TDebugger.Destroy;
 begin
-  if (Executing) then
-    CloseDebugger(nil);
+  CloseDebugger(nil);
   CloseHandle(Event);
   RemoveAllBreakpoints; 
 
@@ -805,7 +804,7 @@ begin
     Executable := DBG_PROGRAM(devCompiler.CompilerType);
   
   //Create the command line
-  Executable := Format('%s -lines -2 -G -y "%s" "%s" %s', [Executable, ExtractFilePath(Filename), FileName, arguments]);
+  Executable := Format('%s -lines -2 -G -sflags 0x800B8633 -y "%s" "%s" %s', [Executable, ExtractFilePath(Filename), FileName, arguments]);
 
   //Launch the process
   if not CreateProcess(nil, PChar(Executable), nil, nil, True, CREATE_NEW_CONSOLE,
@@ -882,9 +881,9 @@ var
       //Make sure we don't save the current line!
       Exit;
     end
-    else if RegExp.Exec(line, 'Symbol search path is: (.*)') then
+    else if RegExp.Exec(line, 'DBGHELP: (.*) - no symbols loaded') then
     begin
-      if RegExp.Substitute('$1') = '*** Invalid ***' then
+      if LowerCase(RegExp.Substitute('$1')) = LowerCase(ChangeFileExt(ExtractFileName(Filename), '')) then
         OnNoDebuggingSymbolsFound;
     end
     else if RegExp.Exec(line, '\((.*)\): (.*) - code ([0-9a-fA-F]{1,8}) \((.*)\)') then
@@ -907,7 +906,8 @@ begin
     CurLine := Copy(Output, 0, Pos(#10, Output) - 1);
 
     //Process the output
-    MainForm.DebugOutput.Lines.Add(CurLine);
+    if not AnsiStartsStr('DBGHELP: ', CurLine) then
+      MainForm.DebugOutput.Lines.Add(CurLine);
     ParseOutput(CurLine);
 
     //Remove those that we've already processed

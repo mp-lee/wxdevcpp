@@ -5509,12 +5509,12 @@ procedure TMainForm.actDebugUpdate(Sender: TObject);
 begin
   if Assigned(fProject) then
     (Sender as TCustomAction).Enabled := not (fProject.CurrentProfile.typ = dptStat) and
-      (PageControl.PageCount > 0) and (not devExecutor.Running) and ((not fDebugger.Executing) or
+      (not devExecutor.Running) and ((not fDebugger.Executing) or
       fDebugger.Paused) and (not fCompiler.Compiling)
   else
     (Sender as TCustomAction).Enabled := (PageControl.PageCount > 0) and
-      (PageControl.PageCount > 0) and (not devExecutor.Running) and ((not fDebugger.Executing) or
-      fDebugger.Paused) and (not fCompiler.Compiling);
+      (not devExecutor.Running) and ((not fDebugger.Executing) or fDebugger.Paused)
+      and (not fCompiler.Compiling);
 end;
 
 procedure TMainForm.actCompileUpdate(Sender: TObject);

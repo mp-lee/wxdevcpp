@@ -70,7 +70,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -108,7 +108,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelKind = bkSoft
         BorderStyle = bsNone
@@ -126,7 +126,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 225
-        Height = 97
+        Height = 98
         Align = alLeft
         Caption = 'Information :'
         TabOrder = 0
@@ -181,7 +181,7 @@ object MainForm: TMainForm
         Left = 225
         Top = 0
         Width = 393
-        Height = 97
+        Height = 98
         Align = alClient
         Caption = 'Compile log :'
         TabOrder = 1
@@ -192,7 +192,7 @@ object MainForm: TMainForm
           Left = 7
           Top = 16
           Width = 638
-          Height = 87
+          Height = 88
           Anchors = [akLeft, akTop, akRight, akBottom]
           ReadOnly = True
           ScrollBars = ssVertical
@@ -363,7 +363,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 618
-        Height = 97
+        Height = 98
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -526,15 +526,15 @@ object MainForm: TMainForm
         ImageIndex = 49
         Style = tbsSeparator
       end
-      object RunBtn: TToolButton
+      object CompileAndRunBtn: TToolButton
         Left = 54
         Top = 0
-        Action = actRun
+        Action = actCompRun
       end
-      object CompileAndRunBtn: TToolButton
+      object RunBtn: TToolButton
         Left = 77
         Top = 0
-        Action = actCompRun
+        Action = actRun
       end
       object ProgramResetBtn: TToolButton
         Left = 100
