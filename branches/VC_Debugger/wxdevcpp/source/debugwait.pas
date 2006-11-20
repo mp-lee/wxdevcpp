@@ -137,6 +137,7 @@ procedure TDebugWait.Update;
 var
   I: Integer;
   RegExp: TRegExpr;
+  CurOutput: string;
   StopIndex : Integer;
   LastNewline: Integer;
   LastCarriageReturn: Integer;
@@ -151,8 +152,23 @@ begin
   else
     StopIndex := LastCarriageReturn;
 
+  //Remove non-printable characters
+  CurOutput := Copy(Reader.Output, 0, StopIndex);
+  I := 1;
+  while I < Length(CurOutput) do
+  begin
+    if (CurOutput[I] = #8) and (I > 1) then
+    begin
+      Delete(CurOutput, I - 1, 2);
+      Dec(I);
+    end
+    else
+      Inc(I);
+  end;
+
+  Assert(Pos(#8, CurOutput) = 0);
   //Then call the handler
-  OnOutput(Copy(Reader.Output, 0, StopIndex));
+  OnOutput(CurOutput);
   Reader.Output := Copy(Reader.Output, StopIndex + 1, Length(Reader.Output));
 
   //See if what we have left should be sent over

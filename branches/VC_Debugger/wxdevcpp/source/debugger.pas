@@ -825,7 +825,9 @@ begin
     Executable := DBG_PROGRAM(devCompiler.CompilerType);
   
   //Create the command line
-  Executable := Format('%s -lines -2 -G -sflags 0x800B8633 -y "%s" "%s" %s', [Executable, ExtractFilePath(Filename), FileName, arguments]);
+  Executable := Format('%s -lines -2 -G -n -s -y "%s" "%s" %s', [Executable, ExtractFilePath(Filename) +
+    ';SRV*' + IncludeTrailingPathDelimiter(ExtractFilePath(devDirs.Exec)) +
+    'Symbols*http://msdl.microsoft.com/download/symbols', FileName, arguments]);
 
   //Launch the process
   if not CreateProcess(nil, PChar(Executable), nil, nil, True, CREATE_NEW_CONSOLE,
