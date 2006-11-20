@@ -326,7 +326,7 @@ begin
     if (assigned(fProject) and (fProject.CurrentProfile.typ = dptStat)) then
       writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
     else
-      writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo')
+      writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo /manifest')
   else if devCompiler.CompilerType = ID_COMPILER_MINGW then
     if (assigned(fProject) and (fProject.CurrentProfile.typ = dptDyn)) then
       writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
