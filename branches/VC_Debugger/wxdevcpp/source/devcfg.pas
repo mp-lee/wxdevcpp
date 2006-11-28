@@ -2448,7 +2448,7 @@ begin
     fLinkerFormat           := '/out:"%s"';
     fLinkerPaths            := '/libpath:"%s"';
     fIncludeFormat          := '/I"%s"';
-    fDllFormat              := '/dll /implib:"%s" /out:"%s"';
+    fDllFormat              := '/dll /implib:%s /out:%s';
     fLibFormat              := '/lib /nologo /out:"%s"';
     fPchCreateFormat        := '/Yc%s';
     fPchUseFormat           := '/Yu%s';
@@ -2465,7 +2465,7 @@ begin
     fLinkerFormat           := '-o "%s"';
     fLinkerPaths            := '-L"%s"';
     fIncludeFormat          := '-I"%s"';
-    fDllFormat              := '--implib "%s" -o %s';
+    fDllFormat              := '-Wl,--out-implib,%s -o %s';
     fLibFormat              := 'rcu "%s"';
     fPchCreateFormat        := '';
     fPchUseFormat           := '';
