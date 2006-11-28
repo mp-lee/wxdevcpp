@@ -2036,8 +2036,11 @@ begin
   MainForm.Constraints.MaxWidth := Monitor.Width;
   fCompiler.RunParams := '';
   devCompiler.UseExecParams := True;
+  
   SetSplashStatus('Loading code completion cache');
+  CppParser1.OnCacheProgress := SplashForm.OnCacheProgress;
   InitClassBrowser(true {not CacheCreated});
+  CppParser1.OnCacheProgress := nil;
 
   //Settle the docking sizes
   DockServer.LeftDockPanel.Width := 200;
@@ -6233,6 +6236,7 @@ var
   e: TEditor;
   sl: TStringList;
   I: integer;
+  ProgressEvents: array[0..1] of TProgressEvent;
 begin
   CppParser1.Enabled := devClassBrowsing.Enabled;
   CppParser1.ParseLocalHeaders := devClassBrowsing.ParseLocalHeaders;
@@ -6261,6 +6265,7 @@ begin
   Screen.Cursor := crHourglass;
   if Full and CppParser1.Enabled then begin
     Application.ProcessMessages;
+    ProgressEvents[0] := CppParser1.OnCacheProgress;
     ClassBrowser1.Parser := nil;
     CodeCompletion1.Parser := nil;
     FreeAndNil(CppParser1);
@@ -6276,6 +6281,7 @@ begin
       OnStartParsing := CppParser1StartParsing;
       OnEndParsing := CppParser1EndParsing;
       OnTotalProgress := CppParser1TotalProgress;
+      OnCacheProgress := ProgressEvents[0];
       sl := TStringList.Create;
       try
         ExtractStrings([';'], [' '], PChar(devDirs.C), sl);
@@ -6361,9 +6367,6 @@ end;
 procedure TMainForm.CppParser1TotalProgress(Sender: TObject;
   FileName: String; Total, Current: Integer);
 begin
-  if Assigned(SplashForm) then
-    SplashForm.StatusBar.SimpleText := 'Loading code completion cache... ' + FormatFloat('0.00%', Current / Total * 100);
-
   if FileName <> '' then
   begin
     StatusBar.Panels[3].Text := 'Parsing ' + Filename;
