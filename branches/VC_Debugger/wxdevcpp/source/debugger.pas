@@ -139,8 +139,8 @@ type
     procedure DisplayError(s: string);
     function GetBreakpointFromIndex(index: integer): TBreakpoint;
 
-    procedure Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle); virtual; abstract;
     procedure OnOutput(Output: string); virtual; abstract;
+    procedure Launch(commandline: string);
     procedure SendCommand; virtual;
 
     //Instruction callbacks
@@ -167,7 +167,8 @@ type
     OnLocals: procedure(Locals: TList) of object;
 
     //Debugger basics
-    procedure Execute(filename, arguments: string);
+    procedure Attach(pid: integer); virtual; abstract;
+    procedure Execute(filename, arguments: string); virtual; abstract;
     procedure CloseDebugger(Sender: TObject); virtual;
     procedure SetAssemblySyntax(syntax: AssemblySyntax); virtual; abstract;
     procedure QueueCommand(command, params: String); overload; virtual;
@@ -211,7 +212,6 @@ type
     destructor Destroy; override;
 
   protected
-    procedure Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
     procedure OnOutput(Output: string); override;
 
     //Instruction callbacks
@@ -227,6 +227,10 @@ type
     procedure OnLocals(Output: TStringList);
 
   public
+    //Run the debugger
+    procedure Attach(pid: integer); override;
+    procedure Execute(filename, arguments: string); override;
+
     //Set the include paths
     procedure AddIncludeDir(s: string); override;
     procedure ClearIncludeDirs; override;
@@ -265,7 +269,6 @@ type
     Started: Boolean;
 
   protected
-    procedure Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle); override;
     procedure OnOutput(Output: string); override;
     procedure OnSignal(Output: TStringList);
     procedure OnSourceMoreRecent;
@@ -285,6 +288,8 @@ type
 
   public
     //Debugger control
+    procedure Execute(filename, arguments: string); override;
+    procedure Attach(pid: integer); override;
     procedure CloseDebugger(Sender: TObject); override;
 
     //Set the include paths
@@ -365,18 +370,15 @@ begin
   inherited Destroy;
 end;
 
-procedure TDebugger.Execute(filename, arguments: string);
+procedure TDebugger.Launch(commandline: string);
 var
+  ProcessInfo: TProcessInformation;
+  StartupInfo: TStartupInfo;
   hOutputReadTmp, hOutputWrite,
   hInputWriteTmp, hInputRead,
   hErrorWrite: THandle;
   sa: TSecurityAttributes;
 begin
-  //Strip the beginning and trailing " so we can deal with the path more easily
-  if (Filename[1] = '"') and (Filename[Length(Filename)] = '"') then
-    self.Filename := Copy(Filename, 2, Length(Filename) - 2)
-  else
-    self.FileName := filename;
   fExecuting := True;
   
   // Set up the security attributes struct.
@@ -436,8 +438,29 @@ begin
   Wait.Reader := Reader;
   Wait.Event := Event;
 
-  // Call the derived class' launch function to actually start execution
-  Launch(arguments, hOutputWrite, hInputRead, hErrorWrite);
+  // Set up the start up info structure.
+  FillChar(StartupInfo, sizeof(TStartupInfo), 0);
+  StartupInfo.cb := sizeof(TStartupInfo);
+  StartupInfo.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
+  StartupInfo.hStdOutput := hOutputWrite;
+  StartupInfo.hStdInput := hInputRead;
+  StartupInfo.hStdError := hErrorWrite;
+  StartupInfo.wShowWindow := SW_HIDE;
+
+  // Launch the process
+  if not CreateProcess(nil, PChar(commandline), nil, nil, True, CREATE_NEW_CONSOLE,
+                       nil, nil, StartupInfo, ProcessInfo) then
+  begin
+    DisplayError('Could not start debugger process (' + commandline + ')');
+    Exit;
+  end;
+
+  // Get the PID of the new process
+  hPid := ProcessInfo.hProcess;
+
+  //Close any unnecessary handles.
+  if (not CloseHandle(ProcessInfo.hThread)) then
+    DisplayError('CloseHandle');
 
   // Close pipe handles (do not continue to modify the parent).
   // Make sure that no handles of the
@@ -793,49 +816,34 @@ begin
   inherited;
 end;
 
-procedure TCDBDebugger.Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle);
+procedure TCDBDebugger.Execute(filename, arguments: string);
 const
   InputPrompt = '^([0-9]+):([0-9]+)>';
 var
-  ProcessInfo: TProcessInformation;
-  StartupInfo: TStartupInfo;
   Executable: string;
   Srcpath: string;
   I: Integer;
 begin
-  //Tell the wait function that another valid output terminator is the 0:0000 prompt
-  Wait.OutputTerminators.Add(InputPrompt);
-
   //Heck about the breakpoint thats coming.
   IgnoreBreakpoint := True;
-  
-  //Set up the start up info structure.
-  FillChar(StartupInfo, sizeof(TStartupInfo), 0);
-  StartupInfo.cb := sizeof(TStartupInfo);
-  StartupInfo.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
-  StartupInfo.hStdOutput := hChildStdOut;
-  StartupInfo.hStdInput := hChildStdIn;
-  StartupInfo.hStdError := hChildStdErr;
-  StartupInfo.wShowWindow := SW_HIDE;
+  self.FileName := filename;
 
   //Get the name of the debugger
   if (devCompiler.gdbName <> '') then
     Executable := devCompiler.gdbName
   else
     Executable := DBG_PROGRAM(devCompiler.CompilerType);
-  
-  //Create the command line
-  Executable := Format('%s -lines -2 -G -n -s -y "%s" "%s" %s', [Executable, ExtractFilePath(Filename) +
-    ';SRV*' + IncludeTrailingPathDelimiter(ExtractFilePath(devDirs.Exec)) +
-    'Symbols*http://msdl.microsoft.com/download/symbols', FileName, arguments]);
 
-  //Launch the process
-  if not CreateProcess(nil, PChar(Executable), nil, nil, True, CREATE_NEW_CONSOLE,
-                       nil, nil, StartupInfo, ProcessInfo) then
-  begin
-    DisplayError('Could not find program file ' + Executable);
-    Exit;
-  end;
+  //Create the command line
+  Executable := Format('%s -lines -2 -G -n -s -y "%s" "%s" %s', [Executable, ExtractFilePath(filename) +
+    ';SRV*' + IncludeTrailingPathDelimiter(ExtractFilePath(devDirs.Exec)) +
+    'Symbols*http://msdl.microsoft.com/download/symbols', filename, arguments]);
+
+  //Run the thing!
+  Launch(Executable);
+
+  //Tell the wait function that another valid output terminator is the 0:0000 prompt
+  Wait.OutputTerminators.Add(InputPrompt);
 
   //Send the source mode setting (enable all except ONLY source)
   QueueCommand('l+t; l+l; l+s', '');
@@ -846,13 +854,46 @@ begin
     Srcpath := Srcpath + IncludeDirs[I] + ';';
   QueueCommand('.srcpath+', Srcpath);
   QueueCommand('.exepath+', ExtractFilePath(Filename));
+end;
 
-  //Get the PID of the new process
-  hPid := ProcessInfo.hProcess;
+procedure TCDBDebugger.Attach(pid: integer);
+const
+  InputPrompt = '^([0-9]+):([0-9]+)>';
+var
+  Executable: string;
+  Srcpath: string;
+  I: Integer;
+begin
+  //Heck about the breakpoint thats coming.
+  IgnoreBreakpoint := True;
+  self.FileName := filename;
 
-  //Close any unnecessary handles.
-  if (not CloseHandle(ProcessInfo.hThread)) then
-    DisplayError('CloseHandle');
+  //Get the name of the debugger
+  if (devCompiler.gdbName <> '') then
+    Executable := devCompiler.gdbName
+  else
+    Executable := DBG_PROGRAM(devCompiler.CompilerType);
+
+  //Create the command line
+  Executable := Format('%s -lines -2 -G -n -s -y "%s" -p %d', [Executable, ExtractFilePath(filename) +
+    ';SRV*' + IncludeTrailingPathDelimiter(ExtractFilePath(devDirs.Exec)) +
+    'Symbols*http://msdl.microsoft.com/download/symbols', pid]);
+
+  //Run the thing!
+  Launch(Executable);
+
+  //Tell the wait function that another valid output terminator is the 0:0000 prompt
+  Wait.OutputTerminators.Add(InputPrompt);
+
+  //Send the source mode setting (enable all except ONLY source)
+  QueueCommand('l+t; l+l; l+s', '');
+
+  //Set all the paths
+  Srcpath := ExtractFilePath(Filename) + ';';
+  for I := 0 to IncludeDirs.Count - 1 do
+    Srcpath := Srcpath + IncludeDirs[I] + ';';
+  QueueCommand('.srcpath+', Srcpath);
+  QueueCommand('.exepath+', ExtractFilePath(Filename));
 end;
 
 procedure TCDBDebugger.OnOutput(Output: string);
@@ -1743,27 +1784,17 @@ begin
   inherited;
 end;
 
-procedure TGDBDebugger.Launch(arguments: string; hChildStdOut, hChildStdIn, hChildStdErr: THandle);
+procedure TGDBDebugger.Execute(filename, arguments: string);
 var
-  ProcessInfo: TProcessInformation;
-  StartupInfo: TStartupInfo;
   Executable: string;
   Includes: string;
   I: Integer;
 begin
   //Reset our variables
+  self.FileName := filename;
   fExecuting := True;
   fNextBreakpoint := 0;
   IgnoreBreakpoint := False;
-
-  //Set up the start up info structure.
-  FillChar(StartupInfo, sizeof(TStartupInfo), 0);
-  StartupInfo.cb := sizeof(TStartupInfo);
-  StartupInfo.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
-  StartupInfo.hStdOutput := hChildStdOut;
-  StartupInfo.hStdInput := hChildStdIn;
-  StartupInfo.hStdError := hChildStdErr;
-  StartupInfo.wShowWindow := SW_HIDE;
 
   //Get the name of the debugger
   if (devCompiler.gdbName <> '') then
@@ -1779,23 +1810,43 @@ begin
     Executable := Executable + ' ' + Includes;
 
   //Launch the process
-  if not CreateProcess(nil, PChar(Executable), nil, nil, True, CREATE_NEW_CONSOLE,
-                       nil, nil, StartupInfo, ProcessInfo) then
-  begin
-    DisplayError('Could not find program file ' + Executable);
-    Exit;
-  end;
-
-  //Get the PID of the new process
-  hPid := ProcessInfo.hProcess;
-
-  //Close any unnecessary handles.
-  if (not CloseHandle(ProcessInfo.hThread)) then
-    DisplayError('CloseHandle');
+  Launch(Executable);
 
   //Tell GDB which file we want to debug
   QueueCommand('file', '"' + filename + '"');
   QueueCommand('set args', arguments);
+end;
+
+procedure TGDBDebugger.Attach(pid: integer);
+var
+  Executable: string;
+  Includes: string;
+  I: Integer;
+begin
+  //Reset our variables
+  self.FileName := filename;
+  fExecuting := True;
+  fNextBreakpoint := 0;
+  IgnoreBreakpoint := False;
+
+  //Get the name of the debugger
+  if (devCompiler.gdbName <> '') then
+    Executable := devCompiler.gdbName
+  else
+    Executable := DBG_PROGRAM(devCompiler.CompilerType);
+  Executable := Executable + ' --annotate=2 --silent';
+
+  //Add in the include paths
+  for I := 0 to IncludeDirs.Count - 1 do
+    Includes := Includes + '--directory=' + GetShortName(IncludeDirs[I]) + ' ';
+  if Includes <> '' then
+    Executable := Executable + ' ' + Includes;
+
+  //Launch the process
+  Launch(Executable);
+
+  //Tell GDB which file we want to debug
+  QueueCommand('attach', inttostr(pid));
 end;
 
 procedure TGDBDebugger.CloseDebugger(Sender: TObject);

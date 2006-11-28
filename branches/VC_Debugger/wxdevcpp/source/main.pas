@@ -1272,11 +1272,10 @@ begin
   with frmProjMgrDock do
   begin
     Name := 'frmProjMgrDock';
-    Hint := 'Project Inspector';
     Caption := 'Project Inspector';
     BorderStyle := bsSizeToolWin;
     Color := clBtnFace;
-    Width:=300;
+    Width := 300;
 
     DockSite := True;
     DragKind := dkDock;
@@ -1307,7 +1306,6 @@ begin
   with frmInspectorDock do
   begin
     Name := 'frmInspectorDock';
-    Hint := 'Property Inspector';
     Caption := 'Property Inspector';
     BorderStyle := bsSizeToolWin;
     Color := clBtnFace;
@@ -5339,7 +5337,7 @@ begin
       Initialize;
     end;
   end
-  else if devCompiler.CompilerType in [ID_COMPILER_VC6, ID_COMPILER_VC2003, ID_COMPILER_VC2005] then
+  else if devCompiler.CompilerType in ID_COMPILER_VC then
   begin
     if not (fDebugger is TCDBDebugger) then
     begin
@@ -5391,9 +5389,17 @@ begin
   begin
     if not FileExists(fProject.Executable) then begin
       MessageDlg(Lang[ID_ERR_PROJECTNOTCOMPILED], mtWarning, [mbOK], 0);
-      exit;
+      Exit;
     end;
-    if fProject.CurrentProfile.typ = dptDyn then begin
+
+    // add to the debugger the project include dirs
+    for idx := 0 to fProject.CurrentProfile.Includes.Count - 1 do
+      fDebugger.AddIncludeDir(fProject.CurrentProfile.Includes[idx]);
+
+    if fProject.CurrentProfile.typ <> dptDyn then
+      fDebugger.Execute(StringReplace(fProject.Executable, '\', '\\', [rfReplaceAll]), fCompiler.RunParams)
+    else
+    begin
       if fProject.CurrentProfile.HostApplication = '' then begin
         MessageDlg(Lang[ID_ERR_HOSTMISSING], mtWarning, [mbOK], 0);
         exit;
@@ -5402,13 +5408,10 @@ begin
         MessageDlg(Lang[ID_ERR_HOSTNOTEXIST], mtWarning, [mbOK], 0);
         exit;
       end;
+      
+      fDebugger.Execute(StringReplace(fProject.CurrentProfile.HostApplication, '\', '\\', [rfReplaceAll]), fCompiler.RunParams);
     end;
-
-    // add to the debugger the project include dirs
-    for idx := 0 to fProject.CurrentProfile.Includes.Count - 1 do
-      fDebugger.AddIncludeDir(fProject.CurrentProfile.Includes[idx]);
-
-    fDebugger.Execute('"' + StringReplace(fProject.Executable, '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
+    
     fDebugger.RefreshBreakpoints;
   end
   else
@@ -5425,7 +5428,7 @@ begin
           Abort; // if it's not saved, abort
       chdir(ExtractFilePath(e.FileName));
 
-      fDebugger.Execute(StringReplace(ChangeFileExt(ExtractFileName(e.FileName), EXE_EXT), '\', '\\', [rfReplaceAll]) + '"', fCompiler.RunParams);
+      fDebugger.Execute(StringReplace(ChangeFileExt(ExtractFileName(e.FileName), EXE_EXT), '\', '\\', [rfReplaceAll]), fCompiler.RunParams);
       fDebugger.RefreshBreakpoints;
     end;
   end;
@@ -8264,18 +8267,14 @@ begin
     try
       ProcessListForm := TProcessListForm.Create(self);
       if (ProcessListForm.ShowModal = mrOK) and (ProcessListForm.ProcessCombo.ItemIndex > -1) then begin
-        s := IntToStr(integer(ProcessListForm.ProcessList[ProcessListForm.ProcessCombo.ItemIndex]));
-
         // add to the debugger the project include dirs
         for idx := 0 to fProject.CurrentProfile.Includes.Count - 1 do
           fDebugger.AddIncludeDir(fProject.CurrentProfile.Includes[idx]);
 
         //Todo: lowjoel: What am I meant to do for this debugger part?
-        {fDebugger.Execute('"' + StringReplace(fProject.Executable, '\', '\\', [rfReplaceAll]) + '"');
-        fDebugger.QueueCommand(GDB_ATTACH, s);
+        fDebugger.Attach(Integer(ProcessListForm.ProcessList[ProcessListForm.ProcessCombo.ItemIndex]));
         fDebugger.RefreshBreakpoints;
         fDebugger.Go;
-        DebugTree.Items.Clear;}
       end
     finally
       ProcessListForm.Free;
