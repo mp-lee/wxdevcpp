@@ -1150,7 +1150,6 @@ public
     DisablePropertyBuilding:Boolean;
     boolInspectorDataClear:Boolean;
     intControlCount: Integer;
-    SelectedComponentName: string;
     SelectedComponent: TComponent;
     PreviousComponent: TComponent;
     PreviousStringValue: string;
@@ -1202,19 +1201,9 @@ uses
   , CompFileIo, CreateOrderFm, ViewIDForm,
 
   //Components
-  WxBoxSizer, WxStaticBoxSizer, WxGridSizer, WxButton, WxBitmapButton,
-  WxCheckBox, WxChoice, WxComboBox, WxEdit, WxGauge, WxListBox, WxListCtrl,
-  WxMemo, WxRadioButton, WxScrollBar, WxGrid, WxSlider, WxSpinButton, WxStaticBitmap,
-  WxStaticBox, WxStaticLine, WxStaticText, WxControlPanel, WxTreeCtrl, WxFlexGridSizer,
-  WxPanel, WxNotebook, WxStatusBar, WxToolbar, WxNoteBookPage, WxCheckListBox,
-  WxSpinCtrl, WxScrolledWindow, WxHtmlWindow, WxToolButton, WxSeparator, WxPopupMenu,
-  WxMenuBar, WxOpenFileDialog, WxSaveFileDialog, WxFontDialog, WxMessageDialog,
-  WxProgressDialog, WxPrintDialog, WxFindReplaceDialog, WxDirDialog, WxColourDialog,
-  WxPageSetupDialog, WxTimer, WxNonVisibleBaseComponent, WxSplitterWindow, WxDatePickerCtrl,
-  WxToggleButton, WxRadioBox, WxOwnerDrawnComboBox, WxSTC, WxRichTextCtrl, WxTreeListCtrl,
-  WxCalendarCtrl, WxTextEntryDialog, WxPasswordEntryDialog, WxSingleChoiceDialog,
-  WxMultiChoiceDialog, WxHyperLinkCtrl, WxDialUpManager, WxHtmlEasyPrinting, WxMediaCtrl,
-  WxBitmapComboBox
+  WxSplitterWindow, WxNotebook, WxNoteBookPage, WxToolbar, WxToolButton,
+  WxSeparator, WxStatusBar, WxNonVisibleBaseComponent, WxMenuBar, WxPopupMenu,
+  WxStaticBitmap, WxBitmapButton, WxStdDialogButtonSizer
 {$ENDIF}
   ;
 {$ENDIF}
@@ -1328,11 +1317,10 @@ begin
   end;
 
   frmPaletteDock := TForm.Create(Self);
-  ComponentPalette := TComponentPalette.Create(frmPaletteDock{pnlControlHolder});
+  ComponentPalette := TComponentPalette.Create(frmPaletteDock);
   with frmPaletteDock do
   begin
     Name := 'frmPaletteDock';
-    Hint := 'Components';
     Caption := 'Components';
     BorderStyle := bsSizeToolWin;
     Color := clBtnFace;
@@ -1438,7 +1426,7 @@ begin
   begin
     Name := 'WxPropertyInspectorMenuDelete';
     Action := actDelete;
-   end;
+  end;
 
   with DesignerPopup do
   begin
@@ -1569,14 +1557,14 @@ begin
     OnClick := AlignToMiddleHorizontalClick;
   end;
 
-   with DesignerMenuAlignToTop do
+  with DesignerMenuAlignToTop do
   begin
     Name := 'DesignerMenuAlignToTop';
     Caption := 'To Top';
     OnClick := AlignToTopClick;
   end;
 
-   with DesignerMenuAlignToBottom do
+  with DesignerMenuAlignToBottom do
   begin
     Name := 'DesignerMenuAlignToBottom';
     Caption := 'To Bottom';
@@ -1662,43 +1650,43 @@ begin
     OnKeyDown := ELDesigner1KeyDown;
   end;
 
-      ini := TiniFile.Create(devDirs.Config + 'devcpp.ini');
-    try
-        ELDesigner1.Grid.Visible:=ini.ReadBool('wxWidgets','cbGridVisible',ELDesigner1.Grid.Visible);
-        ELDesigner1.Grid.XStep:=ini.ReadInteger('wxWidgets','lbGridXStepUpDown',ELDesigner1.Grid.XStep);
-        ELDesigner1.Grid.YStep:=ini.ReadInteger('wxWidgets','lbGridYStepUpDown',ELDesigner1.Grid.YStep);
-        ELDesigner1.SnapToGrid:=ini.ReadBool('wxWidgets','cbSnapToGrid',ELDesigner1.SnapToGrid);
-        ELDesigner1.GenerateXRC:=ini.ReadBool('wxWidgets','cbGenerateXRC',ELDesigner1.GenerateXRC);
+  ini := TiniFile.Create(devDirs.Config + 'devcpp.ini');
+  try
+    ELDesigner1.Grid.Visible:=ini.ReadBool('wxWidgets','cbGridVisible',ELDesigner1.Grid.Visible);
+    ELDesigner1.Grid.XStep:=ini.ReadInteger('wxWidgets','lbGridXStepUpDown',ELDesigner1.Grid.XStep);
+    ELDesigner1.Grid.YStep:=ini.ReadInteger('wxWidgets','lbGridYStepUpDown',ELDesigner1.Grid.YStep);
+    ELDesigner1.SnapToGrid:=ini.ReadBool('wxWidgets','cbSnapToGrid',ELDesigner1.SnapToGrid);
+    ELDesigner1.GenerateXRC:=ini.ReadBool('wxWidgets','cbGenerateXRC',ELDesigner1.GenerateXRC);
 
-        // String format tells us what function to wrap strings with in the generated C++ code
-        // Possible values are wxT(), _T(), and _()
-        StringFormat := ini.ReadString('wxWidgets', 'cbStringFormat', StringFormat);
-        // if there's no preference saved in the ini file, then default to wxT()
-        if trim(StringFormat) = '' then
-           StringFormat := 'wxT';
-        
-        if ini.ReadBool('wxWidgets','cbControlHints',true) then
-            ELDesigner1.ShowingHints:=ELDesigner1.ShowingHints + [htControl]
-        else
-            ELDesigner1.ShowingHints:=ELDesigner1.ShowingHints - [htControl];
+    // String format tells us what function to wrap strings with in the generated C++ code
+    // Possible values are wxT(), _T(), and _()
+    StringFormat := ini.ReadString('wxWidgets', 'cbStringFormat', StringFormat);
+    // if there's no preference saved in the ini file, then default to wxT()
+    if trim(StringFormat) = '' then
+      StringFormat := 'wxT';
 
-        if ini.ReadBool('wxWidgets','cbSizeHints',true) then
-            ELDesigner1.ShowingHints:=ELDesigner1.ShowingHints + [htSize]
-        else
-            ELDesigner1.ShowingHints:=ELDesigner1.ShowingHints - [htSize];
+    if ini.ReadBool('wxWidgets', 'cbControlHints', true) then
+      ELDesigner1.ShowingHints := ELDesigner1.ShowingHints + [htControl]
+    else
+      ELDesigner1.ShowingHints := ELDesigner1.ShowingHints - [htControl];
 
-        if ini.ReadBool('wxWidgets','cbMoveHints',true) then
-            ELDesigner1.ShowingHints:=ELDesigner1.ShowingHints + [htMove]
-        else
-            ELDesigner1.ShowingHints:=ELDesigner1.ShowingHints - [htMove];
-                    
-        if ini.ReadBool('wxWidgets','cbInsertHints',true) then
-            ELDesigner1.ShowingHints:=ELDesigner1.ShowingHints + [htInsert]
-        else
-            ELDesigner1.ShowingHints:=ELDesigner1.ShowingHints - [htInsert];
-    except
-        ini.destroy;
-    end;
+    if ini.ReadBool('wxWidgets', 'cbSizeHints', true) then
+      ELDesigner1.ShowingHints := ELDesigner1.ShowingHints + [htSize]
+    else
+      ELDesigner1.ShowingHints := ELDesigner1.ShowingHints - [htSize];
+
+    if ini.ReadBool('wxWidgets', 'cbMoveHints', true) then
+      ELDesigner1.ShowingHints := ELDesigner1.ShowingHints + [htMove]
+    else
+      ELDesigner1.ShowingHints := ELDesigner1.ShowingHints - [htMove];
+
+    if ini.ReadBool('wxWidgets', 'cbInsertHints', true) then
+      ELDesigner1.ShowingHints := ELDesigner1.ShowingHints + [htInsert]
+    else
+      ELDesigner1.ShowingHints := ELDesigner1.ShowingHints - [htInsert];
+  finally
+    ini.destroy;
+  end;
 
   pnlMainInsp := TPanel.Create(frmInspectorDock);
   cbxControlsx := TComboBox.Create(frmInspectorDock);
@@ -3358,28 +3346,23 @@ end;
 
 function TMainForm.CloseEditor(index: integer; Rem: boolean): Boolean;
 var
-  e: TEditor;
-  cppEditor,hppEditor,wxEditor,wxXRCEditor:TEditor;
-  EditorFilename:String;
-  Saved,IsFileAForm:Boolean;
+  e, cppEditor, hppEditor, wxEditor, wxXRCEditor: TEditor;
+  EditorFilename: String;
+  Saved: Boolean;
 
   procedure CloseEditorInternal(eX: TEditor);
   begin
     if not eX.InProject then
     begin
-        dmMain.AddtoHistory(eX.FileName);
-        eX.Close;
-        //eX:=nil; // because closing the editor will destroy it
+      dmMain.AddtoHistory(eX.FileName);
+      eX.Close;
     end
     else
     begin
-        if eX.IsRes or (not Assigned(fProject)) then
-        begin
-            eX.Close;
-            //eX:=nil; // because closing the editor will destroy it
-        end
-        else if assigned(fProject) then
-            fProject.CloseUnit(fProject.Units.Indexof(eX));
+      if eX.IsRes or (not Assigned(fProject)) then
+        eX.Close
+      else if assigned(fProject) then
+        fProject.CloseUnit(fProject.Units.Indexof(eX));
     end;
   end;
 
@@ -3387,89 +3370,71 @@ begin
   Result := False;
   e := GetEditor(index);
   if not assigned(e) then exit;
-  if not AskBeforeClose(e, Rem,Saved) then Exit;
+  if not AskBeforeClose(e, Rem, Saved) then Exit;
   Result := True;
+
 {$IFDEF WX_BUILD}
-  //Guru: My Code starts here
-  EditorFilename:=e.FileName;
-  if FileExists(ChangeFileExt(e.FileName,WXFORM_EXT)) then begin
-    cppEditor:=MainForm.GetEditorFromFileName(ChangeFileExt(EditorFilename, CPP_EXT),true);
-    if assigned(cppEditor) then begin
-        if Saved then begin
-            cppEditor.Modified:=true;
-            SaveFile(cppEditor);
+  EditorFilename := e.FileName;
+  if FileExists(ChangeFileExt(e.FileName, WXFORM_EXT)) then begin
+    cppEditor := MainForm.GetEditorFromFileName(ChangeFileExt(EditorFilename, CPP_EXT), true);
+    if assigned(cppEditor) then
+    begin
+      if Saved then
+      begin
+        cppEditor.Modified := true;
+        SaveFile(cppEditor);
+      end
+      else
+        cppEditor.Modified := false;
+      CloseEditorInternal(cppEditor);
+    end;
+
+    hppEditor:=MainForm.GetEditorFromFileName(ChangeFileExt(EditorFilename, H_EXT), true);
+    if assigned(hppEditor) then
+    begin
+      if Saved then
+      begin
+        hppEditor.Modified := true;
+        SaveFile(hppEditor);
+      end
+      else
+        hppEditor.Modified:=false;
+      CloseEditorInternal(hppEditor);
+    end;
+
+    wxEditor := MainForm.GetEditorFromFileName(ChangeFileExt(EditorFilename, WXFORM_EXT), true);
+    if assigned(wxEditor) then
+    begin
+      if Saved then
+      begin
+        wxEditor.Modified := true;
+        SaveFile(wxEditor);
         end
-        Else
-            cppEditor.Modified:=false;
-        CloseEditorInternal(cppEditor);
+      else
+        wxEditor.Modified := false;
+      CloseEditorInternal(wxEditor);
     end;
 
-
-    hppEditor:=MainForm.GetEditorFromFileName(ChangeFileExt(EditorFilename, H_EXT),true);
-    if assigned(hppEditor) then begin
-        if Saved then begin
-            hppEditor.Modified:=true;
-            SaveFile(hppEditor);
-        end
-        Else
-            hppEditor.Modified:=false;
-        CloseEditorInternal(hppEditor);
+    wxXRCEditor := MainForm.GetEditorFromFileName(ChangeFileExt(EditorFilename, XRC_EXT), true);
+    if assigned(wxXRCEditor) then
+    begin
+      if Saved then
+      begin
+        wxXRCEditor.Modified := true;
+        SaveFile(wxXRCEditor);
+      end
+      else
+        wxXRCEditor.Modified:=false;
+      CloseEditorInternal(wxXRCEditor);
     end;
-
-    wxEditor:=MainForm.GetEditorFromFileName(ChangeFileExt(EditorFilename, WXFORM_EXT),true);
-    if assigned(wxEditor) then begin
-        if Saved then begin
-            wxEditor.Modified:=true;
-            SaveFile(wxEditor);
-        end
-        Else
-            wxEditor.Modified:=false;
-        if (e.isForm) then
-        begin
-          IsFileAForm:=boolInspectorDataClear;
-          boolInspectorDataClear:=true;
-          DisableDesignerControls();
-          boolInspectorDataClear:=IsFileAForm;
-        end;
-
-        CloseEditorInternal(wxEditor);
-    end;
-
-    wxXRCEditor:=MainForm.GetEditorFromFileName(ChangeFileExt(EditorFilename, XRC_EXT),true);
-    if assigned(wxXRCEditor) then begin
-       if Saved then begin
-          wxXRCEditor.Modified:=true;
-          SaveFile(wxXRCEditor);
-       end
-    Else
-       wxXRCEditor.Modified:=false;
-       CloseEditorInternal(wxXRCEditor);
-    end;
-
   end
   else
 {$ENDIF}
     CloseEditorInternal(e);
 
-  //Guru : My Code End;
-
-  e := GetEditor;
-  if Assigned(e) then begin
-    ClassBrowser1.CurrentFile := e.FileName;
-    {$IFDEF WX_BUILD}
-    if not e.isForm then
-    {$ENDIF}
-        e.Text.SetFocus
-    else
-    begin
-        EnableDesignerControls;
-        e.ActivateDesigner;
-    end;
-
-  end
-  else
+  PageControl.OnChange(PageControl);
   if (ClassBrowser1.ShowFilter = sfCurrent) or not Assigned(fProject) then
-      ClassBrowser1.Clear;
+    ClassBrowser1.Clear;
 end;
 
 procedure TMainForm.ToggleBookmarkClick(Sender: TObject);
@@ -5975,7 +5940,7 @@ end;
 
 procedure TMainForm.actRestartDebugExecute(Sender: TObject);
 begin
-  doDebugAfterCompile(Sender);
+  actStopExecute.Execute;
   actDebug.Execute;
 end;
 
@@ -6561,60 +6526,41 @@ var
   i, x, y: integer;
   intActivePage:Integer;
 begin
-  intActivePage:=PageControl.ActivePageIndex;
-  if ClassBrowser1.Enabled then begin
-    if intActivePage > -1 then begin
-      e := GetEditor(intActivePage);
-      if Assigned(e) then
+  intActivePage := PageControl.ActivePageIndex;
+
+  if intActivePage > -1 then
+  begin
+    e := GetEditor(intActivePage);
+    if Assigned(e) then
+    begin
+{$IFDEF WX_BUILD}
+      if e.isForm then
+      begin
+        if not ELDesigner1.Active then
+          EnableDesignerControls;
+        e.ActivateDesigner
+      end
+      else
+{$ENDIF}
       begin
 {$IFDEF WX_BUILD}
-        if e.isForm then
-        begin
-          EnableDesignerControls;
-          e.ActivateDesigner
-        end
-        else
+        if ELDesigner1.Active then
+          DisableDesignerControls;
 {$ENDIF}
-        begin
-{$IFDEF WX_BUILD}
-           MainForm.ELDesigner1.Active:=false;
-{$ENDIF}
-          e.Text.SetFocus;
+        e.Text.SetFocus;
+        if ClassBrowser1.Enabled then
           ClassBrowser1.CurrentFile := e.FileName;
-        end;
-        if not e.isForm then
-          for i := 1 to 9 do
-            if e.Text.GetBookMark(i, x, y) then begin
-              TogglebookmarksPopItem.Items[i - 1].Checked := true;
-              TogglebookmarksItem.Items[i - 1].Checked := true;
-            end
-            else begin
-              TogglebookmarksPopItem.Items[i - 1].Checked := false;
-              TogglebookmarksItem.Items[i - 1].Checked := false;
-            end;
+        for i := 1 to 9 do
+          if e.Text.GetBookMark(i, x, y) then begin
+            TogglebookmarksPopItem.Items[i - 1].Checked := true;
+            TogglebookmarksItem.Items[i - 1].Checked := true;
+          end
+          else begin
+            TogglebookmarksPopItem.Items[i - 1].Checked := false;
+            TogglebookmarksItem.Items[i - 1].Checked := false;
+          end;
       end;
     end;
-  end
-
-  Else
-  begin
-    //TODO: Guru: I have to make sure I dont repeat the same code
-    //I have in the if clause
-{$IFDEF WX_BUILD}
-    if intActivePage > -1 then
-    begin
-        e := GetEditor(intActivePage);
-        if Assigned(e) then
-        begin
-            if e.isForm() then
-            begin
-                EnableDesignerControls;
-                e.ActivateDesigner
-            end
-
-        end;
-    end;
-{$ENDIF}
   end;
 end;
 
@@ -8255,7 +8201,6 @@ end;
 procedure TMainForm.actAttachProcessExecute(Sender: TObject);
 var
   idx : integer;
-  s: string;
 begin
   PrepareDebugger;
   if assigned(fProject) then begin
@@ -8381,18 +8326,8 @@ end;
 
 procedure TMainForm.PageControlChanging(Sender: TObject;
   var AllowChange: Boolean);
-var
-  e:TEditor;
 begin
   HideCodeToolTip;
-{$IFDEF WX_BUILD}
-  if (PageControl.ActivePageIndex <> -1) then
-  begin
-    e := GetEditor(PageControl.ActivePageIndex);
-    if e.isForm then
-      DisableDesignerControls;
-  end;
-{$ENDIF}
 end;
 
 procedure TMainForm.mnuCVSClick(Sender: TObject);
@@ -9171,7 +9106,6 @@ begin
     end;
   end; // End for
 
-  SelectedComponentName := '';
   ComponentPalette.UnselectComponents;
   ActiveControl := nil;
 
@@ -9211,39 +9145,52 @@ begin
   ELDesigner1.DesignControl:=nil;
 
   SelectedComponent:=nil;
-  if boolInspectorDataClear = true then
+  if boolInspectorDataClear then
   begin
-  try
+{$IFNDEF PRIVATE_BUILD}
+    try
+{$ENDIF}
+      JvInspProperties.Clear;
+      if Assigned(JvInspProperties.Root) then
+        JvInspProperties.Root.Clear;
+{$IFNDEF PRIVATE_BUILD}
+    except
+    end;
 
-  JvInspProperties.Clear;
-  if Assigned(JvInspProperties.Root) then
-    JvInspProperties.Root.Clear;
-  except
+    try
+{$ENDIF}
+      JvInspEvents.Clear;
+      if Assigned(JvInspEvents.Root) then
+        JvInspEvents.Root.Clear;
+{$IFNDEF PRIVATE_BUILD}
+    except
+    end;
+{$ENDIF}
   end;
 
-  try
-  JvInspEvents.Clear;
-  if Assigned(JvInspEvents.Root) then
-    JvInspEvents.Root.Clear;
-  except
-  end;
-  end;
-    boolInspectorDataClear := true;
+  boolInspectorDataClear := true;
   cbxControlsx.Items.Clear;
 end;
 
 procedure TMainForm.EnableDesignerControls;
 begin
   //TODO: Guru: I have no clue why I'm getting an error at this place.
+{$IFNDEF PRIVATE_BUILD}
   try
+{$ENDIF}
     if Assigned(ELDesigner1.DesignControl) then
     begin
-        ELDesigner1.Active:=True;
-        ELDesigner1.DesignControl.SetFocus;
+      ELDesigner1.Active:=True;
+      ELDesigner1.DesignControl.SetFocus;
     end;
+{$IFNDEF PRIVATE_BUILD}
   finally
+{$ENDIF}
     cbxControlsx.Enabled := true;
+{$IFNDEF PRIVATE_BUILD}
   end;
+{$ENDIF}
+
   pgCtrlObjectInspector.Enabled := true;
   JvInspProperties.Enabled := true;
   JvInspEvents.Enabled := true;
@@ -9610,30 +9557,40 @@ begin
       end;
 
   JvInspProperties.BeginUpdate;
-  try
-    for I := JvInspProperties.Root.Count - 1 downto 0 do    // Iterate
-      try
-        JvInspProperties.Root.Delete(I);
-      except
-      end;
-    TJvInspectorPropData.New(JvInspProperties.Root, Comp);
-    JvInspProperties.EndUpdate;
-  except
-  end;
-
   JvInspEvents.BeginUpdate;
+{$IFNDEF PRIVATE_BUILD}
   try
-    for I := JvInspEvents.Root.Count - 1 downto 0 do    // Iterate
-    begin
+{$ENDIF}
+    //Populate the properties list
+    for I := JvInspProperties.Root.Count - 1 downto 0 do    // Iterate
+{$IFNDEF PRIVATE_BUILD}
       try
-        JvInspEvents.Root.Delete(I);
+{$ENDIF}
+        JvInspProperties.Root.Delete(I);
+{$IFNDEF PRIVATE_BUILD}
       except
       end;
-    end;    // for
+{$ENDIF}
+    TJvInspectorPropData.New(JvInspProperties.Root, Comp);
+
+    //And the events list
+    for I := JvInspEvents.Root.Count - 1 downto 0 do    // Iterate
+{$IFNDEF PRIVATE_BUILD}
+      try
+{$ENDIF}
+        JvInspEvents.Root.Delete(I);
+{$IFNDEF PRIVATE_BUILD}
+      except
+      end;
+{$ENDIF}
     JvInspEvents.Root.Clear;
     TJvInspectorPropData.New(JvInspEvents.Root, Comp);
+{$IFNDEF PRIVATE_BUILD}
   except
   end;
+{$ENDIF}
+
+  JvInspProperties.EndUpdate;
   JvInspEvents.EndUpdate;
 end;
 
@@ -9995,33 +9952,26 @@ var
   propertyName,wxClassName,propDisplayName:string;
   strNewValue:String;
   bOpenFile:Boolean;
-procedure SetPropertyValue(Comp:TComponent;strPropName,strPropValue:String);
-var
-  PropInfo: PPropInfo;
-begin
+
+  procedure SetPropertyValue(Comp: TComponent; strPropName, strPropValue: String);
+  var
+    PropInfo: PPropInfo;
+  begin
     { Get info record for Enabled property }
     PropInfo := GetPropInfo(Comp.ClassInfo, strPropName);
     { If property exists, set value to False }
     if Assigned(PropInfo) then
       SetStrProp(Comp, PropInfo, strPropValue);
-end;
-
+  end;
 begin
-  bOpenFile:=false;
-  fstrCppFileToOpen:='';
+  bOpenFile := False;
+  fstrCppFileToOpen := '';
   try
     //Do some sanity checks
-    if JvInspEvents.Selected = nil then
+    if (JvInspEvents.Selected = nil) or (not JvInspEvents.Selected.Visible) then
       Exit;
-
-    if JvInspEvents.Selected.Visible = False then
-      Exit;
-
     e := GetEditor(PageControl.ActivePage.TabIndex);
-    if not Assigned(e) then
-      Exit;
-
-    if not e.isForm then
+    if (not Assigned(e)) or (not e.isForm) then
       Exit;
 
     //Then get the value as a string
@@ -10032,7 +9982,9 @@ begin
     begin
       if not ClassBrowser1.Enabled then
       begin
-        MessageDlg('Class Browser is not enabled.'+#13+#10+''+#13+#10+'Event handlers wont work', mtWarning, [mbOK], 0);
+        MessageDlg('The Class Browser is not enabled; wxDev-C++ will be unable to' +
+          'create an event handler for you.'#10#10'Please see Help for instructions ' +
+          'on enabling the Class Browser', mtWarning, [mbOK], Handle);
         JvInspEvents.OnDataValueChanged:=nil;
         Data.AsString := '';
         JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
@@ -10098,15 +10050,14 @@ begin
             MessageDlg(ErrorString, mtError, [mbOK], 0);
         end;
       end;
-    end;
-
-    if strNewValue= '<Goto Function>' then
+    end
+    else if strNewValue = '<Goto Function>' then
     begin
       if not ClassBrowser1.Enabled then
       begin
-        MessageDlg('The Class Browser has been disabled.'#13#10#13#10 +
-                   'All event handling automation code will not work.', mtError, [mbOK], 0);
-        Data.AsString := strGlobalCurrentFunction;
+        MessageDlg('The Class Browser has been disabled; All event handling ' +
+          'automation code will not work.'#10#10'See Help for instructions on ' +
+          'enabling the Class Browser.', mtError, [mbOK], 0);
         Exit;
       end;
         
@@ -10141,19 +10092,18 @@ begin
         fstrCppFileToOpen:=e.GetDesignerCPPEditor.FileName;
         bOpenFile:=true;
       end;
-    end;
-
-    if strNewValue = '<Remove Function>' then
+    end
+    else if strNewValue = '<Remove Function>' then
       Data.AsString := '';
 
     JvInspEvents.Root.DoneEdit(true);
-
     UpdateDefaultFormContent;
   except
     on E: Exception do
       MessageBox(Self.Handle, PChar(E.Message), PChar(Application.Title), MB_ICONERROR or MB_OK or MB_TASKMODAL);
   end;
-  if (bOpenFile) then
+
+  if bOpenFile then
   begin
     tmrInspectorHelper.OnTimer:=tmrInspectorHelperTimer;
     tmrInspectorHelper.Enabled:=true;
@@ -10242,65 +10192,47 @@ end;
 
 function TMainForm.LocateFunctionInEditor(eventProperty:TJvCustomInspectorData;strClassName: string; SelComponent:TComponent; var strFunctionName: string; strEventFullName: string): Boolean;
 
-function isFunctionAvailableInEditor(intClassID:Integer;strFunctionName:String;var intLineNum:Integer;var strFname:String):boolean;
-var
+  function isFunctionAvailableInEditor(intClassID: Integer; strFunctionName: String;
+    var intLineNum: Integer; var strFname: String): boolean;
+  var
     i:Integer;
     St2 : PStatement;
-begin
-  Result:=False;
-
-  for I := 0 to ClassBrowser1.Parser.Statements.Count - 1 do // Iterate
   begin
-
-    St2 := PStatement(ClassBrowser1.Parser.Statements[i]);
-    if St2._ParentID <> intClassID then
-      Continue;
-
-    if St2._Kind <> skFunction then
-      Continue;
-
-    if AnsiSameText(strFunctionName, St2._Command) then
+    Result := False;
+    for I := 0 to ClassBrowser1.Parser.Statements.Count - 1 do // Iterate
     begin
-      strFname:=St2._DeclImplFileName;
-      intLineNum:=St2._DeclImplLine;
-      Result := True;
-      Break;
-    end;
-  end; // for
+      St2 := PStatement(ClassBrowser1.Parser.Statements[i]);
+      if St2._ParentID <> intClassID then
+        Continue;
 
-end;
+      if St2._Kind <> skFunction then
+        Continue;
 
-
+      if AnsiSameText(strFunctionName, St2._Command) then
+      begin
+        strFname:=St2._DeclImplFileName;
+        intLineNum:=St2._DeclImplLine;
+        Result := True;
+        Break;
+      end;
+    end; // for
+  end;
 var
   strOldFunctionName:string;
   strFname:String;
   intLineNum:Integer;
   I: integer;
-  Line: integer;
-  AddScopeStr: boolean;
-  S: string;
-  VarName: string;
-  VarType: string;
-  VarArguments: string;
   St: PStatement;
-  ClsName : string;
   boolFound: Boolean;
   e: TEditor;
-  CppEditor, Hppeditor: TSynEdit;
 begin
   Result := False;
   boolFound := False;
-  AddScopeStr := False;
   intLineNum := 0;
-  Line := 0;
   St := nil;
   
   e := GetEditor(Self.PageControl.ActivePageIndex);
-
-  if not Assigned(e) then
-    Exit;
-
-  if not e.isForm then
+  if (not Assigned(e)) or (not e.isForm) then
     Exit;
 
   for I := 0 to ClassBrowser1.Parser.Statements.Count - 1 do // Iterate
@@ -10316,80 +10248,22 @@ begin
     end;
   end; // for
     
-  if boolFound = False then
-  begin
+  if not boolFound then
     Exit;
-  end;
 
-  strOldFunctionName:=strFunctionName;
-
-  if isFunctionAvailableInEditor(St._ID,strOldFunctionName,intLineNum,strFname) then
+  strOldFunctionName := strFunctionName;
+  if isFunctionAvailableInEditor(St._ID, strOldFunctionName, intLineNum, strFname) then
   begin
-    boolInspectorDataClear:=False;
+    boolInspectorDataClear := False;
     OpenFile(strFname);
-    e:=GetEditorFromFileName(strFname);
+    e := GetEditorFromFileName(strFname);
     if assigned(e) then
     begin
       //TODO: check for a valid line number
-      e.Text.CaretX:=0;
-      e.Text.CaretY:=intLineNum;
-      OpenFile(e.GetDesignerCPPFileName);
+      e.Text.CaretX := 0;
+      e.Text.CaretY := intLineNum;
     end;
-    boolInspectorDataClear:=False;
-  end;
-
-  //TODO: lowjoel: Unreachable code?
-  exit;
-
-  boolInspectorDataClear:=False;
-  Hppeditor := e.GetDesignerHPPText;
-
-  boolInspectorDataClear:=False;
-  CppEditor := e.GetDesignerCPPText;
-
-  if Assigned(Hppeditor) then
-  begin
-      if AnsiStartsText('////GUI Control Declaration End',trim(Hppeditor.Lines[Line])) then
-        Line:=Line+1;
-
-    Hppeditor.Lines.Insert(Line, S);
-    if AddScopeStr then
-      Hppeditor.Lines.Insert(Line, #9'public:');
-    e.GetDesignerHPPEditor.InsertString('', true);
-  end;
-
-  // set the parent class's name
-  ClsName := strClassName;
-
-  if Assigned(cppeditor) then
-  begin
-    boolInspectorDataClear:=False;
-    // insert the implementation
-    if Trim(CppEditor.Lines[CppEditor.Lines.Count - 1]) <> '' then
-      CppEditor.Lines.Append('');
-
-    // insert the comment
-    CppEditor.Lines.Append('/*');
-    Cppeditor.Lines.Append(' * ' + strFunctionName);
-    Cppeditor.Lines.Append(' */');
-
-    Cppeditor.Lines.Append(VarType + ' ' + ClsName + '::' + VarName + '(' +
-      VarArguments + ')');
-    Cppeditor.Lines.Append('{');
-    Cppeditor.Lines.Append(#9'// insert your code here');
-    Line := CppEditor.Lines.Count;
-
-    Cppeditor.Lines.Append('}');
-    Cppeditor.Lines.Append('');
-    Result := True;
-    CppEditor.CaretY := Line;
-    e.GetDesignerCPPEditor.InsertString('', true);
-
-    boolInspectorDataClear:=False;
-    OpenFile(e.GetDesignerCPPFileName);
-    boolInspectorDataClear:=False;
-    e.UpdateDesignerData;
-    boolInspectorDataClear:=False;
+    boolInspectorDataClear := False;
   end;
 end;
 
