@@ -939,7 +939,6 @@ object MainForm: TMainForm
       Top = 9
       Width = 192
       Height = 201
-      Hint = 'Project Inspector'
       ActivePage = ProjectSheet
       Images = dmMain.ProjectImage_NewLook
       TabOrder = 0
