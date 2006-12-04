@@ -333,9 +333,7 @@ begin
         writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo');
     end
   else if devCompiler.CompilerType = ID_COMPILER_MINGW then
-    if (assigned(fProject) and (fProject.CurrentProfile.typ = dptDyn)) then
-      writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
-    else if (assigned(fProject) and (fProject.CurrentProfile.typ = dptStat)) then
+    if (assigned(fProject) and (fProject.CurrentProfile.typ = dptStat)) then
       writeln(F, 'LINK      = ar')
     else if fProject.Profiles.useGPP then
       writeln(F, 'LINK      = ' + Comp_ProgCpp)
@@ -743,10 +741,7 @@ begin
   begin
     binary := GenMakePath(ExtractRelativePath(Makefile, fProject.Executable));
     if devCompiler.CompilerType = ID_COMPILER_MINGW then
-      if fProject.Profiles.useGpp then
-        writeln(F, #9 + '$(CPP) -shared $(STATICLIB) $(LINKOBJ) $(LIBS) ' + format(devcompiler.DllFormat, [GenMakePath(ChangeFileExt(tfile, LIB_EXT)), GenMakePath(ExtractRelativePath(Makefile, fProject.Executable))]))
-      else
-        writeln(F, #9 + '$(CC) -shared $(STATICLIB) $(LINKOBJ) $(LIBS) ' + format(devcompiler.DllFormat, [GenMakePath(ChangeFileExt(tfile, LIB_EXT)), GenMakePath(ExtractRelativePath(Makefile, fProject.Executable))]))
+      writeln(F, #9 + '$(LINK) -shared $(STATICLIB) $(LINKOBJ) $(LIBS) ' + format(devcompiler.DllFormat, [GenMakePath(ChangeFileExt(tfile, LIB_EXT)), binary]))
     else
       writeln(F, #9 + '$(LINK) ' + format(devcompiler.DllFormat, [GenMakePath(ChangeFileExt(tfile, '.lib')), binary]) + ' $(LINKOBJ) $(LIBS)');
 
