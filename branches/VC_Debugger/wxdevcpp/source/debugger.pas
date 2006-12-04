@@ -1346,7 +1346,6 @@ begin
   NeedsRefresh := False;
   RegExp := TRegExpr.Create;
   Node := TTreeNode(CurrentCommand.Data);
-  Output.SaveToFile('D:\Output.txt');
   
   //Set the type of the structure/class/whatever
   with PWatch(Node.Data)^ do
