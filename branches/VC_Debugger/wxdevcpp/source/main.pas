@@ -2106,9 +2106,11 @@ begin
       begin
         Caption := '*';
         lvThreads.Selected := lvThreads.Items[Index];
+        MakeVisible(false);
       end
       else
         Caption := '';
+      SubItems.Add(PDebuggerThread(Threads[I])^.Index);
       SubItems.Add(PDebuggerThread(Threads[I])^.ID);
     end;
   lvThreads.Items.EndUpdate;
@@ -5400,10 +5402,11 @@ begin
 
   for idx := 0 to DebugTree.Items.Count - 1 do begin
     idx2 := AnsiPos('=', DebugTree.Items[idx].Text);
-    if (idx2 > 0) then begin
+    if (idx2 > 0) then
+    begin
       s := DebugTree.Items[idx].Text;
       Delete(s, idx2 + 1, length(s) - idx2);
-      DebugTree.Items[idx].Text := s + ' ?';
+      DebugTree.Items[idx].Text := s + ' = (unknown)';
     end;
   end;
 
@@ -7071,7 +7074,7 @@ end;
 procedure TMainForm.lvThreadsDblClick(Sender: TObject);
 begin
   if lvThreads.Selected <> nil then
-    fDebugger.SetThread(lvThreads.Selected.Index);
+    fDebugger.SetThread(StrToInt(lvThreads.Selected.SubItems[0]));
 end;
 
 procedure TMainForm.devFileMonitor1NotifyChange(Sender: TObject;

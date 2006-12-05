@@ -86,7 +86,8 @@ type
   PDebuggerThread = ^TDebuggerThread;
   TDebuggerThread = packed record
     Active: Boolean;
-    ID: string;
+    Index: String;
+    ID: String;
   end;
 
   PCommand = ^TCommand;
@@ -330,6 +331,14 @@ implementation
 uses 
   main, devcfg, MultiLangSupport, cpufrm, prjtypes, StrUtils, dbugintf, RegExpr,
   madstacktrace, Forms, utils;
+
+function RegexEscape(str: string): string;
+begin
+  Result := AnsiReplaceStr(str, '[', '\[');
+  Result := AnsiReplaceStr(Result, ']', '\]');
+  Result := AnsiReplaceStr(Result, '(', '\(');
+  Result := AnsiReplaceStr(Result, ')', '\)');
+end;
 
 constructor TCommandWithResult.Create;
 begin
@@ -1057,6 +1066,7 @@ var
   I: Integer;
   Node: TTreeNode;
   Command: TCommand;
+  MemberName: string;
 begin
   if not Executing then
     Exit;
@@ -1099,11 +1109,16 @@ begin
 
         //Decide what command we should send - dv for locals, dt for structures
         if Pos('.', Name) > 0 then
-          Command.Command := 'dt -r -b ' + Copy(name, 1, Pos('.', name) - 1)
+        begin
+          Command.Command := 'dt -r -b -n ' + Copy(name, 1, Pos('.', name) - 1);
+          MemberName := Copy(name, Pos('.', name) + 1, Length(name));
+          if MemberName <> '' then
+            Command.Command := Command.Command + ' ' + MemberName + '.';
+        end
         else if Pos('[', Name) > 0 then
-          Command.Command := 'dt -a -r -b ' + Copy(name, 1, Pos('[', name) - 1)
+          Command.Command := 'dt -a -r -b -n ' + Copy(name, 1, Pos('[', name) - 1)
         else if AnsiStartsStr('*', name) then
-          Command.Command := 'dt -r -b ' + Copy(name, Pos('*', name) + 1, Length(name))
+          Command.Command := 'dt -r -b -n ' + Copy(name, Pos('*', name) + 1, Length(name))
         else
           Command.Command := 'dv ' + name;
 
@@ -1124,6 +1139,7 @@ end;
 
 procedure TCDBDebugger.OnRefreshContext(Output: TStringList);
 const
+  NotFound = 'Cannot find specified field members.';
   StructExpr = '( +)[\+|=]0x([0-9a-fA-F]{1,8}) ([^ ]*)?( +): (.*)';
   ArrayExpr = '\[([0-9a-fA-F]*)\] @ ([0-9a-fA-F]*)';
   StructArrayExpr = '( *)\[([0-9a-fA-F]*)\] (.*)';
@@ -1196,8 +1212,6 @@ var
           Dec(I);
         end;
       end;
-
-      Inc(I);
     end;
   end;
 
@@ -1352,7 +1366,10 @@ begin
     if RegExp.Exec(Output[0], '(.*) (.*) @ 0x([0-9a-fA-F]{1,8}) Type (.*)\[\]') then
     begin
       Expanded := Node.Expanded;
-      Node.Text := RegExp.Substitute(Copy(name, 1, Pos('[', name) - 1) + ' = $4 (0x$3)');
+      if Pos('[', name) <> 0 then
+        Node.Text := RegExp.Substitute(Copy(name, 1, Pos('[', name) - 1) + ' = $4 (0x$3)')
+      else
+        Node.Text := RegExp.Substitute(name + ' = $4 (0x$3)');
       Node.SelectedIndex := 32;
       Node.ImageIndex := 32;
       ParseArray(Output, Node);
@@ -1376,17 +1393,17 @@ begin
     end
     else
       for J := 0 to Output.Count - 1 do
-        if RegExp.Exec(Output[J], '( +)' + name + ' = (.*) \[(.*)\]') then
+        if RegExp.Exec(Output[J], '( +)' + RegexEscape(name) + ' = (.*) \[(.*)\]') then
         begin
           PWatch(Node.Data)^.Name := PWatch(Node.Data)^.Name + '[';
           NeedsRefresh := True;
         end
-        else if RegExp.Exec(Output[J], '( +)' + name + ' = (struct|class|union) (.*)') then
+        else if RegExp.Exec(Output[J], '( +)' + RegexEscape(name) + ' = (struct|class|union) (.*)') then
         begin
           PWatch(Node.Data)^.Name := PWatch(Node.Data)^.Name + '.';
           NeedsRefresh := True;
         end
-        else if RegExp.Exec(Output[J], '( +)' + name + ' = (.*)') then
+        else if RegExp.Exec(Output[J], '( +)' + RegexEscape(name) + ' = (.*)') then
           Node.Text := Trim(Output[J]);
 
   //Do we have to refresh the entire thing?
@@ -1404,7 +1421,7 @@ begin
     ImageIndex := 21;
     SelectedIndex := 21;
     New(Watch);
-    Watch^.Name := varname;
+    Watch^.Name := AnsiReplaceStr(varname, '->', '.');
     Data := Watch;
   end;
 end;
@@ -1507,6 +1524,7 @@ begin
       with Thread^ do
       begin
         Active := RegExp.Substitute('$1') = '.';
+        Index := RegExp.Substitute('$3');
         ID := RegExp.Substitute('$5.$6');
         Suspended := RegExp.Substitute('$7') <> '0';
         Frozen := RegExp.Substitute('$9') = 'frozen';
@@ -2515,6 +2533,7 @@ begin
       with Thread^ do
       begin
         Active := RegExp.Substitute('$1') = '*';
+        Index := RegExp.Substitute('$3');
         ID := RegExp.Substitute('$5.$6');
       end;
     end;
@@ -2770,7 +2789,7 @@ end;
 
 procedure TGDBDebugger.SetThread(thread: Integer);
 begin
-  QueueCommand('thread', IntToStr(thread + 1));
+  QueueCommand('thread', IntToStr(thread));
   RefreshContext([cdLocals, cdWatches, cdCallStack, cdThreads]);
 end;
 

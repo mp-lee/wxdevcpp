@@ -290,6 +290,9 @@ object MainForm: TMainForm
                 Width = 25
               end
               item
+                Caption = 'Index'
+              end
+              item
                 Caption = 'Thread ID'
                 Width = 575
               end>
