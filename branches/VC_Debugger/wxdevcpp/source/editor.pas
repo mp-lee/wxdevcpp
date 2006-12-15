@@ -1,4 +1,6 @@
 {
+    $Id$
+
     This file is part of Dev-C++
     Copyright (c) 2004 Bloodshed Software
 
@@ -2271,6 +2273,7 @@ begin
     FCodeToolTip.Show;
   except
     ShowMessage(inttostr(integer(FCodeToolTip)) + '/' + inttostr(integer(@AStatement)));
+    raise;
   end;
 {$ENDIF}
 
