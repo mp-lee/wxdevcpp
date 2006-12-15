@@ -913,11 +913,11 @@ var
   CurLine: String;
 
   procedure ParseError(const line: string);
-  begin
-    if RegExp.Exec(line, '\((.*)\): Access Violation - code c0000005 \((.*)\)') then
+  begin                  
+    if RegExp.Substitute('$3') = 'c0000005' then
       OnAccessViolation
-    else if RegExp.Exec(line, '\((.*)\): Control-C exception - code 40010005 \((.*)\)') then
-    else if RegExp.Exec(line, '\((.*)\): Break instruction exception - code 80000003 \((.*)\)') then
+    else if RegExp.Substitute('$3') = '40010005' then
+    else if RegExp.Substitute('$3') = '80000003' then
       if IgnoreBreakpoint then
         IgnoreBreakpoint := False
       else
@@ -958,7 +958,7 @@ var
     begin
       if LowerCase(RegExp.Substitute('$1')) = LowerCase(ChangeFileExt(ExtractFileName(Filename), '')) then
         OnNoDebuggingSymbolsFound;
-    end
+    end                       
     else if RegExp.Exec(line, '\((.*)\): (.*) - code ([0-9a-fA-F]{1,8}) \((.*)\)') then
       ParseError(line)
     else if RegExp.Exec(line, 'Breakpoint ([0-9]+) hit') then
@@ -973,24 +973,34 @@ begin
   RegExp := TRegExpr.Create;
   MainForm.DebugOutput.Lines.BeginUpdate;
 
-  while Pos(#10, Output) > 0 do
-  begin
-    //Extract the current line
-    CurLine := Copy(Output, 0, Pos(#10, Output) - 1);
+  try
+    while Pos(#10, Output) > 0 do
+    begin
+      //Extract the current line
+      CurLine := Copy(Output, 0, Pos(#10, Output) - 1);
 
-    //Process the output
-    if not AnsiStartsStr('DBGHELP: ', CurLine) then
-      MainForm.DebugOutput.Lines.Add(CurLine);
-    ParseOutput(CurLine);
+      //Process the output
+      if not AnsiStartsStr('DBGHELP: ', CurLine) then
+        MainForm.DebugOutput.Lines.Add(CurLine);
+      ParseOutput(CurLine);
 
-    //Remove those that we've already processed
-    Delete(Output, 1, Pos(#10, Output));
-  end;
+      //Remove those that we've already processed
+      Delete(Output, 1, Pos(#10, Output));
+    end;
 
-  if Length(Output) > 0 then
-  begin
-    MainForm.DebugOutput.Lines.Add(Output);
-    ParseOutput(Output);
+    if Length(Output) > 0 then
+    begin
+      MainForm.DebugOutput.Lines.Add(Output);
+      ParseOutput(Output);
+    end;
+  except
+    on E: Exception do
+    begin
+      MainForm.DebugOutput.Lines.EndUpdate;
+      SendMessage(MainForm.DebugOutput.Handle, $00B6, 0, MainForm.DebugOutput.Lines.Count);
+      RegExp.Free;
+      raise;
+    end;
   end;
 
   //Clean up
@@ -1704,7 +1714,7 @@ var
   I, Depth: Integer;
   RegExp: TRegExpr;
 begin
-  if CurrentCommand <> nil then
+  if (CurrentCommand <> nil) and (CurrentCommand.Data.ClassName = 'string') then
     Name := string(CurrentCommand.Data);
   RegExp := TRegExpr.Create;
 
