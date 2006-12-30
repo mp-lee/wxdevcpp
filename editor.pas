@@ -2346,6 +2346,7 @@ var
     Result := Format('%.3f seconds', [(GetTickCount - StartTime) / 1000]);
   end;
 begin
+{$IFNDEF XRC_ONLY_BUILD}
   if isForm then
   begin
     StartTimeX := GetTickCount;
@@ -2392,6 +2393,7 @@ begin
       end;
     end;
   end;
+{$ENDIF}
   if MainForm.ELDesigner1.GenerateXRC then
      UpdateXRC;
 end;
