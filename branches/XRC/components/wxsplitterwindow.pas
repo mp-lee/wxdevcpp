@@ -296,6 +296,27 @@ end;
 function TWxSplitterWindow.GenerateEventTableEntries(CurrClassName: string): string;
 begin
   Result := '';
+ if (XRCGEN) then
+ begin//generate xrc loading code
+  if trim(EVT_SPLITTER_SASH_POS_CHANGING) <> '' then
+    Result := Format('EVT_SPLITTER_SASH_POS_CHANGING(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_SPLITTER_SASH_POS_CHANGING]) + '';
+  if trim(EVT_SPLITTER_SASH_POS_CHANGED) <> '' then
+    Result := Format('EVT_SPLITTER_SASH_POS_CHANGED(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_SPLITTER_SASH_POS_CHANGED]) + '';
+  if trim(EVT_SPLITTER_DCLICK) <> '' then
+    Result := Format('EVT_SPLITTER_DCLICK(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_SPLITTER_DCLICK]) + '';
+  if trim(EVT_SPLITTER_UNSPLIT) <> '' then
+    Result := Format('EVT_SPLITTER_UNSPLIT(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_SPLITTER_UNSPLIT]) + '';
+	  
+  if trim(EVT_UPDATE_UI) <> '' then
+    Result := Result + #13 + Format('EVT_UPDATE_UI(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_UPDATE_UI]) + ''; 
+ end
+ else
+ begin
   if trim(EVT_SPLITTER_SASH_POS_CHANGING) <> '' then
     Result := Format('EVT_SPLITTER_SASH_POS_CHANGING(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_SPLITTER_SASH_POS_CHANGING]) + '';
@@ -308,13 +329,18 @@ begin
   if trim(EVT_SPLITTER_UNSPLIT) <> '' then
     Result := Format('EVT_SPLITTER_UNSPLIT(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_SPLITTER_UNSPLIT]) + '';
-
+	  
   if trim(EVT_UPDATE_UI) <> '' then
     Result := Result + #13 + Format('EVT_UPDATE_UI(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_UPDATE_UI]) + '';
 end;
+end;
 
 function TWxSplitterWindow.GenerateXRCControlCreation(IndentString: string): TStringList;
+var
+  i: integer;
+  wxcompInterface: IWxComponentInterface;
+  tempstring: TStringList;
 begin
 
   Result := TStringList.Create;
@@ -331,6 +357,22 @@ begin
 
     Result.Add(IndentString + Format('  <style>%s</style>',
       [GetSplitterWindowSpecificStyle(self.Wx_GeneralStyle, Wx_SplitterStyle)]));
+      
+    for i := 0 to self.ControlCount - 1 do // Iterate
+      if self.Controls[i].GetInterface(IID_IWxComponentInterface, wxcompInterface) then
+        // Only add the XRC control if it is a child of the top-most parent (the form)
+        //  If it is a child of a sizer, panel, or other object, then it's XRC code
+        //  is created in GenerateXRCControlCreation of that control.
+        if ( self.Controls[i].GetParentComponent.Name = self.Name) then
+        begin
+          tempstring := wxcompInterface.GenerateXRCControlCreation('    ' + IndentString);
+          try
+            Result.AddStrings(tempstring)
+          finally
+            tempstring.Free
+          end
+        end; // for
+      
     Result.Add(IndentString + '</object>');
 
   except
@@ -354,11 +396,20 @@ begin
   if (trim(strStyle) <> '') then
     strStyle := ', ' + strStyle;
 
+if (XRCGEN) then
+ begin//generate xrc loading code
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);   
+ end
+ else
+ begin
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s =new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d) %s);',
     [self.Name, self.wx_Class, parentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
     self.Left, self.Top, self.Width, self.Height, strStyle]);
+end;
 
   strColorStr := trim(GetwxColorFromString(InvisibleFGColorString));
   if strColorStr <> '' then
@@ -373,7 +424,7 @@ begin
   strColorStr := GetWxFontDeclaration(self.Font);
   if strColorStr <> '' then
     Result := Result + #13 + Format('%s->SetFont(%s);', [self.Name, strColorStr]);
-
+if not (XRCGEN) then //NUKLEAR ZELPH
   if (self.Parent is TWxSizerPanel) then
   begin
     strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
@@ -705,7 +756,8 @@ begin
     strOrientation := 'SplitHorizontally'
   else
     strOrientation := 'SplitVertically';
-
+if not (XRCGEN) then //NUKLEAR ZELPH
+ begin 
   if self.ControlCount = 1 then
   begin
     if Result = '' then
@@ -728,6 +780,7 @@ begin
         self.Wx_SashPosition]);
     exit;
   end;
+ end;//NUKLEAR ZELPH
 end;
 
 end.

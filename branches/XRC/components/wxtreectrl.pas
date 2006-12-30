@@ -404,7 +404,99 @@ end;
 function TWxTreeCtrl.GenerateEventTableEntries(CurrClassName: string): string;
 begin
   Result := '';
+ 
+  if (XRCGEN) then
+ begin
+ if trim(EVT_TREE_BEGIN_DRAG) <> '' then
+    Result := Format('EVT_TREE_BEGIN_DRAG(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_BEGIN_DRAG]) + '';
 
+  if trim(EVT_TREE_BEGIN_RDRAG) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_BEGIN_RDRAG(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_BEGIN_RDRAG]) + '';
+
+  if trim(EVT_TREE_END_DRAG) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_END_DRAG(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_END_DRAG]) + '';
+
+  if trim(EVT_TREE_BEGIN_LABEL_EDIT) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_BEGIN_LABEL_EDIT(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_BEGIN_LABEL_EDIT]) + '';
+
+  if trim(EVT_TREE_END_LABEL_EDIT) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_END_LABEL_EDIT(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_END_LABEL_EDIT]) + '';
+
+  if trim(EVT_TREE_DELETE_ITEM) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_DELETE_ITEM(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_DELETE_ITEM]) + '';
+
+  if trim(EVT_TREE_GET_INFO) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_GET_INFO(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_GET_INFO]) + '';
+
+  if trim(EVT_TREE_SET_INFO) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_SET_INFO(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_SET_INFO]) + '';
+
+  if trim(EVT_TREE_ITEM_ACTIVATED) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_ITEM_ACTIVATED(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_ITEM_ACTIVATED]) + '';
+
+  if trim(EVT_TREE_ITEM_COLLAPSED) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_ITEM_COLLAPSED(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_ITEM_COLLAPSED]) + '';
+
+  if trim(EVT_TREE_ITEM_COLLAPSING) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_ITEM_COLLAPSING(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_ITEM_COLLAPSING]) + '';
+
+  if trim(EVT_TREE_ITEM_EXPANDED) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_ITEM_EXPANDED(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_ITEM_EXPANDED]) + '';
+
+  if trim(EVT_TREE_ITEM_EXPANDING) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_ITEM_EXPANDING(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_ITEM_EXPANDING]) + '';
+
+  if trim(EVT_TREE_ITEM_RIGHT_CLICK) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_ITEM_RIGHT_CLICK(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_ITEM_RIGHT_CLICK]) + '';
+
+  if trim(EVT_TREE_ITEM_MIDDLE_CLICK) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_ITEM_MIDDLE_CLICK(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_ITEM_MIDDLE_CLICK]) + '';
+
+  if trim(EVT_TREE_SEL_CHANGED) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_SEL_CHANGED(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_SEL_CHANGED]) + '';
+
+  if trim(EVT_TREE_SEL_CHANGING) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_SEL_CHANGING(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_SEL_CHANGING]) + '';
+
+  if trim(EVT_TREE_KEY_DOWN) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_KEY_DOWN(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_KEY_DOWN]) + '';
+
+  if trim(EVT_TREE_ITEM_GETTOOLTIP) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_ITEM_GETTOOLTIP(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_ITEM_GETTOOLTIP]) + '';
+
+  if trim(EVT_TREE_ITEM_MENU) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_ITEM_MENU(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_ITEM_MENU]) + '';
+
+  if trim(EVT_TREE_STATE_IMAGE_CLICK) <> '' then
+    Result := Result + #13 + Format('EVT_TREE_STATE_IMAGE_CLICK(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TREE_STATE_IMAGE_CLICK]) + '';
+
+  if trim(EVT_UPDATE_UI) <> '' then
+    Result := Result + #13 + Format('EVT_UPDATE_UI(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_UPDATE_UI]) + '';
+ end
+ else
+ begin
   if trim(EVT_TREE_BEGIN_DRAG) <> '' then
     Result := Format('EVT_TREE_BEGIN_DRAG(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_TREE_BEGIN_DRAG]) + '';
@@ -492,6 +584,7 @@ begin
   if trim(EVT_UPDATE_UI) <> '' then
     Result := Result + #13 + Format('EVT_UPDATE_UI(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_UPDATE_UI]) + '';
+ end;
 
 end;
 
@@ -511,7 +604,7 @@ begin
     Result.Add(IndentString + Format('  <style>%s</style>',
       [GetTreeViewSpecificStyle(self.Wx_GeneralStyle, Wx_TreeviewStyle)]));
     Result.Add(IndentString + '</object>');
-
+    
   except
     Result.Free;
     raise;
@@ -538,11 +631,20 @@ begin
   if (trim(strStyle) <> '') then
     strStyle := ', ' + strStyle;
 
+  if (XRCGEN) then
+ begin//generate xrc loading code
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);   
+ end
+ else
+ begin
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
     [self.Name, self.wx_Class, parentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
     self.Left, self.Top, self.Width, self.Height, strStyle]);
+ end;
 
   if trim(self.Wx_ToolTip) <> '' then
     Result := Result + #13 + Format('%s->SetToolTip(%s);',

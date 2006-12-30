@@ -345,6 +345,27 @@ begin
 
   Result := '';
 
+if (XRCGEN) then
+ begin
+  if trim(EVT_CHECKLISTBOX) <> '' then
+    Result := Format('EVT_CHECKLISTBOX(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_CHECKLISTBOX]) + '';
+
+
+  if trim(EVT_LISTBOX) <> '' then
+    Result := Result + #13 + Format('EVT_LISTBOX(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_LISTBOX]) + '';
+
+  if trim(EVT_UPDATE_UI) <> '' then
+    Result := Result + #13 + Format('EVT_UPDATE_UI(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_UPDATE_UI]) + '';
+
+  if trim(EVT_LISTBOX_DCLICK) <> '' then
+    Result := Result + #13 + Format('EVT_LISTBOX_DCLICK(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_LISTBOX_DCLICK]) + '';
+ end
+ else
+ begin
   if trim(EVT_CHECKLISTBOX) <> '' then
     Result := Format('EVT_CHECKLISTBOX(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_CHECKLISTBOX]) + '';
@@ -361,6 +382,7 @@ begin
   if trim(EVT_LISTBOX_DCLICK) <> '' then
     Result := Result + #13 + Format('EVT_LISTBOX_DCLICK(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_LISTBOX_DCLICK]) + '';
+ end;
 
 end;
 
@@ -429,12 +451,21 @@ begin
   else
     strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
 
+ if (XRCGEN) then
+ begin
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]); 
+ end
+ else
+ begin
   Result := Format('wxArrayString arrayStringFor_%s;', [self.Name]);
   Result := GetCommentString(self.FWx_Comments.Text) +
     Result + #13 + Format('%s = new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d), arrayStringFor_%s%s);',
     [self.Name, self.Wx_Class, parentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
     self.Left, self.Top, self.Width, self.Height, self.Name, strStyle]);
+ end;
 
   if trim(self.Wx_ToolTip) <> '' then
     Result := Result + #13 + Format('%s->SetToolTip(%s);',
@@ -469,7 +500,7 @@ begin
   if strColorStr <> '' then
     Result := Result + #13 + Format('%s->SetFont(%s);', [self.Name, strColorStr]);
 
-
+if not (XRCGEN) then //NUKLEAR ZELPH
   if (self.Parent is TWxSizerPanel) then
   begin
     strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);

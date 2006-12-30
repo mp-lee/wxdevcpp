@@ -364,9 +364,18 @@ begin
   if (trim(strStyle) <> '') then
     strStyle := ', ' + strStyle;
 
+if (XRCGEN) then
+begin//generate xrc loading code
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);   
+ end
+ else
+ begin
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s%s);', [self.Name, self.wx_Class, parentName,
     GetWxIDString(self.Wx_IDName, self.Wx_IDValue), strStyle]);
+end;
 
   if self.Panels.Count > 0 then
   begin

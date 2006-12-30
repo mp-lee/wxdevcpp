@@ -50,7 +50,10 @@ const
 
 var
    StringFormat : string;
-
+   XRCGEN:Boolean;//NUKLEAR ZELPH
+{$IFDEF XRC_ONLY_BUILD}
+   XRConly:Boolean;//NUKLEAR ZELPH
+{$ENDIF}
 type
   TWxPoint = class(TComponent)
   private

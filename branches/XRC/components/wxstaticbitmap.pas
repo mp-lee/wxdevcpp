@@ -421,6 +421,14 @@ begin
     Result := GetCommentString(self.FWx_Comments.Text) +
       'wxBitmap ' + strBitmapArrayName + '(' + GetDesignerFormName(self)+'_'+self.Name + '_XPM' + ');';
   end;
+  if (XRCGEN) then
+ begin//generate xrc loading code
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);
+ end
+ else
+ begin
   if Result <> '' then
     Result := Result + #13 + Format(
       '%s = new %s(%s, %s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
@@ -433,6 +441,7 @@ begin
       [self.Name, self.wx_Class, parentName, GetWxIDString(self.Wx_IDName,
       self.Wx_IDValue),
       strBitmapArrayName, self.Left, self.Top, self.Width, self.Height, strStyle]);
+ end;
 
 
   if trim(self.Wx_ToolTip) <> '' then
