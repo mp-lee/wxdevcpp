@@ -385,9 +385,19 @@ begin
     strStyle := '0';
   strStyle := ', ' + strStyle + ', ' + GetCppString(Name);
 
+ if (XRCGEN) then
+ begin //xrc export
   //Last comma is removed because it depends on the user selection of the properties.
   Result := GetCommentString(self.FWx_Comments.Text) +
-    Format('%s = new %s(%s, %s, %s, wxPoint(%d,%d), %s%s);',
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);
+  
+ end
+ else
+ begin //cpp export
+  //Last comma is removed because it depends on the user selection of the properties.
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = new %s(%s, %s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
     [self.Name, self.Wx_Class, ParentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
     GetCppString(self.Caption), self.Left, self.Top, strSize, strStyle]);
@@ -431,6 +441,8 @@ begin
     Result := Result + #13 + Format('%s->AddControl(%s);',
       [self.Parent.Name, self.Name]);
 
+  end;
+  
   // Change the text justification in the form designer
   if wxST_ALIGN_LEFT in Wx_LabelStyle then
     self.Alignment := taLeftJustify;

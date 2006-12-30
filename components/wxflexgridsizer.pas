@@ -330,13 +330,19 @@ begin
   Result := TStringList.Create;
 
   try
+{$IFNDEF XRC_ONLY_BUILD}
+ if not (self.Parent is TForm) then //NUKLEAR ZELPH
+ begin
+{$ENDIF}
     Result.Add(IndentString + Format('<object class="%s" name="%s">',
       [self.Wx_Class, self.Name]));
     Result.Add(IndentString + Format('  <rows>%d</rows>', [self.rows]));
     Result.Add(IndentString + Format('  <cols>%d</cols>', [self.columns]));
     Result.Add(IndentString + Format('  <vgap>%d</vgap>', [self.rowSpacing]));
     Result.Add(IndentString + Format('  <hgap>%d</hgap>', [self.columnSpacing]));
-
+{$IFNDEF XRC_ONLY_BUILD}
+ end;//NUKLEAR ZELPH
+{$ENDIF}
     for i := 0 to self.ControlCount - 1 do // Iterate
       if self.Controls[i].GetInterface(IID_IWxComponentInterface, wxcompInterface) then
         // Only add the XRC control if it is a child of the top-most parent (the form)
@@ -351,9 +357,14 @@ begin
             tempstring.Free
           end
         end; // for
-
+{$IFNDEF XRC_ONLY_BUILD}
+ if not (self.Parent is TForm) then //NUKLEAR ZELPH
+ begin
+{$ENDIF}
     Result.Add(IndentString + '</object>');
-
+{$IFNDEF XRC_ONLY_BUILD}
+ end;//NUKLEAR ZELPH
+{$ENDIF}
   except
     Result.Free;
     raise;
@@ -366,6 +377,11 @@ var
   strAlignment: string;
   parentName:  string;
 begin
+{$IFNDEF XRC_ONLY_BUILD}
+if not (XRCGEN) or ((XRCGEN) and (self.Parent is TForm)) then //NUKLEAR ZELPH
+begin
+{$ENDIF}
+Result := '';
   Result := Format('%s = new wxFlexGridSizer(%d, %d, %d, %d);',
     [self.Name, self.rows, self.columns, self.rowSpacing, self.columnSpacing]);
   if ((self.Parent is TForm) or (IsControlWxContainer(self.Parent))) then
@@ -390,10 +406,17 @@ begin
       [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
       self.Wx_Border]);
   end;
+{$IFNDEF XRC_ONLY_BUILD}
+ end;//NUKLEAR ZELPH
+{$ENDIF}
 end;
 
 function TWxFlexGridSizer.GenerateGUIControlDeclaration: string;
 begin
+Result := '';
+{$IFNDEF XRC_ONLY_BUILD}
+if not (XRCGEN) or ((XRCGEN) and (self.Parent is TForm)) then //NUKLEAR ZELPH
+{$ENDIF}
   Result := Format('%s *%s;', [trim(Self.Wx_Class), trim(Self.Name)]);
 end;
 

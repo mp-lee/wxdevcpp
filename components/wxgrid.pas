@@ -559,6 +559,8 @@ begin
 
   Result := '';
 
+    {if (XRCGEN) then //does not appear to need an xrc event loader}
+
   if trim(EVT_GRID_CELL_LEFT_CLICK) <> '' then
     Result := Format('EVT_GRID_CELL_LEFT_CLICK(%s::%s)',
       [CurrClassName, EVT_GRID_CELL_LEFT_CLICK]) + '';
@@ -662,11 +664,20 @@ begin
   if trim(strStyle) <> '' then
     strStyle := ', ' + strStyle;
 
+    if (XRCGEN) then
+ begin
+   Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]); 
+  end
+ else
+ begin
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
     [self.Name, self.wx_Class, parentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
     self.Left, self.Top, self.Width, self.Height, strStyle]);
+ end;
 
   if trim(self.Wx_ToolTip) <> '' then
     Result := Result + #13 + Format('%s->SetToolTip(%s);',
@@ -718,7 +729,7 @@ begin
   Result := Result + #13 + Format('%s->CreateGrid(%d,%d,%s);',
     [self.Name, wx_RowCount, wx_ColCount, strSelectionStr]);
 
-
+if not (XRCGEN) then //NUKLEAR ZELPH
   if (self.Parent is TWxSizerPanel) then
   begin
     strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
