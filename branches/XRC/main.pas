@@ -1830,6 +1830,7 @@ begin
 
   //Setting data for the newly created GUI
   intControlCount := 1000;
+  XRCGEN := MainForm.ELDesigner1.GenerateXRC;
 end;
 {$ENDIF}
 
@@ -3519,8 +3520,7 @@ begin
         end
       else
         wxEditor.Modified := false;
-      CloseEditorInternal(wxEditor);
-    end;
+      CloseEditorInternal(wxEditor); 
 
     wxXRCEditor := GetEditorFromFileName(ChangeFileExt(EditorFilename, XRC_EXT), true);
     if assigned(wxXRCEditor) then
@@ -3533,6 +3533,7 @@ begin
       else
         wxXRCEditor.Modified:=false;
       CloseEditorInternal(wxXRCEditor);
+    end;
     end;
   end
   else
