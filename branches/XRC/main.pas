@@ -3522,7 +3522,7 @@ begin
         wxEditor.Modified := false;
       CloseEditorInternal(wxEditor); 
 
-    wxXRCEditor := GetEditorFromFileName(ChangeFileExt(EditorFilename, XRC_EXT), true);
+    wxXRCEditor := GetEditorFromFileName(IncludeTrailingPathDelimiter(fProject.CurrentProfile.ObjectOutput) + ChangeFileExt(EditorFilename, XRC_EXT), true);
     if assigned(wxXRCEditor) then
     begin
       if Saved then
@@ -11147,11 +11147,13 @@ procedure TMainForm.DesignerOptionsClick(Sender: TObject);
 begin
   with TDesignerForm.Create(Self) do
   try
-    DesignerForm.ShowModal;
-    DesignerForm.Destroy;
-  finally
+    ShowModal;
+    Destroy;
+  except
     Free;
   end;
+  XRCGEN := MainForm.ELDesigner1.GenerateXRC;
+
 end;
 
 procedure TMainForm.AlignToGridClick(Sender: TObject);
