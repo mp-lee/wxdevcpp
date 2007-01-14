@@ -6,83 +6,8 @@ object dmMain: TdmMain
   Top = 185
   Height = 403
   Width = 589
-  object Cpp: TSynCppSyn
-    DefaultFilter = 'C++ files (*.cpp,*.h,*.hpp)|*.cpp;*.h;*.hpp'
-    AsmAttri.Foreground = clBlue
-    CommentAttri.Foreground = clHighlight
-    DirecAttri.Foreground = clGreen
-    IdentifierAttri.Foreground = clBlack
-    InvalidAttri.Foreground = clBlack
-    KeyAttri.Foreground = clBlack
-    NumberAttri.Foreground = clTeal
-    StringAttri.Foreground = clRed
-    SymbolAttri.Foreground = clBlack
-    Left = 265
-    Top = 13
-  end
-  object SynExporterRTF: TSynExporterRTF
-    Color = clNone
-    DefaultFilter = 'Rich Text Format (*.rtf)|*.rtf'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clBlack
-    Font.Height = -13
-    Font.Name = 'Courier New'
-    Font.Style = []
-    Highlighter = Cpp
-    Title = 'Untitled'
-    UseBackground = True
-    Left = 149
-    Top = 75
-  end
-  object SynExporterHTML: TSynExporterHTML
-    Color = clNone
-    DefaultFilter = 'HTML Document (*.htm,*.html)|*.htm;*.html'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clBlack
-    Font.Height = -13
-    Font.Name = 'Courier New'
-    Font.Style = []
-    Highlighter = Cpp
-    Title = 'Untitled'
-    UseBackground = True
-    Left = 32
-    Top = 75
-  end
   object PrinterSetupDialog: TPrinterSetupDialog
     Left = 500
-    Top = 75
-  end
-  object SynEditPrint: TSynEditPrint
-    Copies = 1
-    Header.DefaultFont.Charset = DEFAULT_CHARSET
-    Header.DefaultFont.Color = clBlack
-    Header.DefaultFont.Height = -13
-    Header.DefaultFont.Name = 'Arial'
-    Header.DefaultFont.Style = []
-    Footer.DefaultFont.Charset = DEFAULT_CHARSET
-    Footer.DefaultFont.Color = clBlack
-    Footer.DefaultFont.Height = -13
-    Footer.DefaultFont.Name = 'Arial'
-    Footer.DefaultFont.Style = []
-    Margins.Left = 25.000000000000000000
-    Margins.Right = 15.000000000000000000
-    Margins.Top = 25.000000000000000000
-    Margins.Bottom = 25.000000000000000000
-    Margins.Header = 15.000000000000000000
-    Margins.Footer = 15.000000000000000000
-    Margins.LeftHFTextIndent = 2.000000000000000000
-    Margins.RightHFTextIndent = 2.000000000000000000
-    Margins.HFInternalMargin = 0.500000000000000000
-    Margins.MirrorMargins = False
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
-    Font.Style = []
-    Highlighter = Cpp
-    TabWidth = 8
-    Color = clWhite
-    Left = 383
     Top = 75
   end
   object OpenDialog: TOpenDialog
@@ -384,7 +309,7 @@ object dmMain: TdmMain
     Left = 150
     Top = 184
     Bitmap = {
-      494C01013B004000040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C01013B004000040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000040000000F0000000010020000000000000F0
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -2368,7 +2293,8 @@ object dmMain: TdmMain
       E000F01FE001E003C000E0070000C0038000C0010000C001800180000000C000
       000300010000C000000100038000000000010007800100000001000F800B0000
       0001001F8003003F8001003F9007007F8001803F8007807FC003F07FC00FC0FF
-      E007FC7FE00FE0FFF83FFEFFFE1FFFFF}
+      E007FC7FE00FE0FFF83FFEFFFE1FFFFF00000000000000000000000000000000
+      000000000000}
   end
   object HelpImages_Gnome: TImageList
     AllocBy = 6
@@ -2646,24 +2572,11 @@ object dmMain: TdmMain
       FE3FFE47E007C1FFFFFFFF47F00FFFFF00000000000000000000000000000000
       000000000000}
   end
-  object Res: TSynRCSyn
-    DefaultFilter = 'RC files (*.rc)|*.rc'
-    CommentAttri.Background = clBackground
-    CommentAttri.Foreground = clHighlight
-    CommentAttri.Style = [fsItalic]
-    DirecAttri.Background = clBackground
-    DirecAttri.Foreground = clGreen
-    NumberAttri.Background = clBackground
-    NumberAttri.Foreground = clPurple
-    StringAttri.Foreground = clRed
-    Left = 382
-    Top = 13
-  end
   object MenuImages_NewLook: TImageList
     Left = 266
     Top = 127
     Bitmap = {
-      494C01013B004000040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C01013B004000040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000040000000F0000000010020000000000000F0
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -4647,7 +4560,8 @@ object dmMain: TdmMain
       0001C007FF1900010001C007818D00010000C007FFC100010000C00780650001
       0000C007FFF100010000C007803100010007C007FFF900010007C007C30D0001
       8007C00701FF0001C007C00701010001C007C00F01FF0001C007C01F01010001
-      C00FC03F81FF0001C01FFFFFC3FF800F}
+      C00FC03F81FF0001C01FFFFFC3FF800F00000000000000000000000000000000
+      000000000000}
   end
   object ProjectImage_NewLook: TImageList
     Left = 383
@@ -5928,7 +5842,7 @@ object dmMain: TdmMain
     Left = 32
     Top = 241
     Bitmap = {
-      494C01013B004000040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C01013B004000040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000040000000F0000000010020000000000000F0
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -7912,7 +7826,8 @@ object dmMain: TdmMain
       0001F8070000F03F0001F8070000C01F0001F8070000800F0001F80700000007
       0001F807000000030001F807000000010001F007000080000001D0070000C001
       0001E00F0000E0010001801F0000F0030001E3FF0000E0070003D5FF0001FC1F
-      0007F7FF0003FC3FEFFFFFFFFFFFFC7F}
+      0007F7FF0003FC3FEFFFFFFFFFFFFC7F00000000000000000000000000000000
+      000000000000}
   end
   object HelpImages_Blue: TImageList
     AllocBy = 6
@@ -8745,34 +8660,11 @@ object dmMain: TdmMain
     Left = 32
     Top = 298
   end
-  object SynHint: TSynCompletionProposal
-    DefaultType = ctHint
-    Options = [scoCaseSensitive, scoLimitToMatchedText, scoUsePrettyText]
-    NbLinesInWindow = 1
-    Width = 262
-    EndOfTokenChr = '()[]. '
-    TriggerChars = '.'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
-    Font.Style = []
-    TitleFont.Charset = DEFAULT_CHARSET
-    TitleFont.Color = clBtnText
-    TitleFont.Height = -11
-    TitleFont.Name = 'MS Sans Serif'
-    TitleFont.Style = [fsBold]
-    Columns = <>
-    ShortCut = 16416
-    TimerInterval = 2000
-    Left = 266
-    Top = 75
-  end
   object ClassImages: TImageList
     Left = 32
     Top = 127
     Bitmap = {
-      494C01010C000E00040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C01010C000E00040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000004000000001002000000000000040
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -9304,34 +9196,25 @@ object dmMain: TdmMain
       800183C1FFC1FFC100000180FF80FF8000000180FF80FF8000000080FF80FF80
       00000000FF80FF8000000000FF80FF8000008001FFC1FFC10000C0037FE37FE3
       0000E0177FF77FF70000F01F1B771BBB0000F01F6B776B5B0001F83F6B6B6B5B
-      807FFC7F6B6B6B5BC0FFFEFF196B19B1}
+      807FFC7F6B6B6B5BC0FFFEFF196B19B100000000000000000000000000000000
+      000000000000}
   end
-  object XML: TSynXMLSyn
-    WantBracesParsed = False
-    Left = 30
-    Top = 13
-  end
-  object Assembly: TSynAsmSyn
-    DefaultFilter = 'x86 Assembly Files (*.asm,*.s)|*.asm;*.s'
-    Left = 147
-    Top = 13
-  end
-  object CppMultiSyn: TSynMultiSyn
-    Schemes = <
-      item
-        EndExpr = '\}'
-        Highlighter = Assembly
-        MarkerAttri.Background = clNone
-        SchemeName = 'Assembly'
-      end
-      item
-        Highlighter = Assembly
-        MarkerAttri.Background = clNone
-        SchemeName = 'Shorthand Assembly'
-      end>
-    DefaultHighlighter = Cpp
-    DefaultLanguageName = 'C++'
-    Left = 500
-    Top = 13
+  object SciPrinter: TSciPrinter
+    Title = 'DelphiSci'
+    HeaderFont.Charset = DEFAULT_CHARSET
+    HeaderFont.Color = clBlack
+    HeaderFont.Height = -11
+    HeaderFont.Name = 'Arial'
+    HeaderFont.Style = []
+    FooterFont.Charset = DEFAULT_CHARSET
+    FooterFont.Color = clBlack
+    FooterFont.Height = -11
+    FooterFont.Name = 'Arial'
+    FooterFont.Style = []
+    ColorMode = sccmNormal
+    WordWrap = sciNoWrap
+    Magnification = 0
+    Left = 120
+    Top = 40
   end
 end

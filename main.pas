@@ -44,8 +44,10 @@ uses
 {$IFNDEF OLD_MADSHI}
   ExceptionFilterUnit,
 {$ENDIF}
-  DesignerOptions, JvExStdCtrls, JvEdit, SynEditHighlighter, SynHighlighterMulti,
-  JvComponentBase, JvDockControlForm, JvDockTree, JvDockVIDStyle, JvDockVSNetStyle
+  DesignerOptions, JvExStdCtrls, JvEdit, 
+  JvComponentBase, JvDockControlForm, JvDockTree, JvDockVIDStyle, JvDockVSNetStyle,
+  SciLexer, SciLexerMemo, SciLexerMod, SciAutoComplete, SciPropertyMgr,
+  sciPrint, SciCallTips
 {$ENDIF}
   ;
 {$ENDIF}
@@ -631,6 +633,11 @@ type
     lblTodoFilter: TLabel;
     chkTodoIncomplete: TCheckBox;
     cmbTodoFilter: TComboBox;
+    HiddenSci: TScintilla;
+    pLoader: TSciPropertyLoader;
+    SciPrinter: TSciPrinter;
+    SciAutoComplete1: TSciAutoComplete;
+    FCodeToolTip: TSciCallTips;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormDestroy(Sender: TObject);
@@ -943,8 +950,9 @@ type
     procedure lvTodoDblClick(Sender: TObject);
     procedure chkTodoIncompleteClick(Sender: TObject);
     procedure cmbTodoFilterChange(Sender: TObject);
-    procedure ApplicationEvents1Deactivate(Sender: TObject);
-    procedure ApplicationEvents1Activate(Sender: TObject);
+    procedure FCodeToolTipBeforeShow(Sender: TObject;
+      const Position: Integer; ListToDisplay: TStrings;
+      var CancelDisplay: Boolean);
 {$ENDIF}
 
   private
@@ -964,6 +972,8 @@ type
     OldHeight: integer;
     IsIconized: Boolean;
     ReloadFilenames: TList;
+    ReloadFilename: string;
+    fLastParamFunc: TList;
 
     function AskBeforeClose(e: TEditor; Rem: boolean;var Saved:Boolean): boolean;
     procedure AddFindOutputItem(line, col, unit_, message: string);
@@ -1110,7 +1120,11 @@ type
   frmPaletteDock: TForm;
   frmInspectorDock:TForm;
   frmReportDocks: array[0..5] of TForm;
+  
+  strChangedFileList:TStringList;
   strStdwxIDList:TStringList;
+  FWatchList:TList;
+  FileWatching:Boolean;
 {$ENDIF}
   function SaveFileInternal(e: TEditor ; bParseFile:Boolean = true): Boolean;
 
@@ -1125,6 +1139,7 @@ type
   public
     procedure DisableDesignerControls;
     procedure EnableDesignerControls;
+    procedure OnFileChangeNotify(Sender: TObject; ChangeType: TChangeType);
 {$ENDIF}
 
   public
@@ -1175,7 +1190,7 @@ uses
   ShellAPI, IniFiles, Clipbrd, MultiLangSupport, version,
   devcfg, datamod, helpfrm, NewProjectFrm, AboutFrm, PrintFrm,
   CompOptionsFrm, EditorOptfrm, Incrementalfrm, Search_Center, Envirofrm,
-  SynEdit, SynEditTypes, JvAppIniStorage, JvAppStorage,
+  JvAppIniStorage, JvAppStorage,
   debugfrm, Types, Prjtypes, devExec,
   NewTemplateFm, FunctionSearchFm, NewMemberFm, NewVarFm, NewClassFm,
   ProfileAnalysisFm, debugwait, FilePropertiesFm, AddToDoFm,
@@ -1358,7 +1373,11 @@ begin
   ShowPropertyInspItem.Checked := True;
   ShowProjectInspItem.Checked := True;
 
+  strChangedFileList:=TStringList.Create;
   strStdwxIDList:=GetPredefinedwxIds;
+  FWatchList:=TList.Create;
+  FileWatching:=false;
+
   WxPropertyInspectorPopup := TPopupMenu.Create(Self);
   WxPropertyInspectorMenuEdit := TMenuItem.Create(Self);
   WxPropertyInspectorMenuCopy := TMenuItem.Create(Self);
@@ -3187,7 +3206,7 @@ begin
   end;
 end;
 
-function TMainForm.SaveFileInternal(e: TEditor; bParseFile: Boolean): Boolean;
+function TMainForm.SaveFileInternal(e: TEditor ; bParseFile:Boolean): Boolean;
 var
   idx,index,I: Integer;
   ccFile,hFile:String;
@@ -3219,7 +3238,7 @@ begin
           MessageDlg(Format(Lang[ID_ERR_SAVEFILE], [e.FileName]), mtError, [mbOk], Handle)
         else
           fProject.units[idx].Save;
-      except
+       except
 {$IFNDEF PRIVATE_BUILD}
          MessageDlg(Format(Lang[ID_ERR_SAVEFILE], [e.FileName]), mtError, [mbOk], Handle);
          Exit;
@@ -3231,39 +3250,39 @@ begin
            Exit;
          end;
 {$ENDIF}
-      end;
+       end;
 
-      try
-        if (idx <> -1) and ClassBrowser1.Enabled and bParseFile then
-        begin
+       try
+         if (idx <> -1) and ClassBrowser1.Enabled and bParseFile then
+         begin
           CppParser1.ReParseFile(fProject.units[idx].FileName, True);
-          if e.TabSheet = PageControl.ActivePage then
-            ClassBrowser1.CurrentFile := fProject.units[idx].FileName;
-          if GetFileTyp(e.FileName) = utHead then
-          begin
-            CppParser1.GetSourcePair(ExtractFileName(e.FileName), ccFile, hfile);
-            if trim(ccFile) <> '' then
-            begin
-              index := -1;
-              for I := CppParser1.ScannedFiles.Count - 1 downto 0 do    // Iterate
-              begin
-                if AnsiSameText(ExtractFileName(ccFile), ExtractFileName(CppParser1.ScannedFiles[i])) then
-                begin
-                  ccFile := CppParser1.ScannedFiles[i];
-                  index := i;
-                  Break;
-                end;
-              end;    // for
+           if e.TabSheet = PageControl.ActivePage then
+             ClassBrowser1.CurrentFile := fProject.units[idx].FileName;
+           if GetFileTyp(e.FileName) = utHead then
+           begin
+             CppParser1.GetSourcePair(ExtractFileName(e.FileName), ccFile, hfile);
+             if trim(ccFile) <> '' then
+             begin
+               index := -1;
+               for I := CppParser1.ScannedFiles.Count - 1 downto 0 do    // Iterate
+               begin
+                 if AnsiSameText(ExtractFileName(ccFile), ExtractFileName(CppParser1.ScannedFiles[i])) then
+                 begin
+                   ccFile := CppParser1.ScannedFiles[i];
+                   index := i;
+                   Break;
+                 end;
+               end;    // for
 
-              if index <> -1 then
-                CppParser1.ReParseFile(ccFile, true); //new cc
-            end;
-          end;
-        end;
+               if index <> -1 then
+                 CppParser1.ReParseFile(ccFile, true); //new cc
+             end;
+           end;
+         end;
         Result := True;
-      except
-        MessageDlg(Format('Error reparsing file %s', [e.FileName]), mtError, [mbOk], Handle);
-      end;
+       except
+         MessageDlg(Format('Error reparsing file %s', [e.FileName]), mtError, [mbOk], Handle);
+       end;
     end
     else // stand alone file (should have fullpath in e.filename)
     try
@@ -3292,28 +3311,27 @@ begin
         CppParser1.ReParseFile(e.FileName, False); //new cc
         if e.TabSheet = PageControl.ActivePage then
           ClassBrowser1.CurrentFile := e.FileName;
-
-        if GetFileTyp(e.FileName) = utHead then
-        begin
-          CppParser1.GetSourcePair(ExtractFileName(e.FileName), ccFile, hfile);
-          if trim(ccFile) <> '' then
+          if GetFileTyp(e.FileName) = utHead then
           begin
-            index := -1;
-            for I := CppParser1.ScannedFiles.Count - 1 downto 0 do    // Iterate
+            CppParser1.GetSourcePair(ExtractFileName(e.FileName), ccFile, hfile);
+            if trim(ccFile) <> '' then
             begin
-              if AnsiSameText(ExtractFileName(ccFile),ExtractFileName(CppParser1.ScannedFiles[i])) then
+              index := -1;
+              for I := CppParser1.ScannedFiles.Count - 1 downto 0 do    // Iterate
               begin
-                ccFile := CppParser1.ScannedFiles[i];
-                index:=i;
-                break;
-              end;
-            end;    // for
+                if AnsiSameText(ExtractFileName(ccFile),ExtractFileName(CppParser1.ScannedFiles[i])) then
+                begin
+                  ccFile := CppParser1.ScannedFiles[i];
+                  index:=i;
+                  break;
+                end;
+              end;    // for
 
-            if index <> -1 then
-              CppParser1.ReParseFile(ccFile, true); //new cc
+              if index <> -1 then
+                CppParser1.ReParseFile(ccFile, true); //new cc
+            end;
           end;
         end;
-      end;
       Result := True;
     except
       MessageDlg(Format(Lang[ID_ERR_SAVEFILE], [e.FileName]), mtError, [mbOk], Handle);
@@ -3553,10 +3571,18 @@ begin
         TogglebookmarksPopItem.Items[Tag - 1].Checked := Checked
       else
         TogglebookmarksItem.Items[Tag - 1].Checked := Checked;
+
       if Checked then
+{$IFDEF SCINTILLA}
+         e.Bookmark[Tag-1] := e.Text.MarkerAdd(e.Text.LineFromPosition(e.Text.GetCurrentPos), Tag-1)
+      else
+        e.Text.MarkerDelete(e.Text.MarkerLineFromHandle(e.Bookmark[Tag-1]), Tag-1);
+
+{$ELSE}
         e.Text.SetBookMark(Tag, e.Text.CaretX, e.Text.CaretY)
       else
         e.Text.ClearBookMark(Tag);
+{$ENDIF}
     end;
 end;
 
@@ -3566,7 +3592,11 @@ var
 begin
   e := GetEditor;
   if assigned(e) then
+{$IFDEF SCINTILLA}
+//mn    e.Text.GotoBookMark((Sender as TMenuItem).Tag);
+{$ELSE}
     e.Text.GotoBookMark((Sender as TMenuItem).Tag);
+{$ENDIF}
 end;
 
 procedure TMainForm.ToggleBtnClick(Sender: TObject);
@@ -3636,7 +3666,11 @@ end;
 procedure TMainForm.SurroundString(e: TEditor;strStart,strEnd:String);
 var
   I: Integer;
+{$IFDEF SCINTILLA}
+    startXY,endXY:integer;
+{$ELSE}
     startXY,endXY:TBufferCoord;
+{$ENDIF}
     strLstToPaste:TStringList;
 begin
     if assigned(e) = false then
@@ -3645,17 +3679,21 @@ begin
     strLstToPaste:=TStringList.Create;
     try
         strLstToPaste.Add(strStart);
+{$IFDEF SCINTILLA}
+        if (e.Text.GetAnchor <> e.Text.GetCurrentPos) then
+{$ELSE}
         if e.Text.SelAvail then
+{$ENDIF}
         begin
-            startXY:=e.Text.BlockBegin;
-            endXY:=e.Text.BlockEnd;
+            startXY:={$IFDEF SCINTILLA}e.Text.LineFromPosition(e.Text.GetSelectionStart); {$ELSE}e.Text.BlockBegin;{$ENDIF}
+            endXY:={$IFDEF SCINTILLA}e.Text.LineFromPosition(e.Text.GetSelectionEnd); {$ELSE}e.Text.BlockEnd;{$ENDIF}
 
-            for I := startXY.Line-1 to endXY.Line-1 do    // Iterate
+            for I := {$IFDEF SCINTILLA}startXY{$ELSE}startXY.Line-1{$ENDIF} to {$IFDEF SCINTILLA}endXY{$ELSE}endXY.Line-1{$ENDIF} do    // Iterate
             begin
                 strLstToPaste.Add(e.Text.Lines[i])
             end;
 
-            for I := endXY.Line-1 downto startXY.Line-1 do    // Iterate
+            for I := {$IFDEF SCINTILLA}endXY{$ELSE}endXY.Line-1{$ENDIF} downto {$IFDEF SCINTILLA}startXY{$ELSE}startXY.Line-1{$ENDIF} do    // Iterate
             begin
                 //e.Text.insert
                 e.Text.Lines.Delete(I);
@@ -3665,13 +3703,21 @@ begin
         end
         else
         begin
+{$IFDEF SCINTILLA}
+            startXY := e.Text.LineFromPosition(e.Text.GetCurrentPos);
+{$ELSE}
             startXY.Line:=e.Text.CaretY;
-        end;
+{$ENDIF}
+       end;
         strLstToPaste.Add(strEnd);
 
         for I := strLstToPaste.Count-1 downto 0 do    // Iterate
         begin
+{$IFDEF SCINTILLA}
+            e.Text.Lines.Insert(startXY,strLstToPaste[i]);
+{$ELSE}
             e.Text.Lines.Insert(startXY.Line -1,strLstToPaste[i]);
+{$ENDIF}
             e.Modified:=true;
         end;
 
@@ -3684,16 +3730,24 @@ end;
 procedure TMainForm.CppCommentString(e: TEditor);
 var
   I: Integer;
+{$IFDEF SCINTILLA}
+    startXY,endXY:integer;
+{$ELSE}
     startXY,endXY:TBufferCoord;
+{$ENDIF}
    begin
     if assigned(e) = false then
         exit;
+{$IFDEF SCINTILLA}
+        if (e.Text.GetAnchor <> e.Text.GetCurrentPos) then
+{$ELSE}
     if e.Text.SelAvail then
+{$ENDIF}
     begin
-        startXY:=e.Text.BlockBegin;
-        endXY:=e.Text.BlockEnd;
-        for I := startXY.Line-1 to endXY.Line-1 do    // Iterate
-        begin
+        startXY:={$IFDEF SCINTILLA}e.Text.LineFromPosition(e.Text.GetSelectionStart); {$ELSE}e.Text.BlockBegin;{$ENDIF}
+        endXY:={$IFDEF SCINTILLA}e.Text.LineFromPosition(e.Text.GetSelectionEnd); {$ELSE}e.Text.BlockEnd;{$ENDIF}
+        for I := {$IFDEF SCINTILLA}startXY{$ELSE}startXY.Line-1{$ENDIF} to {$IFDEF SCINTILLA}endXY{$ELSE}endXY.Line-1{$ENDIF} do    // Iterate
+            begin
             e.Text.Lines[i]:='// '+e.Text.Lines[i] ;
             e.Modified:=true;
 //            e.Text.UndoList.AddChange(crPaste, st, Point(st.X, st.Y ), '', smNormal);
@@ -4440,11 +4494,11 @@ end;
 
 procedure TMainForm.actSaveAllExecute(Sender: TObject);
 var
-  fileLstToParse: TStringList;
+  fileLstToParse:TStringList;
   idx: Integer;
   e: TEditor;
 begin
-  fileLstToParse := TStringList.Create;
+  fileLstToParse:=TStringList.Create;
   if Assigned(fProject) then begin
     fProject.Save;
     UpdateAppTitle;
@@ -4455,7 +4509,7 @@ begin
   for idx := 0 to pred(PageControl.PageCount) do begin
     e := GetEditor(idx);
     if e.Modified then
-    begin
+  begin
       SaveFile(GetEditor(idx));
       if ClassBrowser1.Enabled and (GetFileTyp(e.FileName) in [utSrc, utHead]) then
         fileLstToParse.Add(e.FileName);
@@ -4575,6 +4629,21 @@ begin
     with TPrintForm.Create(Self) do
     try
       if ShowModal = mrOk then begin
+{$IFDEF SCINTILLA}
+        with dmMain.sciPrinter do //mn scintilla
+        begin
+          Editor := e.Text;
+{          Highlighter := e.Text.Highlighter;
+          Colors := cbColors.Checked;
+          Highlight := cbHighlight.Checked;
+          Wrap := cbWordWrap.Checked;
+          LineNumbers := cbLineNum.checked;
+          LineNumbersInMargin := rbLNMargin.Checked;
+          Copies := seCopies.Value;
+          SelectedOnly := cbSelection.Checked;
+}         Print;
+        end;
+{$ELSE}
         with dmMain.SynEditPrint do
         begin
           SynEdit := e.Text;
@@ -4588,6 +4657,7 @@ begin
           SelectedOnly := cbSelection.Checked;
           Print;
         end;
+{$ENDIF}
         devData.PrintColors := cbColors.Checked;
         devData.PrintHighlight := cbHighlight.Checked;
         devData.PrintWordWrap := cbWordWrap.Checked;
@@ -4646,7 +4716,11 @@ begin
       else   // Otherwise form component is selected so cut whole component (control and code)
         actDesignerCut.Execute
     else
+{$IFDEF SCINTILLA}
+       e.Text.Cut
+{$ELSE}
       e.Text.CutToClipboard
+{$ENDIF}
   end;
 end;
 
@@ -4663,7 +4737,11 @@ begin
       else   // Otherwise form component is selected so copy whole component (control and code)
         actDesignerCopy.Execute
     else
+{$IFDEF SCINTILLA}
+     e.Text.Copy;
+{$ELSE}
       e.Text.CopyToClipboard;
+{$ENDIF}
   end;
 end;
 
@@ -4680,7 +4758,11 @@ begin
       else   // Otherwise form component is selected so paste whole component (control and code)
         actDesignerPaste.Execute
     else if e.Text.Focused then
+{$IFDEF SCINTILLA}
+        e.Text.Paste
+{$ELSE}
       e.Text.PasteFromClipboard
+{$ENDIF}
     else
       SendMessage(GetFocus, WM_PASTE, 0, 0);
    end
@@ -4708,8 +4790,13 @@ var
   e: TEditor;
 begin
   e := GetEditor;
+{$IFDEF SCINTILLA}
+  if assigned(e) and (e.Text.GetAnchor <> e.Text.GetCurrentPos) then
+    e.Text.Clear;
+{$ELSE}
   if assigned(e) and e.Text.SelAvail then
     e.Text.ClearSelection;
+{$ENDIF}
 end;
 
 procedure TMainForm.actStatusbarExecute(Sender: TObject);
@@ -4811,11 +4898,58 @@ begin
         begin
           // update the selected text color
           StrtoPoint(pt, devEditor.Syntax.Values[cSel]);
+
+{$IFDEF SCINTILLA}
+         Text.AutoCloseBraces := MainForm.HiddenSci.AutoCloseBraces;
+         Text.AutoCloseQuotes := MainForm.HiddenSci.AutoCloseQuotes;
+         Text.Bookmark := MainForm.HiddenSci.Bookmark;
+         Text.BraceHilite := MainForm.HiddenSci.BraceHilite;
+         Text.Caret := MainForm.HiddenSci.Caret;
+         Text.ClearUndoAfterSave := MainForm.HiddenSci.ClearUndoAfterSave;
+         Text.CodePage := MainForm.HiddenSci.CodePage;
+         Text.Color := MainForm.HiddenSci.Color;
+         Text.Colors := MainForm.HiddenSci.Colors;
+         Text.ControlCharSymbol := MainForm.HiddenSci.ControlCharSymbol;
+         Text.DivOptions := MainForm.HiddenSci.DivOptions;
+         Text.EdgeColumn := MainForm.HiddenSci.EdgeColumn;
+         Text.EdgeColor := MainForm.HiddenSci.EdgeColor;
+         Text.EdgeMode := MainForm.HiddenSci.EdgeMode;
+         Text.EOLStyle := MainForm.HiddenSci.EOLStyle;
+         Text.Folding := MainForm.HiddenSci.Folding;
+         Text.FoldMarkers := MainForm.HiddenSci.FoldMarkers;
+         Text.FoldDrawFlags := MainForm.HiddenSci.FoldDrawFlags;
+         Text.Font := MainForm.HiddenSci.Font;
+         Text.ForceMouseRelease := MainForm.HiddenSci.ForceMouseRelease;
+         Text.Gutter0 := MainForm.HiddenSci.Gutter0;
+         Text.Gutter1 := MainForm.HiddenSci.Gutter1;
+         Text.Gutter2 := MainForm.HiddenSci.Gutter2;
+         Text.Gutter3 := MainForm.HiddenSci.Gutter3;
+         Text.Gutter4 := MainForm.HiddenSci.Gutter4;
+         Text.KeyCommands := MainForm.HiddenSci.KeyCommands;
+         Text.HideSelect := MainForm.HiddenSci.HideSelect;
+         Text.Indentation := MainForm.HiddenSci.Indentation;
+         Text.IndentWidth := MainForm.HiddenSci.IndentWidth;
+         Text.KeyCommands := MainForm.HiddenSci.KeyCommands;
+         Text.LanguageManager.SelectedLanguage := dmMain.GetHighlighter(FileName);
+         Text.LayoutCache := MainForm.HiddenSci.LayoutCache;
+         Text.ShowHint := MainForm.HiddenSci.ShowHint;
+         Text.TabWidth := MainForm.HiddenSci.TabWidth;
+         Text.UseTabs := MainForm.HiddenSci.UseTabs;
+         Text.WordChars := MainForm.HiddenSci.WordChars;
+         Text.WordWrap := MainForm.HiddenSci.WordWrap;
+         Text.WordWrapVisualFlags := MainForm.HiddenSci.WordWrapVisualFlags;
+         Text.WordWrapVisualFlagsLocation := MainForm.HiddenSci.WordWrapVisualFlagsLocation;
+
+{$ELSE}
           Text.SelectedColor.Background := pt.X;
           Text.SelectedColor.Foreground := pt.Y;
+{$ENDIF}
 
           devEditor.AssignEditor(Text);
+{$IFDEF SCINTILLA}
+{$ELSE}
           Text.Highlighter := dmMain.GetHighlighter(FileName);
+{$ENDIF}
           ReconfigCompletion;
         end;
       InitClassBrowser(chkCCCache.Tag = 1);
@@ -4885,11 +5019,12 @@ begin
     (NewName <> OldName) then
   try
     chdir(ExtractFilePath(OldName));
-
     // change in project first so on failure
     // file isn't already renamed
     fProject.SaveUnitAs(idx, ExpandFileto(NewName, GetCurrentDir));
+    devFileMonitor1.Deactivate;// deactivate for renaming or a message will raise
     Renamefile(OldName, NewName);
+    devFileMonitor1.Activate;
   except
     MessageDlg(format(Lang[ID_ERR_RENAMEFILE], [OldName]), mtError, [mbok], 0);
   end;
@@ -5048,8 +5183,11 @@ procedure TMainForm.actFindAllExecute(Sender: TObject);
 begin
   SearchCenter.SingleFile := FALSE;
   SearchCenter.Project := fProject;
+{$IFDEF SCINTILLA}
+{$ELSE}
   SearchCenter.Replace := false;
   SearchCenter.Editor := GetEditor;
+{$ENDIF}
   if SearchCenter.ExecuteSearch then
     ShowDockForm(frmReportDocks[cFindTab]);
   SearchCenter.Project := nil;
@@ -5515,7 +5653,10 @@ begin
 {$IFNDEF PRIVATE_BUILD}
   try
 {$ENDIF}
+{$IFDEF SCINTILLA}
+{$ELSE}
     (Sender as TAction).Enabled := Assigned(e) and Assigned(e.Text) and (e.Text.Text <> '');
+{$ENDIF}
 {$IFNDEF PRIVATE_BUILD}
   except
   end;
@@ -5628,15 +5769,22 @@ var
 begin
   e := GetEditor;
   if assigned(e) then
+{$IFDEF SCINTILLA}
+    e.ToggleBreakPoint(e.Text.LineFromPosition(e.Text.GetCurrentPos));
+{$ELSE}
     e.ToggleBreakPoint(e.Text.CaretY);
+{$ENDIF}
 end;
 
 procedure TMainForm.actIncrementalExecute(Sender: TObject);
 var
   pt: TPoint;
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   SearchCenter.Editor := GetEditor;
   SearchCenter.AssignSearchEngine;
+{$ENDIF}
 
   frmIncremental.SearchAgain.Shortcut := actFindNext.Shortcut;
   pt := ClienttoScreen(point(PageControl.Left, PageControl.Top));
@@ -5711,9 +5859,15 @@ begin
 
   if assigned(e) then
   begin
+{$IFDEF SCINTILLA}
+    e.Text.GotoPos(e.Text.PositionFromLine(line)+ col);
+    e.Text.SetAnchor(e.Text.WordEndPosition(e.Text.PositionFromLine(line)+ col, true));
+    e.Text.SetCurrentPos(e.Text.WordStartPosition(e.Text.PositionFromLine(line)+ col, true));
+{$ELSE}
     e.Text.CaretXY:= BufferCoord(col, line);
     e.Text.SetSelWord;
     e.Text.CaretXY := e.Text.BlockBegin;
+{$ENDIF}
     e.Activate;
   end;
 end;
@@ -5805,7 +5959,11 @@ begin
   s := '';
   e := GetEditor;
   if Assigned(e) then begin
+{$IFDEF SCINTILLA}
+  if e.Text.GetAnchor <> e.Text.GetCurrentPos then
+{$ELSE}
     if e.Text.SelAvail then
+{$ENDIF}
       s := e.Text.SelText
     else begin
       s := e.GetWordAtCursor;
@@ -5950,9 +6108,13 @@ begin
     if assigned(e) then
     begin
       if e.isForm then
-        actCut.Enabled := e.isForm
+          actCut.Enabled := e.isForm
       else
+{$IFDEF SCINTILLA}
+      actCut.Enabled := (assigned(e) and (e.Text.GetAnchor <> e.Text.GetCurrentPos)) ;
+{$ELSE}
         actCut.Enabled := assigned(e.Text) and e.Text.SelAvail;
+{$ENDIF}
     end;
 {$IFNDEF PRIVATE_BUILD}
   except
@@ -5973,9 +6135,13 @@ begin
     if assigned(e) then
     begin
       if e.isForm then
-        actCopy.Enabled := e.isForm
+          actCopy.Enabled := e.isForm
       else
+{$IFDEF SCINTILLA}
+        actCopy.Enabled := assigned(e) and (e.Text.GetAnchor <> e.Text.GetCurrentPos);
+{$ELSE}
         actCopy.Enabled := e.Text.SelAvail;
+{$ENDIF}
     end;
 {$IFNDEF PRIVATE_BUILD}
   except
@@ -5996,7 +6162,7 @@ begin
     if assigned(e) then
     begin
       if e.isForm then
-        actPaste.Enabled := e.isForm
+          actPaste.Enabled := e.isForm
       else
         actPaste.Enabled := assigned(e.Text) and e.Text.CanPaste;
     end;
@@ -6049,7 +6215,11 @@ begin
 {$ENDIF}
     e := GetEditor;
     // ** need to also check if a search has already happened
+{$IFDEF SCINTILLA}
+  actFindNext.Enabled := assigned(e) and (e.Text.GetLineCount <> 1);
+{$ELSE}
     actFindNext.Enabled := assigned(e) and assigned(e.Text) and (e.Text.Text <> '');
+{$ENDIF}
 {$IFNDEF PRIVATE_BUILD}
   except
   end;
@@ -6501,6 +6671,8 @@ begin
         e.Text.SetFocus;
         if ClassBrowser1.Enabled then
           ClassBrowser1.CurrentFile := e.FileName;
+{$IFDEF SCINTILLA}
+{$ELSE}
         for i := 1 to 9 do
           if e.Text.GetBookMark(i, x, y) then begin
             TogglebookmarksPopItem.Items[i - 1].Checked := true;
@@ -6510,6 +6682,7 @@ begin
             TogglebookmarksPopItem.Items[i - 1].Checked := false;
             TogglebookmarksItem.Items[i - 1].Checked := false;
           end;
+{$ENDIF}
       end;
     end;
   end;
@@ -7047,23 +7220,34 @@ var
 
   procedure ReloadEditor(FileName: string);
   var
-    e: TEditor;
-    p: TBufferCoord;
-  begin
-    e := GetEditorFromFileName(Filename);
-    if Assigned(e) then
-    begin
-      if e.isForm then
-        e.ReloadForm
-      else
+  e: TEditor;
+{$IFDEF SCINTILLA}
+  p : integer;
+{$ELSE}
+  p : TBufferCoord;
+{$ENDIF}
       begin
-        p := e.Text.CaretXY;
-        e.Text.Lines.LoadFromFile(Filename);
-        if (p.Line <= e.Text.Lines.Count) then
-          e.Text.CaretXY := p;
+        e := GetEditorFromFileName(Filename);
+        if Assigned(e) then
+        begin
+          if e.isForm then
+            e.ReloadForm
+          else
+          begin
+{$IFDEF SCINTILLA}
+            p := e.Text.GetCurrentPos;
+            e.Text.Lines.LoadFromFile(Filename);
+            if (p <= e.Text.GetTextLength) then
+              e.Text.GotoPos(p);
+{$ELSE}
+            p := e.Text.CaretXY;
+            e.Text.Lines.LoadFromFile(Filename);
+            if (p.Line <= e.Text.Lines.Count) then
+              e.Text.CaretXY := p;
+{$ENDIF}
+          end;
+        end;
       end;
-    end;
-  end;
 begin
   if ReloadFilenames.Count = 1 then
   begin
@@ -7074,7 +7258,7 @@ begin
                         'Do you want to reload the file from disk? This will discard all your unsaved changes.',
                         mtConfirmation, [mbYes, mbNo], Handle) = mrYes then
             ReloadEditor(Filename);
-        mctDeleted:
+    mctDeleted:
           MessageDlg(Filename + ' has been renamed or deleted.', mtInformation, [mbOk], Handle);
       end;
     ReloadFilenames.Clear;
@@ -7262,7 +7446,11 @@ var  s: string;
      e: TEditor;
 begin
   e := GetEditor;
+{$IFDEF SCINTILLA}
+  s := e.GetWordAtCursor;
+{$ELSE}
   s := e.Text.GetWordAtRowCol(e.Text.CaretXY);
+{$ENDIF}
   if s <> '' then
     AddDebugVar(s);
 end;
@@ -7279,7 +7467,11 @@ var
  line : integer;
 begin
   e := GetEditor;
+{$IFDEF SCINTILLA}
+  line := e.Text.LineFromPosition(e.Text.GetCurrentPos);
+{$ELSE}
   line := e.Text.CaretY;
+{$ENDIF}
   // If the debugger is not running, set the breakpoint to the current line and
   // start the debugger
   if not fDebugger.Executing then
@@ -7602,7 +7794,11 @@ procedure TMainForm.actCVSUpdateExecute(Sender: TObject);
 var
   I: integer;
   e: TEditor;
+{$IFDEF SCINTILLA}
+  pt: integer;
+{$ELSE}
   pt: TBufferCoord;
+{$ENDIF}
 begin
   actSaveAll.Execute;
   DoCVSAction(Sender, caUpdate);
@@ -7611,9 +7807,17 @@ begin
   for I := 0 to PageControl.PageCount - 1 do begin
     e := GetEditor(I);
     if Assigned(e) and FileExists(e.FileName) then begin
+{$IFDEF SCINTILLA}
+      pt := e.Text.GetCurrentPos;
+{$ELSE}
       pt := e.Text.CaretXY;
+{$ENDIF}
       e.Text.Lines.LoadFromFile(e.FileName);
+{$IFDEF SCINTILLA}
+{$ELSE}
       e.Text.CaretXY := pt;
+{$ENDIF}
+
     end;
   end;
 end;
@@ -8221,18 +8425,23 @@ begin
   DebugTree.Items.Clear;
 end;
 
+
 procedure TMainForm.HideCodeToolTip;
 var
   CurrentEditor: TEditor;
 begin
   CurrentEditor := GetEditor(PageControl.ActivePageIndex);
+{$IFDEF SCINTILLA}
+{$ELSE}
   if Assigned(CurrentEditor) and Assigned(CurrentEditor.CodeToolTip) then
     CurrentEditor.CodeToolTip.ReleaseHandle;
+{$ENDIF}
 end;
+
 
 procedure TMainForm.ApplicationEvents1Deactivate(Sender: TObject);
 begin
-  //Hide the tooltip since we no longer have focus
+  // Hide the tooltip since we no longer have focus
   HideCodeToolTip;
   IsIconized := True;
 end;
@@ -10112,8 +10321,12 @@ begin
     if assigned(e) then
     begin
       //TODO: check for a valid line number
+{$IFDEF SCINTILLA}
+        e.Text.GotoPos(e.Text.PositionFromLine(intLineNum));
+{$ELSE}
       e.Text.CaretX := 0;
       e.Text.CaretY := intLineNum;
+{$ENDIF}
     end;
     boolInspectorDataClear := False;
   end;
@@ -10236,7 +10449,11 @@ var
   ClsName : string;
   boolFound: Boolean;
   e: TEditor;
+{$IFDEF SCINTILLA}
+  CppEditor, Hppeditor: TScintilla;
+{$ELSE}
   CppEditor, Hppeditor: TSynEdit;
+{$ENDIF}
   strClassName:String;
 begin
 
@@ -10344,7 +10561,10 @@ begin
     Cppeditor.Lines.Append('}');
     Cppeditor.Lines.Append('');
     Result := True;
+{$IFDEF SCINTILLA}
+{$ELSE}
     CppEditor.CaretY := Line;
+{$ENDIF}
     e.GetDesignerCPPEditor.InsertString('', true);
     e.UpdateDesignerData;
   end;
@@ -10367,7 +10587,11 @@ var
   boolFound: Boolean;
   intfObj: IWxComponentInterface;
   e: TEditor;
+{$IFDEF SCINTILLA}
+  CppEditor, Hppeditor: TScintilla;
+{$ELSE}
   CppEditor, Hppeditor: TSynEdit;
+{$ENDIF}
 begin
   St := nil;
   Result := False;
@@ -10483,7 +10707,10 @@ begin
     Cppeditor.Lines.Append('}');
     Cppeditor.Lines.Append('');
     Result := True;
+{$IFDEF SCINTILLA}
+{$ELSE}
     CppEditor.CaretY := Line;
+{$ENDIF}
     e.GetDesignerCPPEditor.InsertString('', true);
 
     boolInspectorDataClear:=False;
@@ -11358,6 +11585,49 @@ begin
     CreateNewDialogOrFrameCode(dtWxDialog, nil, 2);
 end;
 
+procedure TMainForm.OnFileChangeNotify(Sender: TObject; ChangeType: TChangeType);
+begin
+  if FileWatching = false then
+    exit;
+    if strChangedFileList.IndexOf(TFileWatch(Sender).FileName)  = -1 then
+        strChangedFileList.Add(TFileWatch(Sender).FileName);
+end;
+
+procedure TMainForm.ApplicationEvents1Activate(Sender: TObject);
+{$IFDEF WX_BUILD}
+var
+   I:Integer;
+{$ENDIF}
+begin
+{$IFDEF WX_BUILD}
+  FileWatching := false;
+  devFileMonitor1.Deactivate;
+  for I := 0 to FWatchList.Count - 1 do    // Iterate
+  begin
+{$IFNDEF PRIVATE_BUILD}
+    try
+{$ENDIF}
+      if Assigned(FWatchList[i]) then
+        TFileWatch(FWatchList[i]).Terminate;
+{$IFNDEF PRIVATE_BUILD}
+    except
+    end;
+{$ENDIF}
+  end;    // for
+
+  FWatchList.Clear;
+  for I := 0 to strChangedFileList.Count - 1 do    // Iterate
+  begin
+    if FileExists(strChangedFileList[i]) then
+        devFileMonitor1NotifyChange(self,mctChanged,strChangedFileList[i])
+    else
+        devFileMonitor1NotifyChange(self,mctDeleted,strChangedFileList[i]);
+  end;
+  strChangedFileList.Clear;
+
+{$ENDIF}
+end;
+
 procedure TMainForm.actWxPropertyInspectorCutExecute(Sender: TObject);
 begin
 {$IFDEF WX_BUILD}
@@ -11771,6 +12041,102 @@ begin
   cmbTodoFilterChange(cmbTodoFilter);
 end;
 
+procedure TMainForm.FCodeToolTipBeforeShow(Sender: TObject;
+  const Position: Integer; ListToDisplay: TStrings;
+  var CancelDisplay: Boolean);
+var
+  I: Integer;
+  TmpX, savepos, StartX, ParenCounter: Integer;
+  locline, lookup: String;
+  FoundMatch: Boolean;
+  sl: TList;
+begin
+
+  // we dont need to go further when the hint is already
+  // active, BECAUSE we already got all neccessary prototimes!
+//  if FCodeToolTip.Editor.CallTipActive then Exit;
+
+  //clear the contents of the tooltip list
+  FCodeToolTip.ApiStrings.Clear;
+  sl := nil;
+  try
+//    with FCodeToolTip.Editor do
+    begin
+      locLine := FCodeToolTip.Editor.GetLineS(FCodeToolTip.Editor.LineFromPosition(FCodeToolTip.Editor.GetCurrentPos));
+
+      //go back from the cursor and find the first open paren
+      TmpX := FCodeToolTip.Editor.GetColumn(FCodeToolTip.Editor.GetCurrentPos);
+      if TmpX > length(locLine) then
+        TmpX := length(locLine)
+      else
+        dec(TmpX);
+      FoundMatch := False;
+
+      while (TmpX > 0) and not (FoundMatch) do
+      begin
+        if LocLine[TmpX] = ',' then
+          Dec(TmpX)
+        else if LocLine[TmpX] = ')' then
+        begin
+          //We found a close, go till it's opening paren
+          ParenCounter := 1;
+          dec(TmpX);
+          while (TmpX > 0) and (ParenCounter > 0) do begin
+            if LocLine[TmpX] = ')' then
+              inc(ParenCounter)
+            else if LocLine[TmpX] = '(' then
+              dec(ParenCounter);
+            dec(TmpX);
+          end;
+          if TmpX > 0 then
+            dec(TmpX); //eat the open paren
+        end
+        else if locLine[TmpX] = '(' then begin
+          //we have a valid open paren, lets see what the word before it is
+          StartX := TmpX;
+          while (TmpX > 0) and not (locLine[TmpX] in ['_', '0'..'9', 'A'..'Z', 'a'..'z', 'À'..'ß', #184,#168, 'à'..'ÿ'] ) do
+            Dec(TmpX);
+          if TmpX > 0 then begin
+            SavePos := TmpX;
+            while (TmpX > 0) and (locLine[TmpX] in ['_', '0'..'9', 'A'..'Z', 'a'..'z', 'À'..'ß', #184,#168, 'à'..'ÿ'] ) do
+              dec(TmpX);
+            inc(TmpX);
+            lookup := Copy(LocLine, TmpX, SavePos - TmpX + 1);
+            if Assigned(fLastParamFunc) then begin
+              if (fLastParamFunc.Count > 0) then
+                if (PStatement(fLastParamFunc.Items[0])^._Command = lookup) then // this avoid too much calls to CppParser.FillListOf
+                  sl := fLastParamFunc;
+            end;
+            if not Assigned(sl) then begin
+              sl := TList.Create;
+              if MainForm.CppParser1.FillListOf(Lookup, False, sl) then begin  // and try to use only a minimum of FillListOf
+                if Assigned(fLastParamFunc) then
+                  FreeAndNil(fLastParamFunc);
+                fLastParamFunc := sl;
+              end
+              else
+                FreeAndNil(sl);
+            end;
+            FoundMatch := Assigned(sl);
+            if not(FoundMatch) then begin
+              TmpX := StartX;
+              dec(TmpX);
+            end;
+          end;
+        end
+        else
+          dec(TmpX);
+      end;
+    end;
+
+    CancelDisplay := NOT FoundMatch;
+  finally
+
+  end;
+
+end;
+
+
 {$IfDef WX_BUILD}
 procedure TMainForm.tmrInspectorHelperTimer(Sender: TObject);
 begin
@@ -11793,6 +12159,8 @@ begin
       Height := Rect.Bottom - Rect.Top;
     end;
 end;
+
+
 
 initialization
     TWxJvInspectorTStringsItem.RegisterAsDefaultItem;

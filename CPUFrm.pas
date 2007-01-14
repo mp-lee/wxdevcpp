@@ -24,8 +24,10 @@ interface
 uses
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Buttons, SynEdit, XPMenu, debugger,
-  SynEditHighlighter, SynHighlighterAsm, ExtCtrls, ComCtrls;
+  Dialogs, StdCtrls, Buttons,
+   SynEdit, XPMenu, debugger,
+  SciLexer, SciLexerMemo, SciLexerMod,
+   ExtCtrls, ComCtrls;
 {$ENDIF}
 {$IFDEF LINUX}
   SysUtils, Variants, Classes, QGraphics, QControls, QForms,
@@ -37,10 +39,9 @@ type
     gbAsm: TGroupBox;
     edFunc: TEdit;
     lblFunc: TLabel;
-    CodeList: TSynEdit;
+    CodeList: TScintilla;
     gbRegisters: TGroupBox;
     XPMenu: TXPMenu;
-    SynAsmSyn1: TSynAsmSyn;
     rgSyntax: TRadioGroup;
     Registers: TListView;
     CloseBtn: TButton;
@@ -194,12 +195,15 @@ begin
   CodeList.Lines.Text := Disassembly;
   for i := 0 to CodeList.Lines.Count - 1 do
     if pos(Registers.Items[8].SubItems[0], CodeList.Lines[i]) <> 0 then begin
+{$IFDEF SCINTILLA}
+{$ELSE}
       if (ActiveLine <> i) and (ActiveLine <> -1) then
         CodeList.InvalidateLine(ActiveLine);
       ActiveLine := i + 1;
       CodeList.InvalidateLine(ActiveLine);
       CodeList.CaretY := ActiveLine;
       CodeList.EnsureCursorPosVisible;
+{$ENDIF}
       break;
     end;
 end;

@@ -27,7 +27,7 @@ interface
 uses
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StrUtils, ExtCtrls, StdCtrls, SynEdit, 
+  Dialogs, StrUtils, ExtCtrls, StdCtrls, SciLexer, SciLexerMemo, SciLexerMod, 
   SynEditTypes, FileCtrl, XPMenu;
 {$ENDIF}
 {$IFDEF LINUX}
@@ -73,7 +73,12 @@ type
   private
     { Private declarations }
     fFilename: string;
+{$IFDEF SCINTILLA}
+    fEdit: TScintilla;
+{$ELSE}
     fEdit: TSynEdit;
+{$ENDIF}
+
     procedure LoadText;
     procedure CalculateFile(Filename: string);
     procedure CalculateSize(Filename: string);
@@ -92,7 +97,7 @@ implementation
 
 uses 
 {$IFDEF WIN32}
-  SynEditHighlighter, main, MultiLangSupport, datamod, project, editor, devcfg;
+  main, MultiLangSupport, datamod, project, editor, devcfg;
 {$ENDIF}
 {$IFDEF LINUX}
   QSynEditHighlighter, main, MultiLangSupport, datamod, project, editor, devcfg;
@@ -120,7 +125,10 @@ end;
 
 procedure TFilePropertiesForm.CalculateFile(Filename: string);
 var
+{$IFDEF SCINTILLA}
+{$ELSE}
   Attri: TSynHighlighterAttributes;
+{$ENDIF}
   Current, Token: string;
   I, C: integer;
 begin
@@ -145,7 +153,12 @@ begin
       Inc(C);
 
     // take the token type of the first word of the line
+{$IFDEF SCINTILLA}
+{$ELSE}
     fEdit.GetHighlighterAttriAtRowCol(BufferCoord(C, I + 1), Token, Attri);
+{$ENDIF}
+{$IFDEF SCINTILLA}
+{$ELSE}
 
     // if we get a token type...
     if Assigned(Attri) then begin
@@ -169,15 +182,23 @@ begin
       // if we don't get a token type, this line is empty or contains only spaces
     else
       Inc(Empty);
+{$ENDIF}
   end;
 end;
 
 procedure TFilePropertiesForm.FormCreate(Sender: TObject);
 begin
   LoadText;
+{$IFDEF SCINTILLA}
+  fEdit := TScintilla.Create(Application);
+{$ELSE}
   fEdit := TSynEdit.Create(Application);
+{$ENDIF}
   fEdit.Parent := nil;
+{$IFDEF SCINTILLA}
+{$ELSE}
   fEdit.Highlighter := dmMain.Cpp;
+{$ENDIF}
   fFilename := '';
 
   lblCode.Font.Style := [fsBold];

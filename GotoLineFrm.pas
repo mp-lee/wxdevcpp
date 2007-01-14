@@ -31,7 +31,7 @@ interface
 uses
 {$IFDEF WIN32}
   Windows, SysUtils, Classes, Graphics, Forms, Controls, StdCtrls, 
-  Buttons, ExtCtrls, Spin, XPMenu, SynEdit;
+  Buttons, ExtCtrls, Spin, XPMenu, SciLexer, SciLexerMemo, SciLexerMod;
 {$ENDIF}
 {$IFDEF LINUX}
   Classes, QGraphics, QForms, QControls, QStdCtrls, 
@@ -52,11 +52,20 @@ type
     procedure LineKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
   private
+{$IFDEF SCINTILLA}
+    FEditor: TScintilla;
+    procedure SetEditor(AEditor: TScintilla);
+{$ELSE}
     FEditor: TCustomSynEdit;
     procedure SetEditor(AEditor: TCustomSynEdit);
+{$ENDIF}
   public
     procedure LoadText;
+{$IFDEF SCINTILLA}
+    property Editor: TScintilla read FEditor write SetEditor;
+{$ELSE}
     property Editor: TCustomSynEdit read FEditor write SetEditor;
+{$ENDIF}
   end;
 
 implementation
@@ -113,13 +122,21 @@ begin
 {$ENDIF}
 end;
 
+{$IFDEF SCINTILLA}
+procedure TGotoLineForm.SetEditor(AEditor: TScintilla);
+{$ELSE}
 procedure TGotoLineForm.SetEditor(AEditor: TCustomSynEdit);
+{$ENDIF}
 begin
   FEditor := AEditor;
   if Assigned(FEditor) then
   begin
     Line.MaxValue := FEditor.Lines.Count;
+{$IFDEF SCINTILLA}
+    Line.Value := FEditor.LineFromPosition(FEditor.GetCurrentPos);
+{$ELSE}
     Line.Value := FEditor.CaretY;
+{$ENDIF}
   end;
 end;
 

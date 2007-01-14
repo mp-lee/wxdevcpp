@@ -22,7 +22,7 @@ unit utils;
 interface
 uses
 {$IFDEF WIN32}
- Windows, Classes, Sysutils, Forms, ShellAPI, Dialogs, SynEditHighlighter,
+ Windows, Classes, Sysutils, Forms, ShellAPI, Dialogs, 
  Menus, Registry, Messages {for WM_USER};
 {$ENDIF}
 {$IFDEF LINUX}
@@ -122,8 +122,11 @@ function BuildFilter(var value: string; const _filters: array of string): boolea
 function CodeInstoStr(s: string): string;
 function StrtoCodeIns(s: string): string;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 procedure StrtoAttr(var Attr: TSynHighlighterAttributes; Value: string);
 function AttrtoStr(const Attr: TSynHighlighterAttributes): string;
+{$ENDIF}
 
 procedure StrtoPoint(var pt: TPoint; value: string);
 function PointtoStr(const pt: TPoint): string;
@@ -648,6 +651,8 @@ begin
   result:= format('%d, %d', [pt.y, pt.x]);
 end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 function AttrtoStr(const Attr: TSynHighlighterAttributes): string;
 begin
   result:= format('%s, %s, %d, %d, %d',
@@ -688,6 +693,7 @@ begin
     tmp.Free;
   end;
 end;
+{$ENDIF}
 
 (*procedure StrtoList(s: string; const List: TStrings; const delimiter: char=';');
 begin

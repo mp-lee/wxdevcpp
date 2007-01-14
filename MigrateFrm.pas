@@ -23,7 +23,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, SynEdit, SynMemo, Buttons, JvExButtons,
+  Dialogs, StdCtrls, ComCtrls, SciPropertyMgr, SciLexer, SciLexerMemo, SciLexerMod, SciSupport, SciDocuments, Buttons, JvExButtons,
   JvBitBtn, ExtCtrls, XPMenu, devCfg;
 
 type

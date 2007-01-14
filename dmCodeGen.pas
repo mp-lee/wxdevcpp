@@ -30,13 +30,47 @@ unit dmCodeGen;
 
 interface
 
-uses classes, Sysutils, DbugIntf,xprocs,synEdit;
+uses classes, Sysutils, DbugIntf,xprocs,SciLexer, SciLexerMemo, SciLexerMod;
 
 type
     TBlockType = (btManualCode,btDialogStyle, btHeaderIncludes, btForwardDec, btClassNameControlIdentifiers, btClassNameEnumControlIdentifiers,btXPMImages, btClassNameEventTableEntries, btClassNameGUIItemsCreation, btClassNameGUIItemsDeclaration,btLHSVariables,btRHSVariables);
 
 function GetStartAndEndBlockStrings(ClassNameString: string; blockType: TBlockType; var StartString, EndString: string): Boolean;
 
+{$IFDEF SCINTILLA}
+function GetBlockStartAndEndPos(synEdit:TScintilla; wxClassName: string; blockType: TBlockType; var StartPos, EndPos: Integer): Boolean;
+
+function GetBlockCode(synEdit:TScintilla; wxClassName: string; blockType: TBlockType; StartPos, EndPos: Integer): TStringList;
+
+function DeleteBlock(synEdit:TScintilla; wxClassName: string; blockType: TBlockType): Boolean;
+
+function AddDialogStyleDeclaration(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+function DeleteAllDialogStyleDeclaration(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+
+function AddClassNameGUIItemsDeclaration(synEdit:TScintilla;ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+function DeleteAllClassNameGUIItemsDeclaration(synEdit:TScintilla;ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+
+function AddClassNameGUIItemsCreation(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+function DeleteAllClassNameGUIItemsCreation(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+
+function AddClassNameControlIndentifiers(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; ControlIDString: string): Boolean;
+function DeleteAllClassNameControlIndentifiers(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+
+function AddClassNameEnumControlIndentifiers(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; ControlIDString: string): Boolean;
+function DeleteAllClassNameEnumControlIndentifiers(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+
+function AddClassNameIncludeHeader(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; ControlIDString: string): Boolean;
+function DeleteAllClassNameIncludeHeader(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+
+function AddClassNameEventTableEntries(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; EvtString: string;useTabChar:Boolean = true): Boolean;
+function DeleteAllClassNameEventTableEntries(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+
+function AddRHSVariableList(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; VarString: string;useTabChar:Boolean = true): Boolean;
+function DeleteAllRHSVariableList(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+
+function AddLHSVariableList(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; VarString: string;useTabChar:Boolean = true): Boolean;
+function DeleteAllLHSVariableList(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function GetBlockStartAndEndPos(synEdit:TSynEdit; wxClassName: string; blockType: TBlockType; var StartPos, EndPos: Integer): Boolean;
 
 //function GetBlockCode(synEdit:TSynEdit; wxClassName: string; blockType: TBlockType; StartPos, EndPos: Integer): string;overload;
@@ -70,71 +104,124 @@ function DeleteAllRHSVariableList(synEdit:TSynEdit; ClassNameString: string; Blo
 
 function AddLHSVariableList(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; VarString: string;useTabChar:Boolean = true): Boolean;
 function DeleteAllLHSVariableList(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 
 
 implementation
 
+{$IFDEF SCINTILLA}
+function AddHeaderInclude(synEdit:TScintilla; BlockStart, BlockEnd: Integer; HeaderString: string): Boolean;
+{$ELSE}
 function AddHeaderInclude(synEdit:TSynEdit; BlockStart, BlockEnd: Integer; HeaderString: string): Boolean;
+{$ENDIF}
 begin
     Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function EditHeaderInclude(synEdit:TScintilla; BlockStart, BlockEnd: Integer; FromHeaderString, ToHeaderString: string): Boolean;
+{$ELSE}
 function EditHeaderInclude(synEdit:TSynEdit; BlockStart, BlockEnd: Integer; FromHeaderString, ToHeaderString: string): Boolean;
+{$ENDIF}
 begin
   Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteHeaderInclude(synEdit:TScintilla; BlockStart, BlockEnd: Integer; HeaderString: string): Boolean;
+{$ELSE}
 function DeleteHeaderInclude(synEdit:TSynEdit; BlockStart, BlockEnd: Integer; HeaderString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function AddSourceInclude(synEdit:TScintilla; BlockStart, BlockEnd: Integer; HeaderString: string): Boolean;
+{$ELSE}
 function AddSourceInclude(synEdit:TSynEdit; BlockStart, BlockEnd: Integer; HeaderString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function EditSourceInclude(synEdit:TScintilla; BlockStart, BlockEnd: Integer; FromHeaderString, ToHeaderString: string): Boolean;
+{$ELSE}
 function EditSourceInclude(synEdit:TSynEdit; BlockStart, BlockEnd: Integer; FromHeaderString, ToHeaderString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteSourceInclude(synEdit:TScintilla; BlockStart, BlockEnd: Integer; HeaderString: string): Boolean;
+{$ELSE}
 function DeleteSourceInclude(synEdit:TSynEdit; BlockStart, BlockEnd: Integer; HeaderString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function AddClassNameControlIdentifier(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; IdString: string): Boolean;
+{$ELSE}
 function AddClassNameControlIdentifier(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; IdString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function EditClassNameControlIdentifier(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; FromIdString, ToIdString: string): Boolean;
+{$ELSE}
 function EditClassNameControlIdentifier(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; FromIdString, ToIdString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteClassNameControlIdentifier(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; IdString: string): Boolean;
+{$ELSE}
 function DeleteClassNameControlIdentifier(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; IdString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function AddXPMImage(synEdit:TScintilla; BlockStart, BlockEnd: Integer; XPMString: string): Boolean;
+{$ELSE}
 function AddXPMImage(synEdit:TSynEdit; BlockStart, BlockEnd: Integer; XPMString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function EditXPMImage(synEdit:TScintilla; BlockStart, BlockEnd: Integer; FromXPMString, ToXPMString: string): Boolean;
+{$ELSE}
 function EditXPMImage(synEdit:TSynEdit; BlockStart, BlockEnd: Integer; FromXPMString, ToXPMString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteXPMImage(synEdit:TScintilla; BlockStart, BlockEnd: Integer; XPMString: string): Boolean;
+{$ELSE}
 function DeleteXPMImage(synEdit:TSynEdit; BlockStart, BlockEnd: Integer; XPMString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function AddClassNameEventTableEntries(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; EvtString: string;useTabChar:Boolean = true): Boolean;
+{$ELSE}
 function AddClassNameEventTableEntries(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; EvtString: string;useTabChar:Boolean = true): Boolean;
+{$ENDIF}
 var
     i:Integer;
     strlst:TStringList;
@@ -166,19 +253,31 @@ begin
     //synEdit.Lines.Insert(BlockStart + 1, #9EvtString);
 end;
 
+{$IFDEF SCINTILLA}
+function EditClassNameEventTableEntries(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; FromEvtString, ToEvtString: string): Boolean;
+{$ELSE}
 function EditClassNameEventTableEntries(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; FromEvtString, ToEvtString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;
 
 
+{$IFDEF SCINTILLA}
+function DeleteAllClassNameEventTableEntries(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function DeleteAllClassNameEventTableEntries(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 begin
     Result:= True;
     DeleteBlock(synEdit, ClassNameString, btClassNameEventTableEntries);
 end;
 
+{$IFDEF SCINTILLA}
+function AddRHSVariableList(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; VarString: string;useTabChar:Boolean = true): Boolean;
+{$ELSE}
 function AddRHSVariableList(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; VarString: string;useTabChar:Boolean = true): Boolean;
+{$ENDIF}
 var
     i:Integer;
     strlst:TStringList;
@@ -210,13 +309,21 @@ begin
     //synEdit.Lines.Insert(BlockStart + 1, #9EvtString);
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteAllRHSVariableList(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function DeleteAllRHSVariableList(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 begin
     Result:= True;
     DeleteBlock(synEdit, ClassNameString, btRHSVariables);
 end;
 
+{$IFDEF SCINTILLA}
+function AddLHSVariableList(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; VarString: string;useTabChar:Boolean = true): Boolean;
+{$ELSE}
 function AddLHSVariableList(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; VarString: string;useTabChar:Boolean = true): Boolean;
+{$ENDIF}
 var
     i:Integer;
     strlst:TStringList;
@@ -248,13 +355,21 @@ begin
     //synEdit.Lines.Insert(BlockStart + 1, #9EvtString);
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteAllLHSVariableList(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function DeleteAllLHSVariableList(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 begin
     Result:= True;
     DeleteBlock(synEdit, ClassNameString, btLHSVariables);
 end;
 
+{$IFDEF SCINTILLA}
+function AddDialogStyleDeclaration(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ELSE}
 function AddDialogStyleDeclaration(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ENDIF}
 var
     i:Integer;
     strlst:TStringList;
@@ -280,13 +395,21 @@ begin
 end;
 
 
+{$IFDEF SCINTILLA}
+function DeleteAllDialogStyleDeclaration(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function DeleteAllDialogStyleDeclaration(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 begin
     Result:= True;
     DeleteBlock(synEdit, ClassNameString, btDialogStyle);
 end;
 
+{$IFDEF SCINTILLA}
+function AddClassNameGUIItemsDeclaration(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ELSE}
 function AddClassNameGUIItemsDeclaration(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ENDIF}
 var
     i:Integer;
     strlst: TStringList;
@@ -308,24 +431,40 @@ begin
     strlst.Destroy;
 end;
 
+{$IFDEF SCINTILLA}
+function EditClassNameGUIItemsDeclaration(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; FromGUIItemString, ToGUIItemString: string): Boolean;
+{$ELSE}
 function EditClassNameGUIItemsDeclaration(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; FromGUIItemString, ToGUIItemString: string): Boolean;
+{$ENDIF}
 begin
     Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteClassNameGUIItemsDeclaration(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ELSE}
 function DeleteClassNameGUIItemsDeclaration(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ENDIF}
 begin
     Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteAllClassNameGUIItemsDeclaration(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function DeleteAllClassNameGUIItemsDeclaration(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 begin
     Result:= True;
     DeleteBlock(synEdit, ClassNameString, btClassNameGUIItemsDeclaration);
 end;
 
 
+{$IFDEF SCINTILLA}
+function AddClassNameGUIItemsCreation(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ELSE}
 function AddClassNameGUIItemsCreation(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ENDIF}
 var
     i:Integer;
     strlst: TStringList;
@@ -348,24 +487,40 @@ begin
 
 end;
 
+{$IFDEF SCINTILLA}
+function EditClassNameGUIItemsCreation(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; FromGUIItemString, ToGUIItemString: string): Boolean;
+{$ELSE}
 function EditClassNameGUIItemsCreation(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; FromGUIItemString, ToGUIItemString: string): Boolean;
+{$ENDIF}
 begin
   Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteClassNameGUIItemsCreation(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ELSE}
 function DeleteClassNameGUIItemsCreation(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; GUIItemString: string): Boolean;
+{$ENDIF}
 begin
     Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteAllClassNameGUIItemsCreation(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function DeleteAllClassNameGUIItemsCreation(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 begin
     Result:= True;
     DeleteBlock(synEdit, ClassNameString, btClassNameGUIItemsCreation);
 end;
 
 
+{$IFDEF SCINTILLA}
+function AddClassNameControlIndentifiers(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; ControlIDString: string): Boolean;
+{$ELSE}
 function AddClassNameControlIndentifiers(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; ControlIDString: string): Boolean;
+{$ENDIF}
 var
     i:Integer;
     strlst: TStringList;
@@ -386,18 +541,30 @@ begin
     strlst.Destroy;
 end;
 
+{$IFDEF SCINTILLA}
+function EditClassNameControlIndentifiers(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; FromControlIDString, ToControlIDString: string): Boolean;
+{$ELSE}
 function EditClassNameControlIndentifiers(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; FromControlIDString, ToControlIDString: string): Boolean;
+{$ENDIF}
 begin
     Result:= True;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteAllClassNameControlIndentifiers(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function DeleteAllClassNameControlIndentifiers(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 begin
     Result:= True;
     DeleteBlock(synEdit, ClassNameString, btClassNameControlIdentifiers);
 end;
 
+{$IFDEF SCINTILLA}
+function AddClassNameEnumControlIndentifiers(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer; ControlIDString: string): Boolean;
+{$ELSE}
 function AddClassNameEnumControlIndentifiers(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer; ControlIDString: string): Boolean;
+{$ENDIF}
 var
     i:Integer;
     strlst: TStringList;
@@ -417,13 +584,21 @@ begin
     strlst.Destroy;
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteAllClassNameEnumControlIndentifiers(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function DeleteAllClassNameEnumControlIndentifiers(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 begin
     Result:= True;
     DeleteBlock(synEdit, ClassNameString, btClassNameEnumControlIdentifiers);
 end;
 
+{$IFDEF SCINTILLA}
+function AddClassNameIncludeHeader(synEdit:TScintilla;ClassNameString: string; BlockStart, BlockEnd: Integer; ControlIDString: string): Boolean;
+{$ELSE}
 function AddClassNameIncludeHeader(synEdit:TSynEdit;ClassNameString: string; BlockStart, BlockEnd: Integer; ControlIDString: string): Boolean;
+{$ENDIF}
 var
     i:Integer;
     strlst: TStringList;
@@ -445,7 +620,11 @@ begin
 
 end;
 
+{$IFDEF SCINTILLA}
+function DeleteAllClassNameIncludeHeader(synEdit:TScintilla; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ELSE}
 function DeleteAllClassNameIncludeHeader(synEdit:TSynEdit; ClassNameString: string; BlockStart, BlockEnd: Integer): Boolean;
+{$ENDIF}
 begin
     Result:= True;
     DeleteBlock(synEdit, ClassNameString, btHeaderIncludes);
@@ -558,7 +737,11 @@ end;
 
 
 
+{$IFDEF SCINTILLA}
+function GetBlockStartAndEndPos(synEdit:TScintilla; wxClassName: string; blockType: TBlockType; var StartPos, EndPos: Integer): Boolean;
+{$ELSE}
 function GetBlockStartAndEndPos(synEdit:TSynEdit; wxClassName: string; blockType: TBlockType; var StartPos, EndPos: Integer): Boolean;
+{$ENDIF}
 var
     strStartBlock, strEndBlock: string;
     i: Integer;
@@ -612,7 +795,9 @@ begin
     end;
 
 end;
-//function GetBlockCode(synEdit:TSynEdit; wxClassName: string; blockType: TBlockType; StartPos, EndPos: Integer): string;
+{$IFDEF SCINTILLA}
+{$ELSE}
+//function GetBlockCode(synEdit:TScintilla; wxClassName: string; blockType: TBlockType; StartPos, EndPos: Integer): string;
 //var
 //    strLst:TStringList;
 //begin
@@ -625,8 +810,13 @@ end;
 //    strLst.destroy;
 //
 //end;
+{$ENDIF}
 
+{$IFDEF SCINTILLA}
+function GetBlockCode(synEdit:TScintilla; wxClassName: string; blockType: TBlockType; StartPos, EndPos: Integer): TStringList;
+{$ELSE}
 function GetBlockCode(synEdit:TSynEdit; wxClassName: string; blockType: TBlockType; StartPos, EndPos: Integer): TStringList;
+{$ENDIF}
 var
     i:Integer;
 begin
@@ -645,7 +835,11 @@ begin
 end;
 
 
+{$IFDEF SCINTILLA}
+function DeleteBlock(synEdit:TScintilla; wxClassName: string; blockType: TBlockType): Boolean;
+{$ELSE}
 function DeleteBlock(synEdit:TSynEdit; wxClassName: string; blockType: TBlockType): Boolean;
+{$ENDIF}
 var
     StartLinePos, EndLinePos: Integer;
     i: Integer;
@@ -667,7 +861,11 @@ begin
 
 end;
 
+{$IFDEF SCINTILLA}
+function AddItemToBlock(synEdit:TScintilla; wxClassName: string; blockType: TBlockType; LineString: string): Boolean;
+{$ELSE}
 function AddItemToBlock(synEdit:TSynEdit; wxClassName: string; blockType: TBlockType; LineString: string): Boolean;
+{$ENDIF}
 begin
     Result:= True;
 end;
@@ -677,7 +875,11 @@ end;
 //
 //End;
 
+{$IFDEF SCINTILLA}
+function LocateLineInBlock(synEdit:TScintilla; wxClassName: string; blockType: TBlockType; LineString: string): Boolean;
+{$ELSE}
 function LocateLineInBlock(synEdit:TSynEdit; wxClassName: string; blockType: TBlockType; LineString: string): Boolean;
+{$ENDIF}
 begin
 Result:= True;
 end;

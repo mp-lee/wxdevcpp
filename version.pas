@@ -42,7 +42,7 @@ const
 
 resourcestring
   // misc strings
-  DEVCPP = 'wxDev-C++';
+  DEVCPP = 'wxDev-C++ Scintilla';
   DEVCPP_VERSION    = '6.11';
   DEFAULT_LANG_FILE = 'English.lng';
   HTTP = 'http://';
@@ -166,6 +166,7 @@ resourcestring
   TEMPLATE_DIR         = 'Templates' + pd;
   THEME_DIR            = 'Themes' + pd;
   PACKAGES_DIR         = 'Packages' + pd;
+  STYLES_DIR           = 'Styles' + pd;
 
   // file fxtensions
   DLL_EXT = '.dll';
@@ -176,6 +177,8 @@ resourcestring
   INI_EXT = '.ini';
   TEMPLATE_EXT = '.template';
   SYNTAX_EXT = '.syntax';
+//  STYLES_EXT = '.Styles';
+  STYLES_EXT = '.properties';
 
   // programs
   PACKMAN_PROGRAM = 'packman.exe';

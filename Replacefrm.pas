@@ -24,7 +24,13 @@ interface
 uses
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  SynEdit, StdCtrls, SynEditTypes, XPMenu, ExtCtrls;
+  SciLexer, SciLexerMemo, SciLexerMod, sciPrint, sciAbbrevationManager, SciActions,
+  SciActionsRes, sciAddLanguageFormUnit, SciAutoComplete, SciCallTips, SciConfirmReplaceDlg,
+  SciControllerHandler, SciDetectUtils, SciDocuments, SciFileExtensionsManager, SciKeyBindings,
+  SciKeyEditForm, SciLexerOptionsDlg, SciMacroRecording, ScintillaLanguageManager,
+  SciPropertyMgr, SciReplaceTextDlg, SciResLang, SciResLangDcl, SciSearchReplace,
+  SciSearchReplaceBase, SciSearchTextDlg, SciStreamDefault, SciStyleLoader, SciSupport,
+  sciUtils, SciWhatToFillUnit, StdCtrls, XPMenu, ExtCtrls;
 {$ENDIF}
 {$IFDEF LINUX}
   SysUtils, Classes, QGraphics, QControls, QForms,
@@ -56,13 +62,21 @@ type
     procedure btnCancelClick(Sender: TObject);
     
   private
+{$IFDEF SCINTILLA}
+    fSearchOptions: integer;  //mn scintilla search options
+{$ELSE}
     fSearchOptions: TSynSearchOptions;
+{$ENDIF}
     fClose: boolean;
     fRegex: boolean;
     procedure LoadText;
 
   public
+{$IFDEF SCINTILLA}
+    property SearchOptions: integer read fSearchOptions write fSearchOptions;
+{$ELSE}
     property SearchOptions: TSynSearchOptions read fSearchOptions write fSearchOptions;
+{$ENDIF}
     property Regex: boolean read fRegex write fRegex;
   end;
 
@@ -86,7 +100,11 @@ procedure TfrmReplace.btnReplaceClick(Sender: TObject);
 begin
   if cboFindText.Text <> '' then
   begin
+{$IFDEF SCINTILLA}
+     fSearchOptions:= 0;
+{$ELSE}
     fSearchOptions := [];
+{$ENDIF}
     Regex := cbRegex.Checked;
     if cboFindText.Items.Indexof(cboFindText.Text) = -1 then
       cboFindText.Items.Add(cboFindText.Text);
@@ -94,6 +112,8 @@ begin
     if cboReplaceText.Items.IndexOf(cboReplaceText.Text) = -1 then
       cboReplaceText.Items.Add(cboReplaceText.Text);
 
+{$IFDEF SCINTILLA}
+{$ELSE}
     if modalResult = mrOk then
       fSearchOptions:= [ssoReplace]
     else if ModalResult = mrAll then
@@ -102,20 +122,41 @@ begin
     if cbPrompt.Checked then
       include(fSearchoptions, ssoPrompt);
 
+{$ENDIF}
     if cbMatchCase.checked then
+{$IFDEF SCINTILLA}
+      fSearchOptions := fSearchOptions or SCFIND_MATCHCASE;
+{$ELSE}
       include(fSearchOptions, ssoMatchCase);
+{$ENDIF}
 
     if cbWholeWord.Checked then
+{$IFDEF SCINTILLA}
+      fSearchOptions := fSearchOptions or SCFIND_WHOLEWORD;
+{$ELSE}
       include(fSearchOptions, ssoWholeWord);
+{$ENDIF}
 
     if grpDirection.ItemIndex = 1 then
+{$IFDEF SCINTILLA}
+	;
+{$ELSE}
       include(fSearchOptions, ssoBackwards);
+{$ENDIF}
 
     if TLookIn(LookIn.Items.Objects[LookIn.ItemIndex]) = liSelected then
+{$IFDEF SCINTILLA}
+    ;    //mn
+{$ELSE}
       include(fSearchOptions, ssoSelectedOnly);
+{$ENDIF}
 
     if grpOrigin.ItemIndex = 1 then
+{$IFDEF SCINTILLA}
+     ;   //mn
+{$ELSE}
       include(fSearchOptions, ssoEntireScope);
+{$ENDIF}
      fClose:= True;
   end;
 end;

@@ -25,7 +25,7 @@ interface
 uses
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ActnList, SynEdit, SynEditTypes;
+  StdCtrls, ActnList, SciLexer, SciLexerMemo, SciLexerMod, ScintillaLanguageManager;
 {$ENDIF}
 {$IFDEF LINUX}
   SysUtils, Classes, QGraphics, QControls, QForms, QDialogs,
@@ -45,10 +45,17 @@ type
       Shift: TShiftState);
   public
     SearchString: string;
+{$IFDEF SCINTILLA}
+    Editor: TScintilla;
+{$ELSE}
     Editor: TSynEdit;
     OrgPt        : TBufferCoord;
+{$ENDIF}
   private
+{$IFDEF SCINTILLA}
+{$ELSE}
     rOptions: TSynSearchOptions;
+{$ENDIF}
   end;
 
 var
@@ -71,6 +78,32 @@ var
   ALen: Integer;
 begin
   ALen := 0;
+{$IFDEF SCINTILLA}
+  if (Editor.GetAnchor <> Editor.GetCurrentPos) then
+  begin
+    ALen := Editor.GetSelectionEnd - Editor.GetSelectionStart;
+//    Editor.CaretX := Editor.CaretX - ALen;
+  end;
+{mn  if Editor.SearchReplace(Edit.Text, '', rOptions) = 0 then
+  begin
+    Include(rOptions, ssoBackwards);
+    Editor.CaretX := Editor.CaretX + ALen;
+    if Editor.SearchReplace(Edit.Text, '', rOptions) = 0 then
+      Edit.Font.Color := clRed
+    else
+      Edit.Font.Color := clBlack;
+  end
+  else
+    Edit.Font.Color := clBlack;
+  rOptions := [];
+  if Length(Edit.Text) = 0 then
+  begin
+    Editor.BlockBegin := OrgPt;
+    Editor.BlockEnd := OrgPt;
+    Editor.CaretXY := OrgPt;
+  end;
+mn}
+{$ELSE}
   if Editor.SelAvail then
   begin
     ALen := Length(Editor.SelText);
@@ -94,13 +127,18 @@ begin
     Editor.BlockEnd := OrgPt;
     Editor.CaretXY := OrgPt;
   end;
+{$ENDIF}
+
 end;
 
 procedure TfrmIncremental.FormShow(Sender: TObject);
 begin
   SearchString := Edit.Text;
   Edit.Text := '';
+{$IFDEF SCINTILLA}
+{$ELSE}
   OrgPt := Editor.CaretXY;
+{$ENDIF}
 end;
 
 procedure TfrmIncremental.EditKeyPress(Sender: TObject; var Key: Char);
@@ -117,7 +155,10 @@ end;
 procedure TfrmIncremental.SearchAgainExecute(Sender: TObject);
 begin
   MainForm.actFindNextExecute(Self);
+{$IFDEF SCINTILLA}
+{$ELSE}
   OrgPt := Editor.CaretXY;
+{$ENDIF}
 end;
 
 procedure TfrmIncremental.EditKeyDown(Sender: TObject; var Key: Word;

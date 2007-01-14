@@ -26,11 +26,11 @@ interface
 uses 
 {$IFDEF WIN32}
   Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, CodeCompletion, CppParser,
-  Menus, ImgList, ComCtrls, StdCtrls, ExtCtrls, SynEdit, SynEditKeyCmds, version, Grids,
-  SynCompletionProposal, StrUtils, SynEditTypes, SynEditHighlighter,
+  Menus, ImgList, ComCtrls, StdCtrls, ExtCtrls, SciPropertyMgr, SciLexer, SciLexerMemo, SciLexerMod, SciSupport, SciDocuments, SciCallTips, version, Grids,
+  StrUtils, 
 
   {** Modified by Peter **}
-  DevCodeToolTip, SynAutoIndent,utils
+  utils
 
   {$IFDEF WX_BUILD}
     ,Designerfrm, CompFileIo, wxutils,DbugIntf
@@ -47,7 +47,19 @@ uses
 {$ENDIF}
 
 type
+{$IFDEF SCINTILLA}
+TScintillaProt=class(TScintillaBase)
+public
+procedure Loaded;override;
+end;
+
+{$ENDIF}  //scintilla
+
+TTransientType=(ttBefore,ttAfter);
   TEditor = class;
+
+{$IFDEF SCINTILLA}
+{$ELSE}
   TDebugGutter = class(TSynEditPlugin)
   protected
     fEditor: TEditor;
@@ -58,6 +70,7 @@ type
   public
     constructor Create(ed: TEditor);
   end;
+{$ENDIF}  //scintilla
 
   // RNC no longer uses an Editor to toggle
   TBreakpointToggleEvent = procedure (index: integer; BreakExists: boolean) of object;
@@ -69,7 +82,13 @@ type
     fNew: boolean;
     fRes: boolean;
     fModified: boolean;
+{$IFDEF SCINTILLA}
+    fText: TScintilla;
+    fBookmark : array [0..9] of integer;
+    fStyles: TSciPropertyLoader;
+{$ELSE}
     fText: TSynEdit;
+{$ENDIF}  //scintilla
 {$IFDEF WX_BUILD}
     fDesigner: TfrmNewForm;
     fScrollDesign: TScrollBox;
@@ -80,7 +99,10 @@ type
     fErrorLine: integer;
     fActiveLine: integer;
     fErrSetting: boolean;
+{$IFDEF SCINTILLA}
+{$ELSE}
     fDebugGutter: TDebugGutter;
+{$ENDIF}  //scintilla
     fDebugHintTimer: TTimer;
     fCurrentHint: string;
     //////// CODE-COMPLETION - mandrav /////////////
@@ -91,14 +113,28 @@ type
     fTimerKey: Char;
     fCompletionBox: TCodeCompletion;
     fRunToCursorLine: integer;
+{$IFDEF SCINTILLA}
+{$ELSE}
     fFunctionArgs: TSynCompletionProposal;
-    fLastParamFunc: TList;
+{$ENDIF}  //scintilla
+//    fLastParamFunc: TList;
+{$IFDEF SCINTILLA}
+//    FCodeToolTip: TSciCallTips;
+//    fCallTipString: string;
+{$ELSE}
     FCodeToolTip: TDevCodeToolTip;
     FAutoIndent: TSynAutoIndent;
+{$ENDIF}  //scintilla
     procedure CompletionTimer(Sender: TObject);
     procedure ToolTipTimer(Sender: TObject);
+{$IFDEF SCINTILLA}
+{$ELSE}
+{$ENDIF}  //scintilla
     procedure CodeRushLikeEditorKeyPress(Sender: TObject; var Key: Char);
+{$IFDEF SCINTILLA}
+{$ELSE}
     procedure EditorOnScroll(Sender: TObject; ScrollBar: TScrollBarKind);
+{$ENDIF}  //scintilla
     procedure EditorKeyPress(Sender: TObject; var Key: Char);
     procedure EditorKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure EditorKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -107,7 +143,61 @@ type
     procedure InitCompletion;
     procedure DestroyCompletion;
     function CurrentPhrase: string;
+{$IFDEF SCINTILLA}
+    function CheckAttributes(P: integer; Phrase: string): boolean;
+    procedure SciAutoCSelection(Sender: TObject; text: PChar);
+    procedure SciCallTipClick(Sender: TObject;
+      const position: Integer);
+    procedure SciCharAdded(Sender: TObject; const ch: Integer);
+    procedure SciClick(Sender: TObject);
+    procedure SciDblClick(Sender: TObject);
+    procedure SciDwellEnd(Sender: TObject; const position: Integer);
+    procedure SciDwellStart(Sender: TObject;
+      const position: Integer);
+    procedure SciEnter(Sender: TObject);
+    procedure SciExit(Sender: TObject);
+    procedure SciHotSpotClick(Sender: TObject; const modifiers,
+      position: Integer);
+    procedure SciHotSpotDoubleClick(Sender: TObject; const modifiers,
+      position: Integer);
+    procedure SciKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure SciKeyPress(Sender: TObject; var Key: Char);
+    procedure SciKeyUp(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure SciMacroRecord(Sender: TObject; const message, wParam,
+      lParam: Integer);
+    procedure SciMarginClick(Sender: TObject; const modifiers,
+      position, margin: Integer);
+    procedure SciModified(Sender: TObject; const position,
+      modificationType: Integer; text: PChar; const len, linesAdded, line,
+      foldLevelNow, foldLevelPrev: Integer);
+    procedure SciModifyAttemptRO(Sender: TObject);
+    procedure SciMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure SciMouseMove(Sender: TObject; Shift: TShiftState; X,
+      Y: Integer);
+    procedure SciMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure SciMsgSent(Sender: TObject; Msg, wParam,
+      lParam: Integer);
+    procedure SciNeedShown(Sender: TObject; const position,
+      len: Integer);
+    procedure SciPainted(Sender: TObject);
+    procedure SciSavePointLeft(Sender: TObject);
+    procedure SciSavePointReached(Sender: TObject);
+    procedure SciStyleNeeded(Sender: TObject;
+      const position: Integer);
+    procedure SciUpdateUI(Sender: TObject);
+    procedure SciUserListSelection(Sender: TObject;
+      const listType: Integer; text: PChar);
+    procedure SciZoom(Sender: TObject);
+    procedure SciCallTipsBeforeShow(Sender: TObject;
+      const Position: Integer; ListToDisplay: TStrings;
+      var CancelDisplay: Boolean);
+{$ELSE}
     function CheckAttributes(P: TBufferCoord; Phrase: string): boolean;
+{$ENDIF}  //scintilla
     //////// CODE-COMPLETION - mandrav - END ///////
     function GetModified: boolean;
     procedure SetModified(value: boolean);
@@ -115,14 +205,26 @@ type
     procedure TurnOffBreakpoint(line: integer);
     procedure TurnOnBreakpoint(line: integer);
 
+{$IFDEF SCINTILLA}
+    function GetBookmark(Index: Integer): integer;
+    procedure SetBookmark(Index, Value: Integer);
+    procedure EditorStatusChange(Sender: TObject; Changes: TSCNotification);
+{$ELSE}
     procedure EditorStatusChange(Sender: TObject; Changes: TSynStatusChanges);
+{$ENDIF}  //scintilla
     procedure EditorSpecialLineColors(Sender: TObject; Line: integer;
       var Special: boolean; var FG, BG: TColor);
+{$IFDEF SCINTILLA}
+{$ELSE}
     procedure EditorGutterClick(Sender: TObject; Button: TMouseButton;
       x, y, Line: integer; mark: TSynEditMark);
+{$ENDIF}  //scintilla
+{$IFDEF SCINTILLA}
+{$ELSE}
     procedure EditorReplaceText(Sender: TObject;
       const aSearch, aReplace: string; Line, Column: integer;
       var Action: TSynReplaceAction);
+{$ENDIF}  //scintilla
     procedure EditorDropFiles(Sender: TObject; x, y: integer;
       aFiles: TStrings);
     procedure EditorDblClick(Sender: TObject);
@@ -134,8 +236,11 @@ type
     procedure DrawGutterImages(ACanvas: TCanvas; AClip: TRect;
                                FirstLine, LastLine: integer);
     procedure EditorPaintTransient(Sender: TObject; Canvas: TCanvas;TransientType: TTransientType);
+{$IFDEF SCINTILLA}
+{$ELSE}
     procedure FunctionArgsExecute(Kind: SynCompletionType; Sender: TObject;
       var AString: String; var x, y: Integer; var CanExecute: Boolean);
+{$ENDIF}//scintilla
   protected
     procedure DoOnCodeCompletion(Sender: TObject; const AStatement: TStatement;const AIndex: Integer); {** Modified by Peter **}
   public
@@ -173,8 +278,10 @@ type
     procedure RemoveBreakpointFocus;
     procedure UpdateCaption(NewCaption: string);
     procedure InsertDefaultText;
+{$IFDEF SCINTILLA}
+{$ELSE}
     procedure PaintMatchingBrackets(TransientType: TTransientType);
-
+{$ENDIF}
     procedure CommentSelection;
     procedure UncommentSelection;
     procedure IndentSelection;
@@ -190,10 +297,21 @@ type
     property New: boolean read fNew write fNew;
     property Modified: boolean read GetModified write SetModified;
     property IsRes: boolean read fRes write fRes;
+{$IFDEF SCINTILLA}
+    property Text: TScintilla read fText write fText;
+    property Styles: TSciPropertyLoader read fStyles write fStyles;
+{$ELSE}
     property Text: TSynEdit read fText write fText;
+{$ENDIF} //scintilla
     property TabSheet: TTabSheet read fTabSheet write fTabSheet;
-
+{$IFDEF SCINTILLA}
+    property Bookmark[Index:integer]: integer read GetBookmark write SetBookmark;
+ //   property CodeToolTip: TSciCallTips read FCodeToolTip; // added on 23rd may 2004 by peter_
+ //   property CallTipString: string read fCallTipString write fCallTipString;
+ {$ELSE}
     property CodeToolTip: TDevCodeToolTip read FCodeToolTip; // added on 23rd may 2004 by peter_
+{$ENDIF}//scintilla
+
 {$IFDEF WX_BUILD}
   private
     fDesignerClassName, fDesignerTitle: string;
@@ -208,8 +326,13 @@ type
     function GetDesignerHPPFileName: string;
     function GetDesignerCPPFileName: string;
 
+{$IFDEF SCINTILLA}
+    function GetDesignerHPPText: TScintilla;
+    function GetDesignerCPPText: TScintilla;
+{$ELSE}
     function GetDesignerHPPText: TSynEdit;
     function GetDesignerCPPText: TSynEdit;
+{$ENDIF}//scintilla
 
     function IsDesignerCPPOpened: Boolean;
     function IsDesignerHPPOpened: Boolean;
@@ -233,6 +356,15 @@ uses
   ,Xlib, utils
 {$ENDIF};
 
+{$IFDEF SCINTILLA}
+procedure TScintillaProt.Loaded;
+begin
+inherited;
+end;
+{$ENDIF}//scintilla
+
+{$IFDEF SCINTILLA}
+{$ELSE}
 { TDebugGutter }
 
 constructor TDebugGutter.Create(ed: TEditor);
@@ -256,6 +388,7 @@ procedure TDebugGutter.LinesDeleted(FirstLine, Count: integer; AddToUndoList: Bo
 begin
   // if this method is not defined -> Abstract error
 end;
+{$ENDIF}//scintilla
 
 { TEditor }
 
@@ -265,6 +398,10 @@ var
   s: string;
   pt: TPoint;
   allowChange: Boolean;
+{$IFDEF SCINTILLA}
+  StylesFile:string;
+{$ELSE}
+{$ENDIF}//scintilla
 begin
   fModified := false;
   fErrorLine := -1;
@@ -293,8 +430,28 @@ begin
   // This is to have a pointer to the TEditor using the PageControl in MainForm
   fTabSheet.Tag := integer(self);
 
+{$IFDEF SCINTILLA}
+  fText := TScintilla.Create(fTabSheet);
+{$ELSE}
   fText := TSynEdit.Create(fTabSheet);
+{$ENDIF}//scintilla
   fText.Parent := fTabSheet;
+{$IFDEF SCINTILLA}
+  TScintillaProt(fText).Loaded;
+  fText.LanguageManager.Assign(MainForm.HiddenSci.LanguageManager);
+//need to do this somewhere else   fText.LanguageManager.SelectedLanguage :='C++/C';
+  fText.DefineMarker(0, SC_MARK_CHARACTER+49, clBlack, clSilver);
+  fText.DefineMarker(1, SC_MARK_CHARACTER+50, clBlack, clSilver);
+  fText.DefineMarker(2, SC_MARK_CHARACTER+51, clBlack, clSilver);
+  fText.DefineMarker(3, SC_MARK_CHARACTER+52, clBlack, clSilver);
+  fText.DefineMarker(4, SC_MARK_CHARACTER+53, clBlack, clSilver);
+  fText.DefineMarker(5, SC_MARK_CHARACTER+54, clBlack, clSilver);
+  fText.DefineMarker(6, SC_MARK_CHARACTER+55, clBlack, clSilver);
+  fText.DefineMarker(7, SC_MARK_CHARACTER+56, clBlack, clSilver);
+  fText.DefineMarker(8, SC_MARK_CHARACTER+57, clBlack, clSilver);
+  fText.DefineMarker(9, SC_MARK_CHARACTER+58, clBlack, clSilver);
+{$ELSE}
+{$ENDIF}//scintilla
 
 {$IFDEF WX_BUILD}
   if fEditorType = etForm then
@@ -308,7 +465,11 @@ begin
     fScrollDesign.Color := clWhite;
 
     fDesigner := TfrmNewForm.Create(fScrollDesign);
+{$IFDEF SCINTILLA}
+    fDesigner.Scintilla := fText;
+{$ELSE}
     fDesigner.synEdit := fText;
+{$ENDIF}//scintilla
     fDesigner.Visible := False;
     SetWindowLong(fDesigner.Handle, GWL_STYLE, WS_CHILD or
       (GetWindowLong(fDesigner.Handle, GWL_STYLE)));
@@ -400,54 +561,126 @@ begin
 
   fText.PopupMenu := MainForm.EditorPopupMenu;
   fText.Font.Color := clWindowText;
+{$IFDEF SCINTILLA}
+    fText.AutoCloseBraces := MainForm.HiddenSci.AutoCloseBraces;
+    fText.AutoCloseQuotes := MainForm.HiddenSci.AutoCloseQuotes;
+    fText.Bookmark := MainForm.HiddenSci.Bookmark;
+    fText.BraceHilite := MainForm.HiddenSci.BraceHilite;
+    fText.Caret := MainForm.HiddenSci.Caret;
+    fText.ClearUndoAfterSave := MainForm.HiddenSci.ClearUndoAfterSave;
+    fText.CodePage := MainForm.HiddenSci.CodePage;
+    fText.Color := MainForm.HiddenSci.Color;
+    fText.Colors := MainForm.HiddenSci.Colors;
+    fText.ControlCharSymbol := MainForm.HiddenSci.ControlCharSymbol;
+    fText.DivOptions := MainForm.HiddenSci.DivOptions;
+    fText.EdgeColumn := MainForm.HiddenSci.EdgeColumn;
+    fText.EdgeColor := MainForm.HiddenSci.EdgeColor;
+    fText.EdgeMode := MainForm.HiddenSci.EdgeMode;
+    fText.EOLStyle := MainForm.HiddenSci.EOLStyle;
+    fText.Folding := MainForm.HiddenSci.Folding;
+    fText.FoldMarkers := MainForm.HiddenSci.FoldMarkers;
+    fText.FoldDrawFlags := MainForm.HiddenSci.FoldDrawFlags;
+    fText.Font := MainForm.HiddenSci.Font;
+    fText.ForceMouseRelease := MainForm.HiddenSci.ForceMouseRelease;
+    fText.Gutter0 := MainForm.HiddenSci.Gutter0;
+    fText.Gutter1 := MainForm.HiddenSci.Gutter1;
+    fText.Gutter2 := MainForm.HiddenSci.Gutter2;
+    fText.Gutter3 := MainForm.HiddenSci.Gutter3;
+    fText.Gutter4 := MainForm.HiddenSci.Gutter4;
+    fText.KeyCommands := MainForm.HiddenSci.KeyCommands;
+    fText.HideSelect := MainForm.HiddenSci.HideSelect;
+    fText.Indentation := MainForm.HiddenSci.Indentation;
+    fText.IndentWidth := MainForm.HiddenSci.IndentWidth;
+    fText.KeyCommands := MainForm.HiddenSci.KeyCommands;
+    fText.LanguageManager.SelectedLanguage := dmMain.GetHighlighter(FileName);
+    fText.LayoutCache := MainForm.HiddenSci.LayoutCache;
+    fText.ShowHint := MainForm.HiddenSci.ShowHint;
+    fText.TabWidth := MainForm.HiddenSci.TabWidth;
+    fText.UseTabs := MainForm.HiddenSci.UseTabs;
+    fText.WordChars := MainForm.HiddenSci.WordChars;
+    fText.WordWrap := MainForm.HiddenSci.WordWrap;
+    fText.WordWrapVisualFlags := MainForm.HiddenSci.WordWrapVisualFlags;
+    fText.WordWrapVisualFlagsLocation := MainForm.HiddenSci.WordWrapVisualFlagsLocation;
+{$ELSE}
   fText.Color := clWindow;
+{$ENDIF}//scintilla
   fText.Font.Name := 'Courier';
   fText.Font.Size := 10;
+{$IFDEF SCINTILLA}
+   fText.OnCharAdded := SciCharAdded;
+   fText.OnModified := SciModified;
+   fText.OnUpdateUI := SciUpdateUI;
+//mn gotta make sure this works first  fText.OnMarginClick := EditorGutterClick;
+{$ELSE}
+
   fText.WantTabs := True;
   fText.OnStatusChange := EditorStatusChange;
   fText.OnSpecialLineColors := EditorSpecialLineColors;
   fText.OnGutterClick := EditorGutterClick;
   fText.OnReplaceText := EditorReplaceText;
   fText.OnDropFiles := EditorDropFiles;
-  fText.OnDblClick := EditorDblClick;
-  fText.OnMouseDown := EditorMouseDown;
   fText.OnPaintTransient := EditorPaintTransient;
-  fText.OnKeyPress := CodeRushLikeEditorKeyPress;
   fText.OnScroll := EditorOnScroll;
 
   fText.MaxScrollWidth:=4096; // bug-fix #600748
   fText.MaxUndo := 4096;
+{$ENDIF}//scintilla
+  fText.OnDblClick := EditorDblClick;
+  fText.OnMouseDown := EditorMouseDown;
+  fText.OnKeyPress := CodeRushLikeEditorKeyPress;
 
   devEditor.AssignEditor(fText);
+{$IFDEF SCINTILLA}
+  if not fNew then
+    fText.LanguageManager.SelectedLanguage := dmMain.GetHighlighter(fFileName)
+  else
+   if fRes then
+    fText.LanguageManager.SelectedLanguage := 'Resource'
+  else
+    fText.LanguageManager.SelectedLanguage := 'C++/C';
+{$ELSE}
   if not fNew then
     fText.Highlighter := dmMain.GetHighlighter(fFileName)
   else if fRes then
     fText.Highlighter := dmMain.Res
   else
     fText.Highlighter := dmMain.cpp;
+{$ENDIF}//scintilla
 
 {$IFDEF WX_BUILD}
   if self.isForm then
   begin
+{$IFDEF SCINTILLA}
+    fText.LanguageManager.SelectedLanguage := 'Resource';
+{$ELSE}
     fText.Highlighter := dmMain.Res;
+{$ENDIF}//scintilla
     fDesigner.PopupMenu:=MainForm.DesignerPopup;
   end;
 {$ENDIF}
 
   // update the selected text color
   StrtoPoint(pt, devEditor.Syntax.Values[cSel]);
+{$IFDEF SCINTILLA}
+{$ELSE}
   fText.SelectedColor.Background := pt.X;
   fText.SelectedColor.Foreground := pt.Y;
+{$ENDIF}//scintilla
 
   // select the new editor
   MainForm.PageControl.OnChanging(MainForm.PageControl, allowChange);
   fTabSheet.PageControl.ActivePage := fTabSheet;
   fTabSheet.TabVisible := TRUE;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
   fDebugGutter := TDebugGutter.Create(self);
+{$ENDIF}//scintilla
   Application.ProcessMessages;
   InitCompletion;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
   fFunctionArgs := TSynCompletionProposal.Create(fText);
   with fFunctionArgs do begin
     EndOfTokenChr := '';
@@ -462,24 +695,35 @@ begin
     Options := Options + [scoUseBuiltInTimer];
 {$IFDEF WIN32}
     ShortCut := Menus.ShortCut(Word(VK_SPACE), [ssCtrl, ssShift]);
-{$ENDIF}
+{$ENDIF}//win32
 {$IFDEF LINUX}
     ShortCut := Menus.ShortCut(Word(XK_SPACE), [ssCtrl, ssShift]);
-{$ENDIF}
+{$ENDIF}//linux
+
   end;
+{$ENDIF}
 
   // create the codetooltip
+{$IFDEF SCINTILLA}
+//  FCodeToolTip := TSciCallTips.Create(Application);
+//  FCodeToolTip.Editor := FText;
+//  FCodeToolTip.OnBeforeShow := SciCallTipsBeforeShow;
+{$ELSE}
   FCodeToolTip := TDevCodeToolTip.Create(Application);
   FCodeToolTip.Editor := FText;
   FCodeToolTip.Parser := MainForm.CppParser1;
   FCodeToolTip.DropShadow := True;
+{$ENDIF}//scintilla
 
   // The Editor must have 'Auto Indent' activated  to use FAutoIndent.
   // It's under Tools | Editor Options and then the General tab
+{$IFDEF SCINTILLA}
+{$ELSE}
   FAutoIndent := TSynAutoIndent.Create(Application);
   FAutoIndent.Editor := FText;
   FAutoIndent.IndentChars := '{:';
   FAutoIndent.UnIndentChars := '}';
+{$ENDIF}//scintilla
   fText.OnMouseMove := EditorMouseMove;
 
   // monitor this file for outside changes
@@ -544,11 +788,14 @@ begin
     end;
   end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
   if Assigned(FCodeToolTip) then
     FreeAndNil(FCodeToolTip);
 
   if Assigned(FAutoIndent) then
     FreeAndNil(FAutoIndent);
+{$ENDIF}//scintilla
 
   inherited;
 end;
@@ -590,6 +837,16 @@ begin
   fText.Modified := Value;
 end;
 
+function TEditor.GetBookmark(Index: Integer): integer;
+begin
+  result := fBookmark[Index];
+end;
+
+procedure TEditor.SetBookmark(Index, Value: Integer);
+begin
+  fBookmark[Index] := value;
+end;
+
 // RNC 07-21-04 These functions are used to turn off/on a breakpoint
 // without calling RemoveBreakpoint or AddBreakpoint in fDebugger.
 // This is helpful when trying to automitically remove a breakpoint
@@ -598,8 +855,11 @@ procedure TEditor.InsertBreakpoint(line: integer);
 begin
   if(line>0) and (line <= fText.Lines.Count) then
     begin
+{$IFDEF SCINTILLA}
+{$ELSE}
       fText.InvalidateLine(line);
       fText.InvalidateGutterLine(line);
+{$ENDIF}//scintilla
     end;
 end;
 
@@ -607,9 +867,12 @@ procedure TEditor.RemoveBreakpoint(line: integer);
 begin
   if(line > 0) and (line <= fText.Lines.Count) then
     begin
+{$IFDEF SCINTILLA}
+{$ELSE}
       fText.InvalidateLine(line);
       // RNC new synedit stuff
       fText.InvalidateGutterLine(line);
+{$ENDIF}//scintilla
   end;
 end;
 
@@ -623,8 +886,11 @@ procedure TEditor.TurnOnBreakpoint(line: integer);
 begin
   if(line > 0) and (line <= fText.Lines.Count) then
   begin
+{$IFDEF SCINTILLA}
+{$ELSE}
     fText.InvalidateLine(line);
     fText.InvalidateGutterLine(line);
+{$ENDIF}//scintilla
     MainForm.AddBreakPointToList(line, self);
   end;
 end;
@@ -633,8 +899,11 @@ procedure TEditor.TurnOffBreakpoint(line: integer);
 begin
   if(line > 0) and (line <= fText.Lines.Count) then
   begin
+{$IFDEF SCINTILLA}
+{$ELSE}
     fText.InvalidateLine(line);
     fText.InvalidateGutterLine(line);
+{$ENDIF}//scintilla
     MainForm.RemoveBreakPointFromList(line, self);
   end;
 end;
@@ -654,14 +923,20 @@ end;
         
 procedure TEditor.Close;
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   fText.OnStatusChange := nil;
   fText.OnSpecialLineColors := nil;
   fText.OnGutterClick := nil;
   fText.OnReplaceText := nil;
   fText.OnDropFiles := nil;
+{$ENDIF}//scintilla
   fText.OnDblClick := nil;
   fText.OnMouseDown := nil;
+{$IFDEF SCINTILLA}
+{$ELSE}
   fText.OnPaintTransient := nil;
+{$ENDIF}//scintilla
   fText.OnKeyPress := nil;
 
 {$IFDEF WX_BUILD}
@@ -680,9 +955,12 @@ begin
   result := FALSE;
   if (line > 0) and (line <= fText.Lines.Count) then
   begin
+{$IFDEF SCINTILLA}
+{$ELSE}
     fText.InvalidateGutterLine(line);
     fText.InvalidateLine(line);
     
+{$ENDIF}//scintilla
     //RNC moved the check to see if the debugger is running to here
     if HasBreakPoint(Line) <> -1 then
       MainForm.RemoveBreakPointFromList(line, self)
@@ -742,8 +1020,11 @@ var
 begin
   if devEditor.InsDropFiles then
   begin
+{$IFDEF SCINTILLA}
+ //mn???    fText.SetCurrentPos(fText.);// := fText.DisplayToBufferPos(fText.PixelsToRowColumn(x, y));
+{$ELSE}
      fText.CaretXY:= fText.DisplayToBufferPos(fText.PixelsToRowColumn(x, y));
-
+{$ENDIF}//scintilla
     sl := TStringList.Create;
     try
       for idx := 0 to pred(aFiles.Count) do
@@ -776,17 +1057,28 @@ procedure TEditor.EditorDblClick(Sender: TObject);
 begin
   if devEditor.DblClkLine then
   begin
+{$IFDEF SCINTILLA}
+     fText.SetSelectionStart(fText.PositionFromLine(fText.LineFromPosition(fText.GetCurrentPos)));
+     fText.SetCurrentPos(fText.GetLineEndPosition(fText.LineFromPosition(fText.GetCurrentPos)));
+{$ELSE}
      fText.BlockBegin:= BufferCoord(1, fText.CaretY);
      fText.BlockEnd:= BufferCoord(1, fText.CaretY +1);
+{$ENDIF}//scintilla
   end;
 end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 procedure TEditor.EditorGutterClick(Sender: TObject; Button: TMouseButton;
   x, y, Line: integer; mark: TSynEditMark);
 begin
   ToggleBreakPoint(Line);
 end;
+{$ENDIF}//scintilla
 
+{$IFDEF SCINTILLA}
+//mn?? procedure TEditor.EditorReplaceText(Sender: TObject; const aSearch, aReplace: string; Line, Column: integer; var Action: TSynReplaceAction);
+{$ELSE}
 procedure TEditor.EditorReplaceText(Sender: TObject; const aSearch,
   aReplace: string; Line, Column: integer; var Action: TSynReplaceAction);
 var
@@ -814,12 +1106,21 @@ begin
     end;
   end;
 end;
+{$ENDIF}//scintilla
 
+{$IFDEF SCINTILLA}
+procedure TEditor.EditorStatusChange(Sender: TObject;
+  Changes: TSCNotification);
+{$ELSE}
 procedure TEditor.EditorStatusChange(Sender: TObject;
   Changes: TSynStatusChanges);
+{$ENDIF}//scintilla
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   if scModified in Changes then begin
     if Modified then
+
       UpdateCaption('[*] ' + ExtractfileName(fFileName))
     else
       UpdateCaption(ExtractfileName(fFileName));
@@ -846,7 +1147,7 @@ begin
         Panels[1].Text := '';
     if fText.ReadOnly then
       Panels[2].Text := Lang[ID_READONLY]
-    else 
+    else
     if fText.InsertMode then
       Panels[2].Text := Lang[ID_INSERT]
     else
@@ -860,6 +1161,7 @@ begin
       fToolTipTimer.Enabled := False;
       fToolTipTimer.Enabled := True;
     end;
+{$ENDIF}
 end;
 
 procedure TEditor.ToolTipTimer(Sender: TObject);
@@ -887,14 +1189,22 @@ var
     Result := -1;
     
     //Make sure the offset is valid
+{$IFDEF SCINTILLA}
+    if I > Length(FText.Lines.Text) then
+{$ELSE}
     if I > Length(FText.Text) then
+{$ENDIF}//scintilla
       Exit;
-    
+
     while I > 0 do
     begin
       if (I < 0) then
         break;
+{$IFDEF SCINTILLA}
+      case Char(FText.GetCharAt(I)) of
+{$ELSE}
       case FText.Text[I] of
+{$ENDIF}  //scintilla
         ')':
           Dec(Brackets);
         '(':
@@ -911,12 +1221,20 @@ var
           if not FillingParameter then
           begin
             //Skip whitespace so we can see what is the last character
+{$IFDEF SCINTILLA}
+            while (I > 1) and (Char(FText.GetCharAt(I - 1)) in [#10, #13, #9, ' ']) do
+{$ELSE}
             while (I > 1) and (FText.Text[I - 1] in [#10, #13, #9, ' ']) do
+{$ENDIF}  //scintilla
               Dec(I); //Previous character is whitespace, skip it
 
             //Is the character a comma or an opening parenthesis?
             if I > 2 then
+{$IFDEF SCINTILLA}
+              if not (Char(FText.GetCharAt(I - 1)) in [',', '(']) then
+{$ELSE}
               if not (FText.Text[I - 1] in [',', '(']) then
+{$ENDIF}  //scintilla
                 Exit;
           end;
         '{', '}':
@@ -938,10 +1256,26 @@ begin
   // check if the last parenthesis selected is the same one as the one we
   // have now. Otherwise, we should get rid of the tooltip
   if startParenthesis <> flastStartParenthesis then
+{$IFDEF SCINTILLA}
+    MainForm.FCodeToolTip.Editor.CallTipCancel;
+{$ELSE}
     FCodeToolTip.ReleaseHandle;
+{$ENDIF}  //scintilla
 
   // when the hint is already activated when call ShowHint again, because the
   //current argument could have been changed, so we need to make another arg in bold
+{$IFDEF SCINTILLA}
+  MainForm.FCodeToolTip.Editor:= self.fText;
+  if MainForm.FCodeToolTip.Editor.CallTipActive then
+    MainForm.FCodeToolTip.Editor.CallTipShow(MainForm.FCodeToolTip.Editor.GetCurrentPos, PChar(MainForm.FCodeToolTip.ApiStrings[1]))
+  else
+    // it's not showing yet, so we check if the cursor
+    // is in the bracket and when it is, we show the hint.
+    if assigned(FText) and (not (fText.GetAnchor <> fText.GetCurrentPos)) and (FText.SelStart > 1) and (startParenthesis <> -1) then
+    begin
+      MainForm.FCodeToolTip.Editor.CallTipShow(MainForm.FCodeToolTip.Editor.GetCurrentPos, PChar(MainForm.FCodeToolTip.ApiStrings[1]));
+    end;
+{$ELSE}
   if FCodeToolTip.Activated then
     FCodeToolTip.Show
   else
@@ -949,17 +1283,21 @@ begin
     // is in the bracket and when it is, we show the hint.
     if assigned(FText) and (not FText.SelAvail) and (FText.SelStart > 1) and (startParenthesis <> -1) then
       FCodeToolTip.Show;
+{$ENDIF}  //scintilla
 
   // cache the current parenthesis index so that we can check if we
   // have changed since we first displayed it
   flastStartParenthesis := startParenthesis;
 end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 procedure TEditor.EditorOnScroll(Sender: TObject; ScrollBar: TScrollBarKind);
 begin
   if assigned(FCodeToolTip) and (FCodeToolTip.Caption <> '') and FCodeToolTip.Activated then
     FCodeToolTip.RethinkCoordAndActivate;
 end;
+{$ENDIF}//scintilla
 
 procedure TEditor.ExportTo(const isHTML: boolean);
 begin
@@ -967,33 +1305,52 @@ begin
   begin
     with dmMain.SaveDialog do
     begin
+{$IFDEF SCINTILLA}
+      Filter := 'HTML Documents (*.htm;*.html)|*.htm;*.html';
+{$ELSE}
       Filter := dmMain.SynExporterHTML.DefaultFilter;
+{$ENDIF}//scintilla
       DefaultExt := HTML_EXT;
       Title := Lang[ID_NV_EXPORT];
       if Execute then
       begin
         dmMain.ExportToHtml(fText.Lines, dmMain.SaveDialog.FileName);
+{$IFDEF SCINTILLA}
+{$ELSE}
         fText.BlockEnd := fText.BlockBegin;
+{$ENDIF//scintilla}
       end;
     end;
   end
   else
     with dmMain.SaveDialog do
     begin
+{$IFDEF SCINTILLA}
+{$ELSE}
       Filter := dmMain.SynExporterRTF.DefaultFilter;
+{$ENDIF}//scintilla
       Title := Lang[ID_NV_EXPORT];
       DefaultExt := RTF_EXT;
       if Execute then
       begin
         dmMain.ExportToRtf(fText.Lines, dmMain.SaveDialog.FileName);
+{$IFDEF SCINTILLA}
+{$ELSE}
         fText.BlockEnd := fText.BlockBegin;
+{$ENDIF}//scintilla
       end;
     end;
 end;
 
 function TEditor.GetWordAtCursor: string;
 begin
+{$IFDEF SCINTILLA}
+  if fText.SelLength=0 then
+    fText.SelectWordAtCaret;
+  result := fText.SelText;
+{$ELSE}
   result := fText.GetWordAtRowCol(fText.CaretXY);
+{$ENDIF}//scintilla
 end;
 
 {** Modified by Peter **}
@@ -1006,7 +1363,11 @@ begin
     GotoForm.Editor := FText;
 
     if GotoForm.ShowModal = mrOK then
+{$IFDEF SCINTILLA}
+      fText.GotoLine(GotoForm.Line.Value);
+{$ELSE}
      FText.CaretXY:= BufferCoord(FText.CaretX, GotoForm.Line.Value);
+{$ENDIF}//scintilla
 
     Activate;
   finally
@@ -1026,11 +1387,20 @@ var
   Line: string;
   idx,
     idx2: integer;
+{$IFDEF SCINTILLA}
+ pt: integer;
+{$ELSE}
  pt: TBufferCoord;
+{$ENDIF}//scintilla
+
   tmp: TStringList;
 begin
   if not assigned(fText) then exit;
+  {$IFDEF SCINTILLA}
+  pt := fText.GetCurrentPos;
+  {$ELSE}
   pt := fText.CaretXY;
+  {$ENDIF}//scintilla
   tmp := TStringList.Create;
   try // move cursor to pipe '|'
     tmp.Text := Value;
@@ -1044,19 +1414,25 @@ begin
           delete(Line, idx2, 1);
           tmp[idx] := Line;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
           inc(pt.Line, idx);
           if idx = 0 then
            inc(pt.Char, idx2 -1)
           else
            pt.Char:= idx2;
+{$ENDIF}//scintilla
 
           break;
         end;
       end;
     Line := tmp.Text;
     fText.SelText := Line;
+{$IFDEF SCINTILLA}
+{$ELSE}
     fText.CaretXY := pt;
     fText.EnsureCursorPosVisible;
+{$ENDIF}//scintilla
   finally
     tmp.Free;
   end;
@@ -1086,11 +1462,18 @@ end;
 
 procedure TEditor.SearchAgain;
 var
+{$IFDEF SCINTILLA}
+  Options: integer;
+{$ELSE}
   Options: TSynSearchOptions;
+{$ENDIF}//scintilla
   return: integer;
 begin
   SearchCenter.Editor := Self;
+{$IFDEF SCINTILLA}
+{$ELSE}
   SearchCenter.AssignSearchEngine;
+{$ENDIF}
 
   if not SearchCenter.SingleFile then exit;
   if SearchCenter.FindText = '' then begin
@@ -1098,11 +1481,17 @@ begin
     exit;
   end;
   Options := SearchCenter.Options;
+{$IFDEF SCINTILLA}
+{$ELSE}
   Exclude(Options, ssoEntireScope);
+{$ENDIF}//scintilla
 
+{$IFDEF SCINTILLA}
+{$ELSE}
   return := fText.SearchReplace(SearchCenter.FindText,
     SearchCenter.ReplaceText,
     Options);
+{$ENDIF}//scintilla
   if return <> 0 then
     Activate
   else
@@ -1112,7 +1501,10 @@ end;
 
 procedure TEditor.SearchKeyNavigation(MoveForward:Boolean);
 var
+{$IFDEF SCINTILLA}
+{$ELSE}
   Options: TSynSearchOptions;
+{$ENDIF}
   return,MidCursorPos: integer;
   s:String;
   bSelected:boolean;
@@ -1127,13 +1519,18 @@ begin
   end;
 
   SearchCenter.Editor := Self;
+{$IFDEF SCINTILLA}
+{$ELSE}
   SearchCenter.AssignSearchEngine;
+{$ENDIF}
   SearchCenter.FindText := s;
 
   if not SearchCenter.SingleFile then exit;
   if SearchCenter.FindText = '' then begin
     exit;
   end;
+{$IFDEF SCINTILLA}
+{$ELSE}
   Options := SearchCenter.Options;
   Exclude(Options, ssoEntireScope);
 
@@ -1152,7 +1549,7 @@ begin
       fText.SelEnd:= MidCursorPos;
     end;
   end;
-
+{$ENDIF}
   if return <> 0 then
     Activate
 end;
@@ -1164,27 +1561,42 @@ begin
   if fErrorLine <> Line then
   begin
     if fErrorLine <> -1 then
+{$IFDEF SCINTILLA}
+{$ELSE}
       fText.InvalidateLine(fErrorLine);
       fText.InvalidateGutterLine(fErrorLine);
+{$ENDIF}//scintilla
     fErrorLine := Line;
+{$IFDEF SCINTILLA}
+{$ELSE}
     fText.InvalidateLine(fErrorLine);
      fText.InvalidateGutterLine(fErrorLine);
+{$ENDIF}//scintilla
   end;
+{$IFDEF SCINTILLA}
+{$ELSE}
      fText.CaretXY:= BufferCoord(col, line);
   fText.EnsureCursorPosVisible;
+{$ENDIF}//scintilla
   fErrSetting := FALSE;
 end;
 
 procedure TEditor.SetActiveBreakpointFocus(const Line: integer);
 begin
   if (fActiveLine <> Line) and (fActiveLine <> -1) then
+{$IFDEF SCINTILLA}
+{$ELSE}
     fText.InvalidateLine(fActiveLine);
   fText.InvalidateGutterLine(fActiveLine);
+{$ENDIF}//scintilla
   fActiveLine := Line;
+{$IFDEF SCINTILLA}
+{$ELSE}
   fText.InvalidateLine(fActiveLine);
   fText.InvalidateGutterLine(fActiveLine);
   fText.CaretY := Line;
   fText.EnsureCursorPosVisible;
+{$ENDIF}//scintilla
 
   if fRunToCursorLine <> -1 then begin
     TurnOffBreakpoint(fRunToCursorLine);
@@ -1195,8 +1607,11 @@ end;
 procedure TEditor.RemoveBreakpointFocus;
 begin
   if fActiveLine <> -1 then
+{$IFDEF SCINTILLA}
+{$ELSE}
     fText.InvalidateLine(fActiveLine);
    fText.InvalidateGutterLine(fActiveLine);
+{$ENDIF}//scintilla
   fActiveLine := -1;
 end;
 
@@ -1231,9 +1646,12 @@ var
   end;
 begin
   X := 14;
+{$IFDEF SCINTILLA}
+{$ELSE}
   LH := fText.LineHeight;
   Y := (LH - dmMain.GutterImages.Height) div 2
     + LH * (FirstLine - fText.TopLine);
+{$ENDIF}//scintilla
 
   while FirstLine <= LastLine do begin
     BreakpointIdx := HasBreakpoint(FirstLine);
@@ -1292,8 +1710,11 @@ end;
 
 procedure TEditor.GotoLineNr(Nr: integer);
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   fText.CaretXY:= BufferCoord(1, Nr);
   fText.TopLine := Nr;
+{$ENDIF}//scintilla
   Activate;
 end;
 
@@ -1307,7 +1728,11 @@ begin
 
   //----------------------------------------------------------------------------
   //Guru: My Own CodeRush like Commentor :o)
+{$IFDEF SCINTILLA}
+  if fText.GetAnchor <> fText.GetCurrentPos then
+{$ELSE}
     if fText.SelAvail then
+{$ENDIF}//scintilla
     begin
         if (String(Key) = '/') and (trim(String(fText.SelText)) <> '') then
         begin
@@ -1324,6 +1749,9 @@ end;
 procedure TEditor.EditorKeyPress(Sender: TObject; var Key: Char);
 var
   P: TPoint;
+{$IFDEF SCINTILLA}
+  CaretX: Integer;
+{$ENDIF}//scintilla
 begin
 if Key = char($7F) then // happens when doing ctrl+backspace with completion on
     exit;
@@ -1331,19 +1759,34 @@ if Key = char($7F) then // happens when doing ctrl+backspace with completion on
   begin
     if not (Sender is TForm) then
     begin // TForm is the code-completion window
+{$IFDEF SCINTILLA}
+  CaretX := fText.GetColumn(fText.GetCurrentPos);
+{$ENDIF}//scintilla
+
       fTimer.Enabled := False;
       fTimerKey := Key;
       case Key of
         '.': fTimer.Enabled := True;
+{$IFDEF SCINTILLA}
+        '>': if (CaretX > 1) and (fText.GetLineLength(fText.GetCurrentLineNumber) > 0) and (AnsiChar(fText.GetCharAt(fText.GetCurrentPos - 1)) = '-') then        fTimer.Enabled := True;
+        ':': if (CaretX > 1) and (fText.GetLineLength(fText.GetCurrentLineNumber) > 0) and (AnsiChar(fText.GetCharAt(fText.GetCurrentPos - 1)) = ':') then        fTimer.Enabled := True;
+{$ELSE}
         '>': if (fText.CaretX > 1) and (Length(fText.LineText) > 0) and (fText.LineText[fText.CaretX - 1] = '-') then fTimer.Enabled := True;
         ':': if (fText.CaretX > 1) and (Length(fText.LineText) > 0) and (fText.LineText[fText.CaretX - 1] = ':') then fTimer.Enabled := True;
+{$ENDIF}//scintilla
         ' ': if fCompletionEatSpace then Key := #0; // eat space if it was ctrl+space (code-completion)
       end;
+{$IFDEF SCINTILLA}
+      P.X := fText.PointXFromPosition(fText.GetCurrentPos);
+      P.Y := fText.PointYFromPosition(fText.GetCurrentPos);
+{$ELSE}
       P := fText.RowColumnToPixels(fText.DisplayXY);
+{$ENDIF}//scintilla
       P.Y := P.Y + 16;
 
       P := fText.ClientToScreen(P);
       fCompletionBox.Position := P;
+
     end
     else
     begin
@@ -1356,7 +1799,11 @@ if Key = char($7F) then // happens when doing ctrl+backspace with completion on
 {$ENDIF}
           begin
             fText.SelStart := fText.SelStart - 1;
+{$IFDEF SCINTILLA}
+            fText.SetSelectionEnd( fText.SelStart + 1 );
+{$ELSE}
             fText.SelEnd := fText.SelStart + 1;
+{$ENDIF}//scintilla
             fText.SelText := '';
             fCompletionBox.Search(nil, CurrentPhrase, fFileName);
           end;
@@ -1408,8 +1855,11 @@ begin
     // Indent/Unindent selected text with TAB key, like Visual C++ ...
     if FText.SelText <> '' then
     begin
+{$IFDEF SCINTILLA}
+{$ELSE}
       if not (ssShift in Shift) then FText.ExecuteCommand(ecBlockIndent, #0, nil)
       else FText.ExecuteCommand(ecBlockUnindent, #0, nil);
+{$ENDIF}//scintilla
       Abort;
     end;
   end;
@@ -1446,7 +1896,11 @@ begin
           M := TMemoryStream.Create;
           try
             fText.Lines.SaveToStream(M);
+{$IFDEF SCINTILLA}
+            fCompletionBox.CurrentClass := MainForm.CppParser1.FindAndScanBlockAt(fFileName, fText.LineFromPosition(fText.GetCurrentPos), M);
+{$ELSE}
             fCompletionBox.CurrentClass := MainForm.CppParser1.FindAndScanBlockAt(fFileName, fText.CaretY, M);
+{$ENDIF}//scintilla
           finally
             M.Free;
           end;
@@ -1475,7 +1929,12 @@ begin
   fTimer.Enabled := False;
   curr := CurrentPhrase;
 
+{$IFDEF SCINTILLA}
+
+  if not CheckAttributes(fText.GetCurrentPos - 1, curr) then begin
+{$ELSE}
   if not CheckAttributes(BufferCoord(fText.CaretX-1, fText.CaretY), curr) then begin
+{$ENDIF}//scintilla
         fTimerKey := #0;
         Exit;
     end;
@@ -1483,18 +1942,33 @@ begin
   M := TMemoryStream.Create;
   try
     fText.Lines.SaveToStream(M);
+{$IFDEF SCINTILLA}
+    fCompletionBox.CurrentClass := MainForm.CppParser1.FindAndScanBlockAt(fFileName, fText.LineFromPosition(fText.GetCurrentPos), M);
+{$ELSE}
     fCompletionBox.CurrentClass := MainForm.CppParser1.FindAndScanBlockAt(fFileName, fText.CaretY, M);
+{$ENDIF}//scintilla
   finally
     M.Free;
   end;
   case fTimerKey of
     '.': fCompletionBox.Search(nil, curr, fFileName);
+
+{$IFDEF SCINTILLA}
+    '>': if fText.GetColumn(fText.GetCurrentPos) - 2 >= 0 then
+        if AnsiChar(fText.GetCharAt(fText.GetCurrentPos - 2)) = '-' then // it makes a '->'
+          fCompletionBox.Search(nil, curr, fFileName);
+    ':': if fText.GetColumn(fText.GetCurrentPos) - 2 >= 0 then
+        if AnsiChar(fText.GetCharAt(fText.GetCurrentPos - 2)) = ':' then // it makes a '->'
+          fCompletionBox.Search(nil, curr, fFileName);
+{$ELSE}
     '>': if fText.CaretX - 2 >= 0 then
         if fText.LineText[fText.CaretX - 2] = '-' then // it makes a '->'
           fCompletionBox.Search(nil, curr, fFileName);
     ':': if fText.CaretX - 2 >= 0 then
         if fText.LineText[fText.CaretX - 2] = ':' then // it makes a '::'
           fCompletionBox.Search(nil, curr, fFileName);
+{$ENDIF}//scintilla
+
   end;
   fTimerKey := #0;
 end;
@@ -1545,22 +2019,51 @@ end;
 function TEditor.CurrentPhrase: string;
 var
   I: integer;
+{$IFDEF SCINTILLA}
+  CurrentPos, LineLength:Integer;
+  LineText:String;
+{$ELSE}
+{$ENDIF}//scintilla
   AllowPar: boolean;
   NestedPar: integer;
 begin
+{$IFDEF SCINTILLA}
+//  I := fText.GetColumn(fText.GetCurrentPos);
+  LineText :=  fText.GetLineS(fText.LineFromPosition(fText.GetCurrentPos));
+  LineLength := Length(LineText);
+  I := LineLength;
+{$ELSE}
   I := fText.CaretX;
   Dec(I, 1);
+{$ENDIF}//scintilla
   NestedPar := 0;
+{$IFDEF SCINTILLA}
+  AllowPar := (Length(LineText) > 1) and (Copy(LineText, I - 1, 2) = ').') or
+              (Length(LineText) > 2) and (Copy(LineText, I - 2, 3) = ')->');
+{$ELSE}
   AllowPar := ((Length(fText.LineText) > 1) and (Copy(fText.LineText, I - 1, 2) = ').')) or
               (Length(fText.LineText) > 2) and (Copy(fText.LineText, I - 2, 3) = ')->');
+{$ENDIF}//scintilla
+{$IFDEF SCINTILLA}
+  while (I <> 0) and (LineText <> '') and (LineText[I] in ['A'..'Z', 'a'..'z', '0'..'9', '_', '.', '-', '>', ':', '(', ')', '[', ']', '~']) do
+{$ELSE}
   while (I <> 0) and (fText.LineText <> '') and (fText.LineText[I] in ['A'..'Z', 'a'..'z', '0'..'9', '_', '.', '-', '>', ':', '(', ')', '[', ']', '~']) do
+{$ENDIF}
   begin
+{$IFDEF SCINTILLA}
+    if (LineText[I] = ')') then
+{$ELSE}
     if (fText.LineText[I] = ')') then
+{$ENDIF}
       if not AllowPar then
         Break
       else
         Inc(NestedPar)
+{$IFDEF SCINTILLA}
+    else if LineText[I] = '(' then
+{$ELSE}
     else if fText.LineText[I] = '(' then
+{$ENDIF}
       if AllowPar then
         if NestedPar > 0 then
           Dec(NestedPar)
@@ -1575,11 +2078,20 @@ begin
   Inc(I);
 
   //If the string starts with a delimiter we should remove it
+{$IFDEF SCINTILLA}
+  while (I <= Length(LineText)) and (LineText[I] in ['.', '-', '>', ':', '(', ')', '[', ']']) do
+{$ELSE}
   while (I <= Length(fText.LineText)) and (fText.LineText[I] in ['.', '-', '>', ':', '(', ')', '[', ']']) do
+{$ENDIF}
     Inc(I);
 
   //Then extract the relevant string
+{$IFDEF SCINTILLA}
+ // Result := Copy(LineText, I, fText.GetColumn(fText.GetCurrentPos) - I);
+  Result := Copy(LineText, I, LineLength - (I-1));
+{$ELSE}
   Result := Copy(fText.LineText, I, fText.CaretX - I);
+{$ENDIF}
 end;
 
 procedure TEditor.SetEditorText(Key: Char);
@@ -1628,12 +2140,18 @@ begin
     Phrase := ST^._Command;
 
     // if already has a selection, delete it
+{$IFDEF SCINTILLA}
+  if Text.GetAnchor <> Text.GetCurrentPos then
+{$ELSE}
     if fText.SelAvail then
+{$ENDIF}//scintilla
       fText.SelText := '';
 
     // find the start of the word
     CurrSel := fText.SelStart;
     I := CurrSel;
+{$IFDEF SCINTILLA}
+{$ELSE}
     while (I<>0) and (fText.Text[I] in ['A'..'Z', 'a'..'z', '0'..'9', '_']) do
       Dec(I);
     fText.SelStart:=I;
@@ -1641,6 +2159,7 @@ begin
     // don't add () if already there
     if fText.Text[CurrSel] = '(' then
       FuncAddOn := '';
+{$ENDIF}//scintilla
 
     fText.SelText := Phrase + FuncAddOn;
 
@@ -1649,28 +2168,53 @@ begin
     // and function takes arguments...
     if (not (Key in ['.', '>'])) and (FuncAddOn <> '') and (Length(ST^._Args) > 2) then
     begin
+{$IFDEF SCINTILLA}
+{$ELSE}
       fText.CaretX := fText.CaretX - Length(FuncAddOn) + 1;
       fFunctionArgs.ExecuteEx(Phrase, fText.DisplayX, fText.DisplayY, ctParams);
+{$ENDIF}//scintilla
     end;
   end;
 end;
 
+{$IFDEF SCINTILLA}
+function TEditor.CheckAttributes(P: integer; Phrase: string): boolean;
+{$ELSE}
 function TEditor.CheckAttributes(P: TBufferCoord; Phrase: string): boolean;
+{$ENDIF}//scintilla
 var
   token: string;
+{$IFDEF SCINTILLA}
+  attri: Integer;
+{$ELSE}
   attri: TSynHighlighterAttributes;
+{$ENDIF}//scintilla
 begin
+{$IFDEF SCINTILLA}
+  attri := fText.GetStyleAt(P);
+{$ELSE}
   fText.GetHighlighterAttriAtRowCol(P, token, attri);
-  Result := not ((not Assigned(Attri)) or
+{$ENDIF}//scintilla
+  Result := not ({(not Assigned(Attri)) or}//mn
     AnsiStartsStr('.', Phrase) or
     AnsiStartsStr('->', Phrase) or
     AnsiStartsStr('::', Phrase) or
     (
-    Assigned(Attri) and
+    {mnAssigned(Attri) and }
     (
+{$IFDEF SCINTILLA}
+    (Attri = 9) or
+    (Attri = 1) or
+    (Attri = 6)
+{    (Attri.Name = 'Preprocessor') or
+    (Attri.Name = 'Comment') or
+    (Attri.Name = 'String')
+}
+{$ELSE}
     (Attri.Name = 'Preprocessor') or
     (Attri.Name = 'Comment') or
     (Attri.Name = 'String')
+{$ENDIF}//scintilla
     )
     ));
 end;
@@ -1680,14 +2224,23 @@ end;
 // variable info
 procedure TEditor.EditorMouseMove(Sender: TObject; Shift: TShiftState; X, Y:Integer);
 var s, s1: string;
+{$IFDEF SCINTILLA}
+{$ELSE}
     p : TBufferCoord;
+{$ENDIF}//scintilla
   	I,j,slen: integer;
+{$IFDEF SCINTILLA}
+{$ELSE}
     attr:TSynHighlighterAttributes;
+{$ENDIF}//scintilla
 begin
   fDebugHintTimer.Enabled := false;
 
   //check if not comment or string
   //if yes - exit without hint
+{$IFDEF SCINTILLA}
+{$ELSE}
+
   p := fText.DisplayToBufferPos(fText.PixelsToRowColumn(X, Y));
   if fText.GetHighlighterAttriAtRowCol(p, s, attr) then
     if (attr = fText.Highlighter.StringAttribute)
@@ -1696,14 +2249,21 @@ begin
       fText.Hint:='';
       Exit;
     end;
+{$ENDIF}//scintilla
 
   if devEditor.ParserHints and (not MainForm.fDebugger.Executing) then begin // editing - show declaration of word under cursor in a hint
+{$IFDEF SCINTILLA}
+{$ELSE}
+
     p.Char := X;
     p.Line := Y;
     p := fText.DisplayToBufferPos(fText.PixelsToRowColumn(p.Char, p.Line));
     s := fText.GetWordAtRowCol(p);
+{$ENDIF}//scintilla
   end
   else if devData.WatchHint and MainForm.fDebugger.Executing then begin // debugging - evaluate var under cursor and show value in a hint
+{$IFDEF SCINTILLA}
+{$ELSE}
     p := fText.DisplayToBufferPos(fText.PixelsToRowColumn(X, Y));
     I:=P.Char;
     s1:=fText.Lines[p.Line-1];
@@ -1714,6 +2274,7 @@ begin
       Inc(I); 
     end;
     P.Char:=I;
+{$ENDIF}//scintilla
     Dec(I);
 
     if (s1 <> '') then
@@ -1724,7 +2285,10 @@ begin
       while (slen >= I) and (I <> 0) and (s1[I] in ['A'..'Z', 'a'..'z', '0'..'9', '_', '.', '-', '>', '&', '*']) do
       Dec(I, 1);
     end;
+{$IFDEF SCINTILLA}
+{$ELSE}
     s := Copy(s1, I + 1, p.Char - I - 1);
+{$ENDIF}//scintilla
   end;
 
   if (s <> '') and (not fDebugHintTimer.Enabled) then begin
@@ -1767,16 +2331,22 @@ begin
       M := TMemoryStream.Create;
       try
         fText.Lines.SaveToStream(M);
+{$IFDEF SCINTILLA}
+{$ELSE}
         MainForm.CppParser1.FindAndScanBlockAt(fFileName, fText.PixelsToRowColumn(fText.ScreenToClient(Mouse.CursorPos).X,
           fText.ScreenToClient(Mouse.CursorPos).Y).Row, M)
+{$ENDIF}//scintilla
       finally
         M.Free;
       end;
       st := PStatement(MainForm.CppParser1.Locate(fCurrentHint, False));
+{$IFDEF SCINTILLA}
+{$ELSE}
       if Assigned(st) and (not FCodeToolTip.Activated) then begin
         fCurrentHint := st^._FullText;
         fCompletionBox.ShowMsgHint(r, fCurrentHint);
       end;
+{$ENDIF}
     end
     else if devData.WatchHint and MainForm.fDebugger.Executing then // debugging - evaluate var under cursor and show value in a hint
     begin
@@ -1790,19 +2360,34 @@ procedure TEditor.OnVariableHint(Hint: string);
 begin
   fText.Hint := Hint;
   fText.ShowHint := True;
+{$IFDEF SCINTILLA}
+{$ELSE}
   if not FCodeToolTip.Activated then
     Application.ActivateHint(Mouse.CursorPos);
+{$ENDIF}
 end;
 
 procedure TEditor.CommentSelection;
 var
   S: string;
   Offset: integer;
+{$IFDEF SCINTILLA}
+  backup: integer;
+{$ELSE}
   backup: TBufferCoord;
+{$ENDIF}//scintilla
+
 begin
+{$IFDEF SCINTILLA}
+  if Text.GetAnchor <> Text.GetCurrentPos then begin
+{$ELSE}
   if Text.SelAvail then begin // has selection
+{$ENDIF}      //scintilla
+{$IFDEF SCINTILLA}
+{$ELSE}
     backup := Text.CaretXY;
     Text.BeginUpdate;
+{$ENDIF}//scintilla
     S := '//' + Text.SelText;
     Offset := 0;
     if S[Length(S)]=#10 then begin // if the selection ends with a newline, eliminate it
@@ -1818,30 +2403,51 @@ begin
     else if Offset = 2 then
       S := S + #13#10;
     Text.SelText := S;
+{$IFDEF SCINTILLA}
+{$ELSE}
     Text.EndUpdate;
     Text.CaretXY := backup;
+{$ENDIF}//scintilla
   end
   else // no selection; easy stuff ;)
+{$IFDEF SCINTILLA}
+{$ELSE}
     Text.LineText := '//' + Text.LineText;
   Text.UpdateCaret;
+{$ENDIF}//scintilla
   Text.Modified := True;
 end;
 
 {** Modified by Peter **}
 procedure TEditor.IndentSelection;
 begin
+{$IFDEF SCINTILLA}
+  if FText.GetAnchor <> FText.GetCurrentPos then
+{$ELSE}
   if FText.SelAvail then
+{$ENDIF}//scintilla
   begin
+{$IFDEF SCINTILLA}
+{$ELSE}
     FText.ExecuteCommand(ecBlockIndent, #0, nil);
+{$ENDIF}//scintilla
   end;
 end;
 
 {** Modified by Peter **}
 procedure TEditor.UnindentSelection;
 begin
+{$IFDEF SCINTILLA}
+  if FText.GetAnchor <> FText.GetCurrentPos then
+{$ELSE}
   if FText.SelAvail then
+{$ENDIF}//scintilla
+
   begin
+{$IFDEF SCINTILLA}
+{$ELSE}
     FText.ExecuteCommand(ecBlockUnIndent, #0, nil);
+{$ENDIF}//scintilla
   end;
 end;
 
@@ -1873,11 +2479,18 @@ var
   Strings: TStringList;
 begin
   // has selection
+{$IFDEF SCINTILLA}
+  if Text.GetAnchor <> Text.GetCurrentPos then
+{$ELSE}
   if Text.SelAvail then
+{$ENDIF}//scintilla
   begin
     // start an undoblock, so we can undo
     // it afterwards!
+{$IFDEF SCINTILLA}
+{$ELSE}
     FText.BeginUndoBlock;
+{$ENDIF}//scintilla
 
     Strings := TStringList.Create;
     try
@@ -1906,8 +2519,11 @@ begin
       Strings.Free;
     end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
     FText.EndUndoBlock;
     FText.UpdateCaret;
+{$ENDIF}//scintilla
     FText.Modified := True;
   end;
 end;
@@ -1932,14 +2548,23 @@ procedure TEditor.EditorMouseDown(Sender: TObject; Button: TMouseButton;
 
       if wrd<>'' then begin
         // find the clicked word on this line and set the cursor on it ;)
+{$IFDEF SCINTILLA}
+{$ELSE}
         ws := AnsiPos(wrd, e.Text.LineText);
+{$ENDIF}//scintilla
         if ws > 0 then
+{$IFDEF SCINTILLA}
+{$ELSE}
           e.Text.CaretX := ws;
+{$ENDIF}//scintilla
       end;
 
       // remove any selection made by Synedit.OnMouseDown
+{$IFDEF SCINTILLA}
+{$ELSE}
       fText.BlockBegin := fText.CaretXY;
       fText.BlockEnd := fText.BlockBegin;
+{$ENDIF}//scintilla
     end;
   end;
 var
@@ -1954,9 +2579,12 @@ begin
   p.X := X;
   p.Y := Y;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
   p.X := fText.PixelsToRowColumn(p.X, p.Y).Column;
   p.Y := fText.PixelsToRowColumn(p.X, p.Y).Row;
   s := fText.GetWordAtRowCol(BufferCoord(p.X, p.Y));
+{$ENDIF}//scintilla
 
   // if ctrl+clicked
   if (ssCtrl in Shift) and (Button=mbLeft) then begin
@@ -2046,16 +2674,27 @@ begin
   TurnOnBreakpoint(fRunToCursorLine);
 end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 procedure TEditor.PaintMatchingBrackets(TransientType: TTransientType);
 const
   OpenChars: array[0..2] of Char = ('{', '[', '(');
   CloseChars: array[0..2] of Char = ('}', ']', ')');
 
+{$IFDEF SCINTILLA}
+  function CharToPixels(P: integer): TPoint;
+{$ELSE}
   function CharToPixels(P: TBufferCoord): TPoint;
+{$ENDIF}//scintilla
   begin
+{$IFDEF SCINTILLA}
+{$ELSE}
     Result:= fText.RowColumnToPixels(fText.BufferToDisplayPos(p));
+{$ENDIF}//scintilla
   end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
   procedure SetColors(Editor: TSynEdit; virtualCoord: TBufferCoord; Attri: TSynHighlighterAttributes);
     function GetEditorBackgroundColor: TColor;
     var
@@ -2080,11 +2719,14 @@ const
         end;
       end;
     end;
+{$ENDIF}
 
     function GetEditorForegroundColor: TColor;
     var
       PhysicalIndex: Integer;
     begin
+{$IFDEF SCINTILLA}
+{$ELSE}
       PhysicalIndex := Editor.RowColToCharIndex(virtualCoord);
 
       //Start by checking for selections
@@ -2092,15 +2734,18 @@ const
         Result := Editor.SelectedColor.Foreground
       else
         Result := Editor.Font.Color;
+{$ENDIF}
     end;
+
   var
     Special: Boolean;
     Foreground, Background: TColor;
   begin
     //Initialize the editor colors to defaults
     Foreground := GetEditorForegroundColor;
+{$IFDEF SCINTILLA}
+{$ELSE}
     Background := GetEditorBackgroundColor;
-
     Editor.OnSpecialLineColors(Self, virtualCoord.Line, Special, Foreground, Background);
     Editor.Canvas.Brush.Style := bsSolid;
     Editor.Canvas.Font.Assign(fText.Font);
@@ -2110,15 +2755,25 @@ const
 
     Editor.Canvas.Brush.Color := Background;
     Editor.Canvas.Font.Color := Foreground;
+{$ENDIF}
   end;
 
 var
+{$IFDEF SCINTILLA}
+    P: integer;
+{$ELSE}
   P: TBufferCoord;
+{$ENDIF}//scintilla
   Pix: TPoint;
   S: String;
   I: Integer;
+{$IFDEF SCINTILLA}
+{$ELSE}
   Attri: TSynHighlighterAttributes;
+{$ENDIF}//scintilla
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   P := fText.CaretXY;
   fText.GetHighlighterAttriAtRowCol(P, S, Attri);
   if Assigned(Attri) and (fText.Highlighter.SymbolAttribute = Attri) and
@@ -2147,16 +2802,23 @@ begin
     end;
     fText.Canvas.Brush.Style := bsSolid;
   end;
+{$ENDIF}//scintilla
 end;
+{$ENDIF}
 
 procedure TEditor.EditorPaintTransient(Sender: TObject; Canvas: TCanvas;
   TransientType: TTransientType);
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   if (not Assigned(fText.Highlighter)) or (devEditor.Match = false) then
     Exit;
   PaintMatchingBrackets(TransientType);
+{$ENDIF}//scintilla
 end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 procedure TEditor.FunctionArgsExecute(Kind: SynCompletionType; Sender: TObject;
   var AString: String; var x, y: Integer; var CanExecute: Boolean);
 var
@@ -2241,6 +2903,7 @@ begin
 
   end;
 end;
+{$ENDIF}//scintilla
 
 //this event is triggered whenever the codecompletion box is going to do the actual
 //code completion
@@ -2284,30 +2947,52 @@ begin
 {$ELSE}
 begin
   try
+{$IFDEF SCINTILLA}
+    Assert(MainForm.FCodeToolTip <> nil);
+    //need to make sure we refer to the active page
+
+ //   CallTipString := AStatement._FullText;
+    MainForm.FCodeToolTip.ApiStrings[1] := AStatement._FullText;
+    MainForm.FCodeToolTip.Editor.CallTipShow(MainForm.FCodeToolTip.Editor.GetCurrentPos, PChar(MainForm.FCodeToolTip.ApiStrings[1]));
+{$ELSE}
     Assert(FCodeToolTip <> nil);
     FCodeToolTip.Select(AStatement._FullText);
     FCodeToolTip.Enabled := True;
     FCodeToolTip.Show;
+{$ENDIF}
   except
+{$IFDEF SCINTILLA}
+    ShowMessage(inttostr(integer(MainForm.FCodeToolTip)) + '/' + inttostr(integer(@AStatement)));
+{$ELSE}
     ShowMessage(inttostr(integer(FCodeToolTip)) + '/' + inttostr(integer(@AStatement)));
+{$ENDIF}
     raise;
   end;
-{$ENDIF}
+{$ENDIF}//Private_build
 
   //When we don't invalidate the SynEditor here, it occurs sometimes that
   //fragments of the codecompletion listbox are stuff displayed on the SynEdit
+{$IFDEF SCINTILLA}
+{$ELSE}
   fText.Invalidate;
+{$ENDIF}//scintilla
 end;
 
 // Editor needs to be told when class browser has been recreated otherwise AV !
 procedure TEditor.UpdateParser;
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   FCodeToolTip.Parser := MainForm.CppParser1;
+{$ENDIF}//scintilla
 end;
 
 procedure TEditor.InvalidateGutter;
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
 fText.InvalidateGutter;
+{$ENDIF}//scintilla
 end;
 
 {$IFDEF WX_BUILD}
@@ -2359,12 +3044,18 @@ begin
       e := MainForm.GetEditorFromFileName(ChangeFileExt(FileName, CPP_EXT));
       if Assigned(e) then
       begin
+{$IFDEF SCINTILLA}
+{$ELSE}
         e.Text.BeginUpdate;
+{$ENDIF}//scintilla
         try
           GenerateCpp(fDesigner, fDesigner.Wx_Name, e.Text,e.FileName);
         except
         end;
+{$IFDEF SCINTILLA}
+{$ELSE}
         e.Text.EndUpdate;
+{$ENDIF}//scintilla
         e.Modified:=true;
         e.InsertString('', false);
         MainForm.StatusBar.Panels[3].Text := ('C++ Source Generation: ' + GetElapsedTimeStr(StartTimeX));
@@ -2380,12 +3071,18 @@ begin
       e := MainForm.GetEditorFromFileName(ChangeFileExt(FileName, H_EXT));
       if Assigned(e) then
       begin
+{$IFDEF SCINTILLA}
+{$ELSE}
         e.Text.BeginUpdate;
+{$ENDIF}//scintilla
         try
           GenerateHpp(fDesigner, fDesigner.Wx_Name, e.Text);
         except
         end;
+{$IFDEF SCINTILLA}
+{$ELSE}
         e.Text.EndUpdate;
+{$ENDIF}//scintilla
         e.Modified:=true;
         e.InsertString('', false);
         MainForm.StatusBar.Panels[3].Text := MainForm.StatusBar.Panels[3].Text + (' / Header Declaration Generation = ' + GetElapsedTimeStr(StartTimeX));
@@ -2431,7 +3128,11 @@ begin
     Result := ChangeFileExt(FileName, CPP_EXT);
 end;
 
+{$IFDEF SCINTILLA}
+function TEditor.GetDesignerHPPText: TScintilla;
+{$ELSE}
 function TEditor.GetDesignerHPPText: TSynEdit;
+{$ENDIF}//scintilla
 var
   e: TEditor;
 begin
@@ -2453,7 +3154,11 @@ begin
   end;
 end;
 
+{$IFDEF SCINTILLA}
+function TEditor.GetDesignerCPPText: TScintilla;
+{$ELSE}
 function TEditor.GetDesignerCPPText: TSynEdit;
+{$ENDIF}//scintilla
 var
   e: TEditor;
 begin
@@ -2578,12 +3283,18 @@ begin
 
       if Assigned(e) then
       begin
+{$IFDEF SCINTILLA}
+{$ELSE}
         e.Text.BeginUpdate;
+{$ENDIF}//scintilla
         try
           GenerateXRC(fDesigner, fDesigner.Wx_Name, e.Text,e.FileName);
         except
         end;
+{$IFDEF SCINTILLA}
+{$ELSE}
         e.Text.EndUpdate;
+{$ENDIF}//scintilla
         e.Modified:=true;
         e.InsertString('', false);
       end;
@@ -2614,6 +3325,189 @@ begin
 end;
 
 {$ENDIF}
+procedure TEditor.SciAutoCSelection(Sender: TObject; text: PChar);
+begin
+
+end;
+
+procedure TEditor.SciCallTipClick(Sender: TObject;
+  const position: Integer);
+begin
+
+end;
+
+procedure TEditor.SciCharAdded(Sender: TObject; const ch: Integer);
+begin
+  if assigned(MainForm.FCodeToolTip) {and FCodeToolTip.Enabled } then
+    begin
+      fToolTipTimer.Enabled := False;
+      fToolTipTimer.Enabled := True;
+    end;
+
+end;
+
+procedure TEditor.SciClick(Sender: TObject);
+begin
+
+end;
+
+procedure TEditor.SciDblClick(Sender: TObject);
+begin
+
+end;
+
+procedure TEditor.SciDwellEnd(Sender: TObject;
+  const position: Integer);
+begin
+
+end;
+
+procedure TEditor.SciDwellStart(Sender: TObject;
+  const position: Integer);
+begin
+
+end;
+
+procedure TEditor.SciEnter(Sender: TObject);
+begin
+
+end;
+
+procedure TEditor.SciExit(Sender: TObject);
+begin
+
+end;
+
+procedure TEditor.SciHotSpotClick(Sender: TObject; const modifiers,
+  position: Integer);
+begin
+
+end;
+
+procedure TEditor.SciHotSpotDoubleClick(Sender: TObject;
+  const modifiers, position: Integer);
+begin
+
+end;
+
+procedure TEditor.SciKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+
+end;
+
+procedure TEditor.SciKeyPress(Sender: TObject; var Key: Char);
+begin
+
+end;
+
+procedure TEditor.SciKeyUp(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+
+end;
+
+procedure TEditor.SciMacroRecord(Sender: TObject; const message,
+  wParam, lParam: Integer);
+begin
+
+end;
+
+procedure TEditor.SciMarginClick(Sender: TObject; const modifiers,
+  position, margin: Integer);
+begin
+
+end;
+
+procedure TEditor.SciModified(Sender: TObject; const position,
+  modificationType: Integer; text: PChar; const len, linesAdded, line,
+  foldLevelNow, foldLevelPrev: Integer);
+begin
+      UpdateCaption('[*] ' + ExtractfileName(fFileName))
+end;
+
+procedure TEditor.SciModifyAttemptRO(Sender: TObject);
+begin
+
+end;
+
+procedure TEditor.SciMouseDown(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+
+end;
+
+procedure TEditor.SciMouseMove(Sender: TObject; Shift: TShiftState;
+  X, Y: Integer);
+begin
+
+end;
+
+procedure TEditor.SciMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+
+end;
+
+procedure TEditor.SciMsgSent(Sender: TObject; Msg, wParam,
+  lParam: Integer);
+begin
+
+end;
+
+procedure TEditor.SciNeedShown(Sender: TObject; const position,
+  len: Integer);
+begin
+
+end;
+
+procedure TEditor.SciPainted(Sender: TObject);
+begin
+
+end;
+
+procedure TEditor.SciSavePointLeft(Sender: TObject);
+begin
+
+end;
+
+procedure TEditor.SciSavePointReached(Sender: TObject);
+begin
+
+end;
+
+procedure TEditor.SciStyleNeeded(Sender: TObject;
+  const position: Integer);
+begin
+
+end;
+
+procedure TEditor.SciUpdateUI(Sender: TObject);
+var
+  X, Y: Integer;
+begin
+      Y := fText.LineFromPosition(fText.GetCurrentPos)+ 1; //Scntilla Lines start at 0
+      X := fText.GetColumn(fText.GetCurrentPos);
+      MainForm.StatusBar.Panels[0].Text := format('%6d: %-4d', [Y, X]);
+end;
+
+procedure TEditor.SciUserListSelection(Sender: TObject;
+  const listType: Integer; text: PChar);
+begin
+
+end;
+
+procedure TEditor.SciZoom(Sender: TObject);
+begin
+
+end;
+
+procedure TEditor.SciCallTipsBeforeShow(Sender: TObject;
+  const Position: Integer; ListToDisplay: TStrings;
+  var CancelDisplay: Boolean);
+begin
+end;
+
 
 end.
 
