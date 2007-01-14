@@ -24,7 +24,12 @@ interface
 uses
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Spin, SynEditTextBuffer, SynEditTypes, XPMenu;
+  Dialogs, StdCtrls, Spin,
+{$IFDEF SCINTILLA}
+{$ELSE}
+ SynEditTextBuffer, SynEditTypes,
+ {$ENDIF}
+ XPMenu;
 {$ENDIF}
 {$IFDEF LINUX}
   SysUtils, Variants, Classes, QGraphics, QControls, QForms,
@@ -73,7 +78,11 @@ procedure TAddToDoForm.btnOKClick(Sender: TObject);
 var
   e: TEditor;
   I: integer;
+{$IFDEF SCINTILLA}
+{$ELSE}
   st: TBufferCoord;
+{$ENDIF}
+
   Line: integer;
   LineText: string;
   Hdr: string;
@@ -85,10 +94,16 @@ begin
     Exit;
   end;
 
+
+{$IFDEF SCINTILLA}
+  Line := e.Text.LineFromPosition(e.Text.GetCurrentPos);//?? - 1;
+  LineText := e.Text.Lines[Line];
+{$ELSE}
   Line := e.Text.CaretY - 1;
   LineText := e.Text.Lines[Line];
   st.Line := Line + 1;
   st.Char := 1;
+{$ENDIF}
 
   I := 1;
   while (I <= Length(LineText)) and (LineText[I] in [#9, ' ']) do
@@ -112,7 +127,11 @@ begin
         e.Text.Lines.Insert(Line + I, Prepend + memDescr.Lines[I]);
     end;
   end;
+{$IFDEF SCINTILLA}
+  //mn I believe that Scintilla will save the undo information itself, otherwise I'll look into it.
+{$ELSE}
   e.Text.UndoList.AddChange(crInsert, st, BufferCoord(st.Char, st.Line + memDescr.Lines.Count), '', smNormal);
+{$ENDIF}
   e.Modified := True;
   Close;
 end;

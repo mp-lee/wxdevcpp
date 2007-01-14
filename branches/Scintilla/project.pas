@@ -285,18 +285,18 @@ begin
   try
     //Update the XPMs if we dont have them on the disk
     if Assigned(fEditor) and fEditor.isForm then
-      fEditor.GetDesigner.CreateNewXPMs(fEditor.FileName);
+        fEditor.GetDesigner.CreateNewXPMs(fEditor.FileName);
 
     //If no editor is created open one; save file and close creates a blank file.
     if (not Assigned(fEditor)) and (not FileExists(fFileName)) then
     begin
       fEditor := TEditor.Create;
       fEditor.Init(True, ExtractFileName(fFileName), fFileName, False);
-      if devEditor.AppendNewline then
-        with fEditor.Text do
-          if Lines.Count > 0 then
-            if Lines[Lines.Count -1] <> '' then
-              Lines.Add('');
+       if devEditor.AppendNewline then
+         with fEditor.Text do
+           if Lines.Count > 0 then
+             if Lines[Lines.Count -1] <> '' then
+               Lines.Add('');
 
       DisableFileWatch;
       fEditor.Text.Lines.SavetoFile(fFileName);
@@ -309,11 +309,11 @@ begin
     end
     else if assigned(fEditor) and fEditor.Modified then
     begin
-      if devEditor.AppendNewline then
-        with fEditor.Text do
-          if Lines.Count > 0 then
-            if Lines[Lines.Count -1] <> '' then
-              Lines.Add('');
+       if devEditor.AppendNewline then
+         with fEditor.Text do
+           if Lines.Count > 0 then
+             if Lines[Lines.Count -1] <> '' then
+               Lines.Add('');
 
       DisableFileWatch;
       fEditor.Text.Lines.SavetoFile(fFileName);
@@ -324,7 +324,6 @@ begin
       if FileExists(fEditor.FileName) then
         FileSetDate(fEditor.FileName, DateTimeToFileDate(Now)); // fix the "Clock skew detected" warning ;)
     end;
-
     if assigned(fNode) then
       fNode.Text := ExtractFileName(fFileName);
     result := True;
@@ -1510,10 +1509,13 @@ begin
   layIni := TIniFile.Create(ChangeFileExt(Filename, '.layout'));
   try
     if Assigned(e) then begin
+{$IFDEF SCINTILLA}
+{$ELSE}
       e.Text.CaretY := layIni.ReadInteger('Editor_' + IntToStr(Index), 'CursorRow', 1);
       e.Text.CaretX := layIni.ReadInteger('Editor_' + IntToStr(Index), 'CursorCol', 1);
       e.Text.TopLine := layIni.ReadInteger('Editor_' + IntToStr(Index),'TopLine', 1);
       e.Text.LeftChar := layIni.ReadInteger('Editor_' + IntToStr(Index),'LeftChar', 1);
+{$ENDIF}
     end;
   finally
     layIni.Free;
@@ -1569,10 +1571,13 @@ begin
         layIni.WriteBool('Editor_' + IntToStr(idx), 'Top', aset and
           (fUnits[idx].Editor.TabSheet = fUnits[idx].Editor.TabSheet.PageControl.ActivePage));
         if aset then begin
+{$IFDEF SCINTILLA}
+{$ELSE}
           layIni.WriteInteger('Editor_' + IntToStr(idx), 'CursorCol', fUnits[idx].Editor.Text.CaretX);
           layIni.WriteInteger('Editor_' + IntToStr(idx), 'CursorRow', fUnits[idx].Editor.Text.CaretY);
           layIni.WriteInteger('Editor_' + IntToStr(idx), 'TopLine',   fUnits[idx].Editor.Text.TopLine);
           layIni.WriteInteger('Editor_' + IntToStr(idx), 'LeftChar',  fUnits[idx].Editor.Text.LeftChar);
+{$ENDIF}
         end;
 
         // remove old data from project file
@@ -1617,10 +1622,13 @@ begin
   layIni := TIniFile.Create(filepath);
   try
     if Assigned(e) then begin
+{$IFDEF SCINTILLA}
+{$ELSE}
       layIni.WriteInteger('Editor_' + IntToStr(Index), 'CursorCol', e.Text.CaretX);
       layIni.WriteInteger('Editor_' + IntToStr(Index), 'CursorRow', e.Text.CaretY);
       layIni.WriteInteger('Editor_' + IntToStr(Index), 'TopLine', e.Text.TopLine);
       layIni.WriteInteger('Editor_' + IntToStr(Index), 'LeftChar',e.Text.LeftChar);
+{$ENDIF}
     end;
   finally
     layIni.Free;
@@ -1964,7 +1972,10 @@ var
   hFile: integer;
 begin
   with dmMain.SaveDialog do begin
+{$IFDEF SCINTILLA}
+{$ELSE}
     Filter := dmMain.SynExporterHTML.DefaultFilter;
+{$ENDIF}
     DefaultExt := HTML_EXT;
     Title := Lang[ID_NV_EXPORT];
     if not Execute then

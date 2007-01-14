@@ -135,7 +135,7 @@ implementation
 
 uses
   MultiLangSupport, devcfg, Macros, devExec, CompileProgressFm, StrUtils, RegExpr,
-  DbugIntf, SynEdit, SynEditHighlighter, SynEditTypes, datamod;
+  DbugIntf, SciLexer, SciLexerMemo, SciLexerMod, SciSupport, datamod, main;
 
 constructor TCompiler.Create;
 begin
@@ -373,11 +373,19 @@ end;
 
 function TCompiler.FindDeps(TheFile: String; var VisitedFiles: TStringList): String;
 var
+{$IFDEF SCINTILLA}
+  Editor: TScintilla;
+{$ELSE}
   Editor: TSynEdit;
+{$ENDIF}
   i, Start: integer;
   Includes: TStringList;
   Token, Quote, FilePath: string;
+{$IFDEF SCINTILLA}
+  Attri: Integer;
+{$ELSE}
   Attri: TSynHighlighterAttributes;
+{$ENDIF}
 
   function StartsStr(start: string; str: string) : Boolean;
   var
@@ -404,8 +412,13 @@ begin;
     Exit;
 
   //Otherwise mark ourselves as visited
+{$IFDEF SCINTILLA}
+  Editor := MainForm.HiddenSci;
+  Editor.LanguageManager.SelectedLanguage :='C++/C';
+{$ELSE}
   Editor := TSynEdit.Create(Application);
   Editor.Highlighter := dmMain.Cpp;
+{$ENDIF}
   VisitedFiles.Add(TheFile);
   Application.ProcessMessages;
   
@@ -419,12 +432,17 @@ begin;
       if StartsStr('#', Editor.Lines[i]) then
       begin
         Start := Pos('#', Editor.Lines[i]);
+{$IFDEF SCINTILLA}
+        Attri := Editor.GetStyleAt(Editor.PositionFromLine(start)+i+1);
+        if Attri = 9 then  //preprocessor
+          Continue;
+{$ELSE}
         Editor.GetHighlighterAttriAtRowCol(BufferCoord(start, i + 1), Token, Attri);
 
         //Is it a preprocessor directive?
         if Attri.Name <> 'Preprocessor' then
           Continue;
-
+{$ENDIF}
         //Is it an include?
         Token := Trim(Copy(Token, 2, Length(Token))); //copy after #
         if not AnsiStartsStr('include', Token) then
@@ -458,7 +476,10 @@ begin;
   finally
     if Assigned (Includes) then
       Includes.Destroy;
+{$IFDEF SCINTILLA}
+{$ELSE}
     Editor.Free;
+{$ENDIF}
   end;
 end;
 

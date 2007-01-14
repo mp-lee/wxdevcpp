@@ -30,141 +30,20 @@ object EditorOptForm: TEditorOptForm
     Top = 8
     Width = 415
     Height = 373
-    ActivePage = tabDisplay
+    ActivePage = tabSyntax
     Anchors = [akLeft, akTop, akRight, akBottom]
+    TabIndex = 1
     TabOrder = 0
     OnChange = PagesMainChange
     object tabGeneral: TTabSheet
       Caption = 'General'
-      object grpMargin: TGroupBox
-        Left = 248
-        Top = 216
-        Width = 155
-        Height = 84
-        Caption = 'Right Margin'
-        TabOrder = 0
-        object lblMarginWidth: TLabel
-          Left = 8
-          Top = 35
-          Width = 28
-          Height = 13
-          Caption = 'Width'
-        end
-        object lblMarginColor: TLabel
-          Left = 83
-          Top = 35
-          Width = 24
-          Height = 13
-          Caption = 'Color'
-        end
-        object cpMarginColor: TColorPickerButton
-          Left = 83
-          Top = 50
-          Width = 61
-          Height = 22
-          DefaultText = 'default'
-          PopupSpacing = 8
-          ShowSystemColors = False
-          OnDefaultSelect = cpMarginColorDefaultSelect
-          OnHint = cpMarginColorHint
-        end
-        object cbMarginVis: TCheckBox
-          Left = 8
-          Top = 16
-          Width = 75
-          Height = 17
-          Caption = 'Visible'
-          TabOrder = 0
-        end
-        object edMarginWidth: TSpinEdit
-          Left = 8
-          Top = 51
-          Width = 60
-          Height = 22
-          MaxValue = 0
-          MinValue = 0
-          TabOrder = 1
-          Value = 0
-        end
-      end
-      object grpCaret: TGroupBox
-        Left = 4
-        Top = 216
-        Width = 235
-        Height = 84
-        Caption = 'Caret'
-        TabOrder = 1
-        object lblInsertCaret: TLabel
-          Left = 8
-          Top = 16
-          Width = 56
-          Height = 13
-          Caption = 'Insert caret:'
-        end
-        object lblOverCaret: TLabel
-          Left = 8
-          Top = 41
-          Width = 75
-          Height = 13
-          Caption = 'Overwrite caret:'
-        end
-        object cboInsertCaret: TComboBox
-          Left = 120
-          Top = 12
-          Width = 100
-          Height = 21
-          Style = csDropDownList
-          ItemHeight = 13
-          TabOrder = 0
-          OnDblClick = cboDblClick
-          Items.Strings = (
-            'Vertical Line'
-            'Horizontal Line'
-            'Half Block'
-            'Block')
-        end
-        object cboOverwriteCaret: TComboBox
-          Left = 120
-          Top = 37
-          Width = 100
-          Height = 21
-          Style = csDropDownList
-          ItemHeight = 13
-          TabOrder = 1
-          OnDblClick = cboDblClick
-          Items.Strings = (
-            'Vertical Line'
-            'Horizontal Line'
-            'Half Block'
-            'Block')
-        end
-        object cbMatch: TCheckBox
-          Left = 8
-          Top = 60
-          Width = 217
-          Height = 17
-          Caption = 'Highlight matching parenthesis/braces'
-          TabOrder = 2
-        end
-      end
       object lblEditorOpts: TGroupBox
         Left = 4
         Top = 4
         Width = 399
         Height = 210
         Caption = 'Editor Options'
-        TabOrder = 2
-        object cpHighColor: TColorPickerButton
-          Left = 199
-          Top = 185
-          Width = 61
-          Height = 22
-          DefaultText = 'default'
-          PopupSpacing = 8
-          ShowSystemColors = False
-          OnDefaultSelect = cpMarginColorDefaultSelect
-          OnHint = cpMarginColorHint
-        end
+        TabOrder = 0
         object cbAppendNewline: TCheckBox
           Left = 8
           Top = 168
@@ -198,15 +77,6 @@ object EditorOptForm: TEditorOptForm
           Caption = 'Group Undo'
           TabOrder = 3
         end
-        object cbSmartUnIndent: TCheckBox
-          Left = 8
-          Top = 100
-          Width = 190
-          Height = 17
-          Hint = 'cursor is moved to nonblank space of previous line '
-          Caption = 'Backspace Unindents'
-          TabOrder = 4
-        end
         object cbTrailingBlanks: TCheckBox
           Left = 8
           Top = 83
@@ -214,7 +84,7 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'Blanks at end of lines will be saved with file'
           Caption = 'Keep Trailing Blanks'
-          TabOrder = 5
+          TabOrder = 4
         end
         object cbTabtoSpaces: TCheckBox
           Left = 8
@@ -222,7 +92,7 @@ object EditorOptForm: TEditorOptForm
           Width = 190
           Height = 17
           Caption = 'Use Tab Character'
-          TabOrder = 6
+          TabOrder = 5
         end
         object cbSmartTabs: TCheckBox
           Left = 8
@@ -233,7 +103,7 @@ object EditorOptForm: TEditorOptForm
             'on tab cursor is moved to first nonblank space of preceeding lin' +
             'e'
           Caption = 'Smart Tabs'
-          TabOrder = 7
+          TabOrder = 6
         end
         object cbInsertMode: TCheckBox
           Left = 8
@@ -242,16 +112,7 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'editor is in insert mode on start'
           Caption = 'Insert Mode'
-          TabOrder = 8
-        end
-        object cbAutoIndent: TCheckBox
-          Left = 8
-          Top = 16
-          Width = 190
-          Height = 17
-          Hint = 'caret will position to first non-whitespace of preceeding line'
-          Caption = 'Auto Indent'
-          TabOrder = 9
+          TabOrder = 7
         end
         object cbPastEOL: TCheckBox
           Left = 199
@@ -260,7 +121,7 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'allows cursor position past end of line'
           Caption = 'Cursor Past EOL'
-          TabOrder = 10
+          TabOrder = 8
         end
         object cbFindText: TCheckBox
           Left = 199
@@ -269,7 +130,7 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'inserts text at cursor into text to find of search dialog'
           Caption = 'Find Text at Cursor'
-          TabOrder = 11
+          TabOrder = 9
         end
         object cbHalfPage: TCheckBox
           Left = 199
@@ -278,7 +139,7 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'page up/down will move text by half a page instead of full page'
           Caption = 'Half Page Scrolling'
-          TabOrder = 12
+          TabOrder = 10
         end
         object cbScrollHint: TCheckBox
           Left = 199
@@ -287,7 +148,7 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'shows current line when scrolling'
           Caption = 'Scroll Hint'
-          TabOrder = 13
+          TabOrder = 11
         end
         object cbParserHints: TCheckBox
           Left = 199
@@ -295,7 +156,7 @@ object EditorOptForm: TEditorOptForm
           Width = 190
           Height = 17
           Caption = 'Show editor hints'
-          TabOrder = 14
+          TabOrder = 12
         end
         object cbSmartScroll: TCheckBox
           Left = 199
@@ -304,7 +165,7 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'show scrollbars only when content is available'
           Caption = 'Scollbars on need'
-          TabOrder = 15
+          TabOrder = 13
         end
         object cbDoubleLine: TCheckBox
           Left = 199
@@ -313,7 +174,7 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'double clicking a line selects it'
           Caption = 'Double Click Line'
-          TabOrder = 16
+          TabOrder = 14
         end
         object cbEHomeKey: TCheckBox
           Left = 199
@@ -322,7 +183,7 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'enhances home key positioning, similar to visual studio'
           Caption = 'Enhanced home key'
-          TabOrder = 17
+          TabOrder = 15
         end
         object cbPastEOF: TCheckBox
           Left = 199
@@ -331,267 +192,26 @@ object EditorOptForm: TEditorOptForm
           Height = 17
           Hint = 'allow cursor position past end of file'
           Caption = 'Cursor Past EOF'
-          TabOrder = 18
-        end
-        object cbHighCurrLine: TCheckBox
-          Left = 8
-          Top = 185
-          Width = 190
-          Height = 17
-          Caption = 'Highlight current line'
-          TabOrder = 19
-          OnClick = cbHighCurrLineClick
-        end
-      end
-    end
-    object tabDisplay: TTabSheet
-      Caption = 'Display'
-      object grpGutter: TGroupBox
-        Left = 4
-        Top = 115
-        Width = 399
-        Height = 180
-        Caption = 'Gutter'
-        TabOrder = 1
-        DesignSize = (
-          399
-          180)
-        object lblGutterFont: TLabel
-          Left = 8
-          Top = 86
-          Width = 24
-          Height = 13
-          Anchors = [akLeft, akRight, akBottom]
-          Caption = 'Font:'
-        end
-        object lblGutterWidth: TLabel
-          Left = 321
-          Top = 86
-          Width = 28
-          Height = 13
-          Anchors = [akLeft, akRight, akBottom]
-          Caption = 'Width'
-          WordWrap = True
-        end
-        object lblGutterFontSize: TLabel
-          Left = 200
-          Top = 86
-          Width = 23
-          Height = 13
-          Anchors = [akLeft, akRight, akBottom]
-          Caption = 'Size:'
-        end
-        object cbLeadZero: TCheckBox
-          Left = 199
-          Top = 48
-          Width = 190
-          Height = 15
-          Caption = 'Show Leading Zeros'
-          TabOrder = 5
-        end
-        object cbFirstZero: TCheckBox
-          Left = 199
-          Top = 32
-          Width = 190
-          Height = 15
-          Caption = 'Start at Zero'
-          TabOrder = 4
-        end
-        object cbLineNum: TCheckBox
-          Left = 199
-          Top = 16
-          Width = 190
-          Height = 15
-          Caption = 'Show Line Numbers'
-          TabOrder = 3
-          OnClick = cbLineNumClick
-        end
-        object cbGutterVis: TCheckBox
-          Left = 8
-          Top = 16
-          Width = 190
-          Height = 15
-          Caption = 'Visible'
-          TabOrder = 0
-        end
-        object cbGutterAuto: TCheckBox
-          Left = 8
-          Top = 32
-          Width = 190
-          Height = 15
-          Caption = 'Auto Size'
-          TabOrder = 1
-        end
-        object cbGutterFnt: TCheckBox
-          Left = 8
-          Top = 48
-          Width = 190
-          Height = 15
-          Caption = 'Use Custom Font'
-          TabOrder = 2
-          OnClick = cbGutterFntClick
-        end
-        object pnlGutterPreview: TPanel
-          Left = 12
-          Top = 129
-          Width = 374
-          Height = 40
-          Anchors = [akLeft, akRight, akBottom]
-          BevelOuter = bvLowered
-          Caption = 'Gutter Font'
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -13
-          Font.Name = 'Courier New'
-          Font.Style = []
-          ParentFont = False
-          TabOrder = 8
-        end
-        object cboGutterFont: TComboBox
-          Left = 12
-          Top = 102
-          Width = 181
-          Height = 21
-          Anchors = [akLeft, akRight, akBottom]
-          ItemHeight = 13
-          TabOrder = 6
-          OnChange = FontChange
-          OnDblClick = cboDblClick
-        end
-        object cboGutterSize: TComboBox
-          Left = 208
-          Top = 102
-          Width = 87
-          Height = 21
-          Anchors = [akLeft, akRight, akBottom]
-          ItemHeight = 13
-          TabOrder = 7
-          OnChange = FontSizeChange
-          OnDblClick = cboDblClick
-        end
-        object edGutterWidth: TSpinEdit
-          Left = 328
-          Top = 102
-          Width = 57
-          Height = 22
-          Anchors = [akLeft, akRight, akBottom]
-          MaxValue = 0
-          MinValue = 0
-          TabOrder = 9
-          Value = 0
-          OnChange = FontSizeChange
-        end
-        object cbGutterGradient: TCheckBox
-          Left = 8
-          Top = 64
-          Width = 190
-          Height = 15
-          Caption = 'Draw with Gradient'
-          TabOrder = 10
-        end
-      end
-      object grpEditorFont: TGroupBox
-        Left = 4
-        Top = 4
-        Width = 399
-        Height = 109
-        Caption = 'Editor Font'
-        TabOrder = 0
-        DesignSize = (
-          399
-          109)
-        object lblEditorSize: TLabel
-          Left = 200
-          Top = 16
-          Width = 23
-          Height = 13
-          Caption = 'Size:'
-        end
-        object lblEditorFont: TLabel
-          Left = 8
-          Top = 16
-          Width = 24
-          Height = 13
-          Caption = 'Font:'
-        end
-        object lblTabSize: TLabel
-          Left = 321
-          Top = 16
-          Width = 45
-          Height = 13
-          Caption = 'Tab Size:'
-        end
-        object cboEditorFont: TComboBox
-          Left = 12
-          Top = 32
-          Width = 180
-          Height = 21
-          ItemHeight = 13
-          TabOrder = 0
-          OnDblClick = cboDblClick
-          OnSelect = FontChange
-        end
-        object cboEditorSize: TComboBox
-          Left = 208
-          Top = 32
-          Width = 80
-          Height = 21
-          ItemHeight = 13
-          TabOrder = 1
-          OnChange = FontSizeChange
-          OnDblClick = cboDblClick
-        end
-        object pnlEditorPreview: TPanel
-          Left = 12
-          Top = 60
-          Width = 374
-          Height = 40
-          Anchors = [akLeft, akRight, akBottom]
-          BevelOuter = bvLowered
-          Caption = 'Editor Font'
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -13
-          Font.Name = 'Courier New'
-          Font.Style = []
-          ParentFont = False
-          TabOrder = 2
-        end
-        object seTabSize: TSpinEdit
-          Left = 328
-          Top = 31
-          Width = 57
-          Height = 22
-          MaxValue = 0
-          MinValue = 0
-          TabOrder = 3
-          Value = 0
-          OnChange = seTabSizeChange
+          TabOrder = 16
         end
       end
     end
     object tabSyntax: TTabSheet
       Caption = 'Syntax'
-      object lblElements: TLabel
-        Left = 5
-        Top = 26
-        Width = 27
-        Height = 13
-        Caption = 'Type:'
-      end
       object lblSpeed: TLabel
-        Left = 151
-        Top = 54
-        Width = 89
+        Left = 281
+        Top = 8
+        Width = 97
         Height = 13
-        Caption = 'Highlighting Styles:'
+        Caption = 'Color Speed Setting:'
       end
       object btnSaveSyntax: TSpeedButton
-        Left = 379
-        Top = 50
+        Left = 280
+        Top = 23
         Width = 21
         Height = 21
         Hint = 'Save custom syntax settings'
+        Flat = True
         Glyph.Data = {
           36030000424D3603000000000000360000002800000010000000100000000100
           18000000000000030000CE0E0000D80E0000000000000000000000FF0000FF00
@@ -623,94 +243,48 @@ object EditorOptForm: TEditorOptForm
         ShowHint = True
         OnClick = btnSaveSyntaxClick
       end
-      object lblSyntaxExt: TLabel
-        Left = 151
-        Top = 28
-        Width = 111
-        Height = 13
-        Caption = 'Enabled file extensions:'
-      end
-      object cbSyntaxHighlight: TCheckBox
-        Left = 5
-        Top = 5
-        Width = 395
-        Height = 17
-        Caption = 'Use Syntax Highlighting'
-        TabOrder = 3
-        OnClick = cbSyntaxHighlightClick
-      end
-      object CppEdit: TSynEdit
-        Left = 4
-        Top = 195
-        Width = 399
-        Height = 145
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -13
-        Font.Name = 'Courier New'
-        Font.Style = []
-        TabOrder = 2
-        BorderStyle = bsNone
-        Gutter.DigitCount = 2
-        Gutter.Font.Charset = DEFAULT_CHARSET
-        Gutter.Font.Color = clWindowText
-        Gutter.Font.Height = -11
-        Gutter.Font.Name = 'Terminal'
-        Gutter.Font.Style = []
-        Gutter.LeadingZeros = True
-        Gutter.LeftOffset = 6
-        Gutter.ShowLineNumbers = True
-        HideSelection = True
-        Highlighter = dmMain.CppMultiSyn
-        Options = [eoAutoIndent, eoDisableScrollArrows, eoDragDropEditing, eoHideShowScrollbars, eoNoCaret, eoNoSelection, eoScrollPastEol, eoShowScrollHint, eoSmartTabs, eoTrimTrailingSpaces]
-        ReadOnly = True
-        ScrollHintFormat = shfTopToBottom
-        WantTabs = True
-        OnGutterClick = OnGutterClick
-        OnSpecialLineColors = CppEditSpecialLineColors
-        OnStatusChange = cppEditStatusChange
-        RemovedKeystrokes = <
-          item
-            Command = ecDeleteLastChar
-            ShortCut = 8200
-          end
-          item
-            Command = ecLineBreak
-            ShortCut = 8205
-          end
-          item
-            Command = ecContextHelp
-            ShortCut = 112
-          end>
-        AddedKeystrokes = <>
-      end
-      object ElementList: TListBox
-        Left = 5
-        Top = 42
-        Width = 138
-        Height = 145
-        ItemHeight = 13
-        Items.Strings = (
-          'Comment'
-          'Identifier'
-          'Keyword'
-          'Number'
-          'Background'
-          'String'
-          'Symbol'
-          'WhiteSpace'
-          'Directives')
-        TabOrder = 0
-        OnClick = ElementListClick
+      object btnScintillaOptions: TSpeedButton
+        Left = 8
+        Top = 24
+        Width = 23
+        Height = 22
+        Glyph.Data = {
+          36030000424D3603000000000000360000002800000010000000100000000100
+          18000000000000030000120B0000120B00000000000000000000BFBFBFBFBFBF
+          BFBFBFBEBEBEBBBBBBB9B9B9BABABABBBBBBBCBCBCBCBCBCBCBCBCBDBDBDBEBE
+          BEBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBCBCBCACACAC9090908A8A8A9292929E
+          9E9EA9A9A9AEAEAEB3B3B3B6B6B6B9B9B9BCBCBCBEBEBEBFBFBFBFBFBFBDBDBD
+          B2B2B29999998383835555555454546464647D7D7D8E8E8E999999A4A4A4ACAC
+          ACB2B2B2B8B8B8BCBCBCBFBFBFBABABAA5A5A5C4C4C4FBFBFBE6E6E6A3A3A362
+          62625151515D5D5D7171718484849191919E9E9EAEAEAEB8B8B8BFBFBFB7B7B7
+          9A9A9AEAEAEAFEFEFEFAFBFBF5F5F5E8E8E8B6B6B66F6F6F4A4A4A5959596A6A
+          6A858585A4A4A4B8B8B8BEBEBEB3B3B3A3A3A3F8F8F8F7F7F7F2F2F2EEEEEEE4
+          E4E7E3E4E4DEDEDEBDBEBE6F6F6F4E4E4E7474749F9F9FBABABABEBEBEB0B0B0
+          B9B9B9F2F2F2EBEBEBD5D5DFD4D4DDCFCFDADDDDDED8D8D8D2D3D3CACACAA1A1
+          A1848484A7A7A7BCBCBCBDBDBDADADADCACACAE2E2E2D0D1D9CACAD5D6D6D9C9
+          CAD3C4C4CEC9CACECBCCCCC4C5C59797979D9D9DB6B6B6BFBFBFBCBCBCADADAD
+          C6C6C6C6C6C7B5B5C1B7B7C5CCCCCEC1C2C8BEBFC5BABAC2C3C3C3ACACAC9595
+          95B0B0B0BEBEBEBFBFBFBDBDBDAFAFAFB2B2B2ADADAD9F9FACB8B8BBB7B7BCB3
+          B3BBADADB7A8A8B5B5B5B8919292A6A6A6BBBBBBBFBFBFBFBFBFBFBFBFB6B6B6
+          8D8D8D8989898C8C969D9DA8A8A8AF9B9BAB9F9FABA1A2AD9D9D9E9D9D9DB6B6
+          B6BFBFBFBFBFBFBFBFBFBFBFBFC4C4C4C2C2C28F8F8F929292A6A6A7A7A8AC99
+          99A7AAABACA9AAAA979898ADADADBCBCBCBFBFBFBFBFBFBFBFBFBFBFBFBFBFBF
+          CCCCCC9D9D9DA2A2A2B1B1B1AEAFB0A3A3ABADADADA0A1A1A7A7A7B9B9B9BFBF
+          BFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFB5B6B6B7B8B8B9B9B9B5B6B6B1
+          B1B2ADADADACACACB7B7B7BDBDBDBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBF
+          BFBFBFBFBFBFBFBFBFBFBFBFBEBEBEBBBBBBB7B7B7BCBCBCBDBDBDBFBFBFBFBF
+          BFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBF
+          BFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBFBF}
+        OnClick = btnScintillaOptionsClick
       end
       object cboQuickColor: TComboBox
-        Left = 281
-        Top = 50
-        Width = 98
+        Left = 303
+        Top = 23
+        Width = 102
         Height = 21
         Style = csDropDownList
         ItemHeight = 13
-        TabOrder = 1
+        TabOrder = 0
         OnSelect = cboQuickColorSelect
         Items.Strings = (
           'Classic'
@@ -720,87 +294,434 @@ object EditorOptForm: TEditorOptForm
           'Borland'
           'Matrix')
       end
-      object grpStyle: TGroupBox
-        Left = 150
-        Top = 73
-        Width = 250
-        Height = 114
-        Caption = 'Styles'
-        TabOrder = 4
-        object lblForeground: TLabel
-          Left = 8
-          Top = 71
-          Width = 84
-          Height = 13
-          Caption = 'Foreground Color:'
-        end
-        object cpForeground: TColorPickerButton
-          Left = 130
-          Top = 69
-          Width = 110
-          Height = 20
-          CustomText = 'Custom'
-          DefaultText = 'Default'
-          PopupSpacing = 8
-          ShowSystemColors = True
-          OnChange = StyleChange
-          OnDefaultSelect = DefaultSelect
-          OnHint = PickerHint
-        end
-        object lblBackground: TLabel
-          Left = 8
-          Top = 90
-          Width = 88
-          Height = 13
-          Caption = 'Background Color:'
-        end
-        object cpBackground: TColorPickerButton
-          Left = 130
-          Top = 88
-          Width = 110
-          Height = 20
-          CustomText = 'Custom'
-          DefaultText = 'Default'
-          PopupSpacing = 8
-          ShowSystemColors = True
-          OnChange = StyleChange
-          OnDefaultSelect = DefaultSelect
-          OnHint = PickerHint
-        end
-        object cbBold: TCheckBox
-          Left = 8
-          Top = 16
-          Width = 230
-          Height = 17
-          Caption = 'Bold'
-          TabOrder = 0
-          OnClick = StyleChange
-        end
-        object cbItalic: TCheckBox
-          Left = 8
-          Top = 33
-          Width = 230
-          Height = 17
-          Caption = 'Italic'
-          TabOrder = 1
-          OnClick = StyleChange
-        end
-        object cbUnderlined: TCheckBox
-          Left = 8
-          Top = 51
-          Width = 230
-          Height = 17
-          Caption = 'Underlined'
-          TabOrder = 2
-          OnClick = StyleChange
-        end
+      object CppEdit: TScintilla
+        Left = 8
+        Top = 56
+        Width = 385
+        Height = 273
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'MS Sans Serif'
+        Font.Style = []
+        ShowHint = True
+        ParentShowHint = False
+        EOLStyle = eolCRLF
+        Indentation = [TabIndents]
+        IndentWidth = 0
+        MarginLeft = 1
+        MarginRight = 1
+        CodePage = cpAnsi
+        Caret.ForeColor = clBlack
+        Caret.LineBackColor = clYellow
+        Caret.LineVisible = False
+        Caret.Width = 1
+        Caret.Period = 500
+        Caret.LineBackAlpha = 0
+        DivOptions.ViewWSpace = sciWsInvisible
+        DivOptions.UsePalette = False
+        DivOptions.OverType = False
+        DivOptions.ViewEOL = False
+        DivOptions.EndAtLastLine = True
+        DivOptions.ScrollBarH = True
+        DivOptions.ScrollBarV = True
+        ActiveHotSpot.BackColor = clDefault
+        ActiveHotSpot.ForeColor = clBlue
+        ActiveHotSpot.Underlined = True
+        ActiveHotSpot.SingleLine = False
+        Colors.SelFore = clHighlightText
+        Colors.SelBack = clHighlight
+        Colors.MarkerFore = clBlue
+        Colors.MarkerBack = clAqua
+        Colors.FoldHi = clBtnFace
+        Colors.FoldLo = clBtnFace
+        Colors.WhiteSpaceFore = clDefault
+        Colors.WhiteSpaceBack = clDefault
+        Bookmark.BackColor = clDefault
+        Bookmark.ForeColor = clDefault
+        Bookmark.MarkerType = sciMCircle
+        Gutter0.Width = 0
+        Gutter0.MarginType = gutLineNumber
+        Gutter0.Sensitive = False
+        Gutter1.Width = 16
+        Gutter1.MarginType = gutSymbol
+        Gutter1.Sensitive = False
+        Gutter2.Width = 0
+        Gutter2.MarginType = gutSymbol
+        Gutter2.Sensitive = False
+        Gutter3.Width = 0
+        Gutter3.MarginType = gutSymbol
+        Gutter3.Sensitive = False
+        Gutter4.Width = 0
+        Gutter4.MarginType = gutSymbol
+        Gutter4.Sensitive = False
+        WordWrapVisualFlags = []
+        WordWrapVisualFlagsLocation = []
+        LayoutCache = sciCacheCaret
+        HideSelect = False
+        WordWrap = sciNoWrap
+        EdgeColor = clSilver
+        WordChars = '_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        ControlCharSymbol = #0
+        Folding = [foldCompact, foldComment, foldPreprocessor, foldAtElse, foldHTML, foldHTMLPreProcessor]
+        FoldMarkers.MarkerType = sciMarkBox
+        FoldMarkers.FoldOpen.BackColor = clDefault
+        FoldMarkers.FoldOpen.ForeColor = clDefault
+        FoldMarkers.FoldOpen.MarkerType = sciMBoxMinus
+        FoldMarkers.FoldClosed.BackColor = clDefault
+        FoldMarkers.FoldClosed.ForeColor = clDefault
+        FoldMarkers.FoldClosed.MarkerType = sciMBoxPlus
+        FoldMarkers.FoldSub.BackColor = clDefault
+        FoldMarkers.FoldSub.ForeColor = clDefault
+        FoldMarkers.FoldSub.MarkerType = sciMVLine
+        FoldMarkers.FoldTail.BackColor = clDefault
+        FoldMarkers.FoldTail.ForeColor = clDefault
+        FoldMarkers.FoldTail.MarkerType = sciMLCorner
+        FoldMarkers.FoldEnd.BackColor = clDefault
+        FoldMarkers.FoldEnd.ForeColor = clDefault
+        FoldMarkers.FoldEnd.MarkerType = sciMBoxPlusConnected
+        FoldMarkers.FoldOpenMid.BackColor = clDefault
+        FoldMarkers.FoldOpenMid.ForeColor = clDefault
+        FoldMarkers.FoldOpenMid.MarkerType = sciMBoxMinusConnected
+        FoldMarkers.FoldMidTail.BackColor = clDefault
+        FoldMarkers.FoldMidTail.ForeColor = clDefault
+        FoldMarkers.FoldMidTail.MarkerType = sciMTCorner
+        LanguageManager.LanguageList = <
+          item
+            Name = 'null'
+            Lexer = 'null'
+            Styles = <>
+            Keywords = <>
+            AssignmentOperator = '='
+            EndOfStatementOperator = ';'
+            CommentBoxStart = '/*'
+            CommentBoxEnd = '*/'
+            CommentBoxMiddle = '*'
+            CommentBlock = '//'
+            CommentAtLineStart = True
+            CommentStreamStart = '/*'
+            CommentStreamEnd = '*/'
+            NumStyleBits = 5
+          end>
+        LanguageManager.SelectedLanguage = 'null'
+        FoldDrawFlags = [sciBelowIfNotExpanded]
+        KeyCommands = <
+          item
+            Command = 2300
+            ShortCut = 40
+          end
+          item
+            Command = 2301
+            ShortCut = 8232
+          end
+          item
+            Command = 2342
+            ShortCut = 16424
+          end
+          item
+            Command = 2426
+            ShortCut = 41000
+          end
+          item
+            Command = 2302
+            ShortCut = 38
+          end
+          item
+            Command = 2303
+            ShortCut = 8230
+          end
+          item
+            Command = 2343
+            ShortCut = 16422
+          end
+          item
+            Command = 2427
+            ShortCut = 40998
+          end
+          item
+            Command = 2415
+            ShortCut = 49190
+          end
+          item
+            Command = 2416
+            ShortCut = 57382
+          end
+          item
+            Command = 2413
+            ShortCut = 49192
+          end
+          item
+            Command = 2414
+            ShortCut = 57384
+          end
+          item
+            Command = 2304
+            ShortCut = 37
+          end
+          item
+            Command = 2305
+            ShortCut = 8229
+          end
+          item
+            Command = 2308
+            ShortCut = 16421
+          end
+          item
+            Command = 2309
+            ShortCut = 24613
+          end
+          item
+            Command = 2428
+            ShortCut = 40997
+          end
+          item
+            Command = 2306
+            ShortCut = 39
+          end
+          item
+            Command = 2307
+            ShortCut = 8231
+          end
+          item
+            Command = 2310
+            ShortCut = 16423
+          end
+          item
+            Command = 2311
+            ShortCut = 24615
+          end
+          item
+            Command = 2429
+            ShortCut = 40999
+          end
+          item
+            Command = 2390
+            ShortCut = 49189
+          end
+          item
+            Command = 2391
+            ShortCut = 57381
+          end
+          item
+            Command = 2392
+            ShortCut = 49191
+          end
+          item
+            Command = 2393
+            ShortCut = 57383
+          end
+          item
+            Command = 2331
+            ShortCut = 36
+          end
+          item
+            Command = 2332
+            ShortCut = 8228
+          end
+          item
+            Command = 2431
+            ShortCut = 40996
+          end
+          item
+            Command = 2316
+            ShortCut = 16420
+          end
+          item
+            Command = 2317
+            ShortCut = 24612
+          end
+          item
+            Command = 2345
+            ShortCut = 32804
+          end
+          item
+            Command = 2314
+            ShortCut = 35
+          end
+          item
+            Command = 2315
+            ShortCut = 8227
+          end
+          item
+            Command = 2318
+            ShortCut = 16419
+          end
+          item
+            Command = 2319
+            ShortCut = 24611
+          end
+          item
+            Command = 2347
+            ShortCut = 32803
+          end
+          item
+            Command = 2432
+            ShortCut = 40995
+          end
+          item
+            Command = 2320
+            ShortCut = 33
+          end
+          item
+            Command = 2321
+            ShortCut = 8225
+          end
+          item
+            Command = 2433
+            ShortCut = 40993
+          end
+          item
+            Command = 2322
+            ShortCut = 34
+          end
+          item
+            Command = 2323
+            ShortCut = 8226
+          end
+          item
+            Command = 2434
+            ShortCut = 40994
+          end
+          item
+            Command = 2180
+            ShortCut = 46
+          end
+          item
+            Command = 2177
+            ShortCut = 8238
+          end
+          item
+            Command = 2336
+            ShortCut = 16430
+          end
+          item
+            Command = 2396
+            ShortCut = 24622
+          end
+          item
+            Command = 2324
+            ShortCut = 45
+          end
+          item
+            Command = 2179
+            ShortCut = 8237
+          end
+          item
+            Command = 2178
+            ShortCut = 16429
+          end
+          item
+            Command = 2325
+            ShortCut = 27
+          end
+          item
+            Command = 2326
+            ShortCut = 8
+          end
+          item
+            Command = 2326
+            ShortCut = 8200
+          end
+          item
+            Command = 2335
+            ShortCut = 16392
+          end
+          item
+            Command = 2176
+            ShortCut = 32776
+          end
+          item
+            Command = 2395
+            ShortCut = 24584
+          end
+          item
+            Command = 2176
+            ShortCut = 16474
+          end
+          item
+            Command = 2011
+            ShortCut = 16473
+          end
+          item
+            Command = 2177
+            ShortCut = 16472
+          end
+          item
+            Command = 2178
+            ShortCut = 16451
+          end
+          item
+            Command = 2179
+            ShortCut = 16470
+          end
+          item
+            Command = 2013
+            ShortCut = 16449
+          end
+          item
+            Command = 2327
+            ShortCut = 9
+          end
+          item
+            Command = 2328
+            ShortCut = 8201
+          end
+          item
+            Command = 2329
+            ShortCut = 13
+          end
+          item
+            Command = 2329
+            ShortCut = 8205
+          end
+          item
+            Command = 2333
+            ShortCut = 16491
+          end
+          item
+            Command = 2334
+            ShortCut = 16493
+          end
+          item
+            Command = 2373
+            ShortCut = 16495
+          end
+          item
+            Command = 2337
+            ShortCut = 16460
+          end
+          item
+            Command = 2338
+            ShortCut = 24652
+          end
+          item
+            Command = 2455
+            ShortCut = 24660
+          end
+          item
+            Command = 2339
+            ShortCut = 16468
+          end
+          item
+            Command = 2469
+            ShortCut = 16452
+          end
+          item
+            Command = 2340
+            ShortCut = 16469
+          end
+          item
+            Command = 2341
+            ShortCut = 24661
+          end>
       end
-      object edSyntaxExt: TEdit
-        Left = 281
-        Top = 26
-        Width = 120
-        Height = 21
-        TabOrder = 5
+      object StaticText1: TStaticText
+        Left = 8
+        Top = 8
+        Width = 40
+        Height = 17
+        Caption = 'Scintilla'
+        TabOrder = 2
       end
     end
     object tabCode: TTabSheet
@@ -810,7 +731,8 @@ object EditorOptForm: TEditorOptForm
         Top = 5
         Width = 396
         Height = 335
-        ActivePage = tabCPInserts
+        ActivePage = tabCPDefault
+        TabIndex = 1
         TabOrder = 0
         object tabCPInserts: TTabSheet
           Caption = 'Inserts'
@@ -882,81 +804,851 @@ object EditorOptForm: TEditorOptForm
             OnCompare = lvCodeinsCompare
             OnSelectItem = lvCodeinsSelectItem
           end
-          object CodeIns: TSynEdit
-            Left = 10
-            Top = 121
-            Width = 368
-            Height = 175
-            Anchors = [akLeft, akTop, akRight, akBottom]
-            Ctl3D = True
-            ParentCtl3D = False
+          object CodeIns: TScintilla
+            Left = 8
+            Top = 120
+            Width = 369
+            Height = 169
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Courier New'
+            Font.Height = -11
+            Font.Name = 'MS Sans Serif'
             Font.Style = []
-            TabOrder = 4
-            BorderStyle = bsNone
-            Gutter.Font.Charset = DEFAULT_CHARSET
-            Gutter.Font.Color = clWindowText
-            Gutter.Font.Height = -11
-            Gutter.Font.Name = 'Terminal'
-            Gutter.Font.Style = []
-            Gutter.Width = 24
-            Highlighter = cpp
-            Options = [eoAutoIndent, eoDisableScrollArrows, eoDragDropEditing, eoEnhanceHomeKey, eoGroupUndo, eoHideShowScrollbars, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabsToSpaces, eoTrimTrailingSpaces]
-            ScrollBars = ssNone
-            WantTabs = True
-            OnStatusChange = CodeInsStatusChange
-            RemovedKeystrokes = <
+            EOLStyle = eolCRLF
+            Indentation = [TabIndents]
+            IndentWidth = 0
+            MarginLeft = 1
+            MarginRight = 1
+            CodePage = cpAnsi
+            Caret.ForeColor = clBlack
+            Caret.LineBackColor = clYellow
+            Caret.LineVisible = False
+            Caret.Width = 1
+            Caret.Period = 500
+            Caret.LineBackAlpha = 0
+            DivOptions.ViewWSpace = sciWsInvisible
+            DivOptions.UsePalette = False
+            DivOptions.OverType = False
+            DivOptions.ViewEOL = False
+            DivOptions.EndAtLastLine = True
+            DivOptions.ScrollBarH = True
+            DivOptions.ScrollBarV = True
+            ActiveHotSpot.BackColor = clDefault
+            ActiveHotSpot.ForeColor = clBlue
+            ActiveHotSpot.Underlined = True
+            ActiveHotSpot.SingleLine = False
+            Colors.SelFore = clHighlightText
+            Colors.SelBack = clHighlight
+            Colors.MarkerFore = clBlue
+            Colors.MarkerBack = clAqua
+            Colors.FoldHi = clBtnFace
+            Colors.FoldLo = clBtnFace
+            Colors.WhiteSpaceFore = clDefault
+            Colors.WhiteSpaceBack = clDefault
+            Bookmark.BackColor = clDefault
+            Bookmark.ForeColor = clDefault
+            Bookmark.MarkerType = sciMCircle
+            Gutter0.Width = 0
+            Gutter0.MarginType = gutLineNumber
+            Gutter0.Sensitive = False
+            Gutter1.Width = 16
+            Gutter1.MarginType = gutSymbol
+            Gutter1.Sensitive = False
+            Gutter2.Width = 0
+            Gutter2.MarginType = gutSymbol
+            Gutter2.Sensitive = False
+            Gutter3.Width = 0
+            Gutter3.MarginType = gutSymbol
+            Gutter3.Sensitive = False
+            Gutter4.Width = 0
+            Gutter4.MarginType = gutSymbol
+            Gutter4.Sensitive = False
+            WordWrapVisualFlags = []
+            WordWrapVisualFlagsLocation = []
+            LayoutCache = sciCacheCaret
+            HideSelect = False
+            WordWrap = sciNoWrap
+            EdgeColor = clSilver
+            WordChars = '_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+            ControlCharSymbol = #0
+            Folding = [foldCompact, foldComment, foldPreprocessor, foldAtElse, foldHTML, foldHTMLPreProcessor]
+            FoldMarkers.MarkerType = sciMarkBox
+            FoldMarkers.FoldOpen.BackColor = clDefault
+            FoldMarkers.FoldOpen.ForeColor = clDefault
+            FoldMarkers.FoldOpen.MarkerType = sciMBoxMinus
+            FoldMarkers.FoldClosed.BackColor = clDefault
+            FoldMarkers.FoldClosed.ForeColor = clDefault
+            FoldMarkers.FoldClosed.MarkerType = sciMBoxPlus
+            FoldMarkers.FoldSub.BackColor = clDefault
+            FoldMarkers.FoldSub.ForeColor = clDefault
+            FoldMarkers.FoldSub.MarkerType = sciMVLine
+            FoldMarkers.FoldTail.BackColor = clDefault
+            FoldMarkers.FoldTail.ForeColor = clDefault
+            FoldMarkers.FoldTail.MarkerType = sciMLCorner
+            FoldMarkers.FoldEnd.BackColor = clDefault
+            FoldMarkers.FoldEnd.ForeColor = clDefault
+            FoldMarkers.FoldEnd.MarkerType = sciMBoxPlusConnected
+            FoldMarkers.FoldOpenMid.BackColor = clDefault
+            FoldMarkers.FoldOpenMid.ForeColor = clDefault
+            FoldMarkers.FoldOpenMid.MarkerType = sciMBoxMinusConnected
+            FoldMarkers.FoldMidTail.BackColor = clDefault
+            FoldMarkers.FoldMidTail.ForeColor = clDefault
+            FoldMarkers.FoldMidTail.MarkerType = sciMTCorner
+            LanguageManager.LanguageList = <
               item
-                Command = ecContextHelp
-                ShortCut = 112
+                Name = 'null'
+                Lexer = 'null'
+                Styles = <>
+                Keywords = <>
+                AssignmentOperator = '='
+                EndOfStatementOperator = ';'
+                CommentBoxStart = '/*'
+                CommentBoxEnd = '*/'
+                CommentBoxMiddle = '*'
+                CommentBlock = '//'
+                CommentAtLineStart = True
+                CommentStreamStart = '/*'
+                CommentStreamEnd = '*/'
+                NumStyleBits = 5
               end>
-            AddedKeystrokes = <
+            LanguageManager.SelectedLanguage = 'null'
+            FoldDrawFlags = [sciBelowIfNotExpanded]
+            KeyCommands = <
               item
-                Command = ecContextHelp
-                ShortCut = 16496
+                Command = 2300
+                ShortCut = 40
+              end
+              item
+                Command = 2301
+                ShortCut = 8232
+              end
+              item
+                Command = 2342
+                ShortCut = 16424
+              end
+              item
+                Command = 2426
+                ShortCut = 41000
+              end
+              item
+                Command = 2302
+                ShortCut = 38
+              end
+              item
+                Command = 2303
+                ShortCut = 8230
+              end
+              item
+                Command = 2343
+                ShortCut = 16422
+              end
+              item
+                Command = 2427
+                ShortCut = 40998
+              end
+              item
+                Command = 2415
+                ShortCut = 49190
+              end
+              item
+                Command = 2416
+                ShortCut = 57382
+              end
+              item
+                Command = 2413
+                ShortCut = 49192
+              end
+              item
+                Command = 2414
+                ShortCut = 57384
+              end
+              item
+                Command = 2304
+                ShortCut = 37
+              end
+              item
+                Command = 2305
+                ShortCut = 8229
+              end
+              item
+                Command = 2308
+                ShortCut = 16421
+              end
+              item
+                Command = 2309
+                ShortCut = 24613
+              end
+              item
+                Command = 2428
+                ShortCut = 40997
+              end
+              item
+                Command = 2306
+                ShortCut = 39
+              end
+              item
+                Command = 2307
+                ShortCut = 8231
+              end
+              item
+                Command = 2310
+                ShortCut = 16423
+              end
+              item
+                Command = 2311
+                ShortCut = 24615
+              end
+              item
+                Command = 2429
+                ShortCut = 40999
+              end
+              item
+                Command = 2390
+                ShortCut = 49189
+              end
+              item
+                Command = 2391
+                ShortCut = 57381
+              end
+              item
+                Command = 2392
+                ShortCut = 49191
+              end
+              item
+                Command = 2393
+                ShortCut = 57383
+              end
+              item
+                Command = 2331
+                ShortCut = 36
+              end
+              item
+                Command = 2332
+                ShortCut = 8228
+              end
+              item
+                Command = 2431
+                ShortCut = 40996
+              end
+              item
+                Command = 2316
+                ShortCut = 16420
+              end
+              item
+                Command = 2317
+                ShortCut = 24612
+              end
+              item
+                Command = 2345
+                ShortCut = 32804
+              end
+              item
+                Command = 2314
+                ShortCut = 35
+              end
+              item
+                Command = 2315
+                ShortCut = 8227
+              end
+              item
+                Command = 2318
+                ShortCut = 16419
+              end
+              item
+                Command = 2319
+                ShortCut = 24611
+              end
+              item
+                Command = 2347
+                ShortCut = 32803
+              end
+              item
+                Command = 2432
+                ShortCut = 40995
+              end
+              item
+                Command = 2320
+                ShortCut = 33
+              end
+              item
+                Command = 2321
+                ShortCut = 8225
+              end
+              item
+                Command = 2433
+                ShortCut = 40993
+              end
+              item
+                Command = 2322
+                ShortCut = 34
+              end
+              item
+                Command = 2323
+                ShortCut = 8226
+              end
+              item
+                Command = 2434
+                ShortCut = 40994
+              end
+              item
+                Command = 2180
+                ShortCut = 46
+              end
+              item
+                Command = 2177
+                ShortCut = 8238
+              end
+              item
+                Command = 2336
+                ShortCut = 16430
+              end
+              item
+                Command = 2396
+                ShortCut = 24622
+              end
+              item
+                Command = 2324
+                ShortCut = 45
+              end
+              item
+                Command = 2179
+                ShortCut = 8237
+              end
+              item
+                Command = 2178
+                ShortCut = 16429
+              end
+              item
+                Command = 2325
+                ShortCut = 27
+              end
+              item
+                Command = 2326
+                ShortCut = 8
+              end
+              item
+                Command = 2326
+                ShortCut = 8200
+              end
+              item
+                Command = 2335
+                ShortCut = 16392
+              end
+              item
+                Command = 2176
+                ShortCut = 32776
+              end
+              item
+                Command = 2395
+                ShortCut = 24584
+              end
+              item
+                Command = 2176
+                ShortCut = 16474
+              end
+              item
+                Command = 2011
+                ShortCut = 16473
+              end
+              item
+                Command = 2177
+                ShortCut = 16472
+              end
+              item
+                Command = 2178
+                ShortCut = 16451
+              end
+              item
+                Command = 2179
+                ShortCut = 16470
+              end
+              item
+                Command = 2013
+                ShortCut = 16449
+              end
+              item
+                Command = 2327
+                ShortCut = 9
+              end
+              item
+                Command = 2328
+                ShortCut = 8201
+              end
+              item
+                Command = 2329
+                ShortCut = 13
+              end
+              item
+                Command = 2329
+                ShortCut = 8205
+              end
+              item
+                Command = 2333
+                ShortCut = 16491
+              end
+              item
+                Command = 2334
+                ShortCut = 16493
+              end
+              item
+                Command = 2373
+                ShortCut = 16495
+              end
+              item
+                Command = 2337
+                ShortCut = 16460
+              end
+              item
+                Command = 2338
+                ShortCut = 24652
+              end
+              item
+                Command = 2455
+                ShortCut = 24660
+              end
+              item
+                Command = 2339
+                ShortCut = 16468
+              end
+              item
+                Command = 2469
+                ShortCut = 16452
+              end
+              item
+                Command = 2340
+                ShortCut = 16469
+              end
+              item
+                Command = 2341
+                ShortCut = 24661
               end>
           end
         end
         object tabCPDefault: TTabSheet
           Caption = 'Default Source'
-          object seDefault: TSynEdit
+          object seDefault: TScintilla
             Left = 0
-            Top = 0
-            Width = 388
-            Height = 290
+            Top = 8
+            Width = 393
+            Height = 265
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Courier New'
+            Font.Height = -11
+            Font.Name = 'MS Sans Serif'
             Font.Style = []
-            TabOrder = 0
-            BorderStyle = bsNone
-            Gutter.Font.Charset = DEFAULT_CHARSET
-            Gutter.Font.Color = clWindowText
-            Gutter.Font.Height = -11
-            Gutter.Font.Name = 'Terminal'
-            Gutter.Font.Style = []
-            Gutter.Width = 10
-            Highlighter = cpp
-            Options = [eoAutoIndent, eoDisableScrollArrows, eoDragDropEditing, eoGroupUndo, eoHideShowScrollbars, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabsToSpaces, eoTrimTrailingSpaces]
-            RemovedKeystrokes = <
+            EOLStyle = eolCRLF
+            Indentation = [TabIndents]
+            IndentWidth = 0
+            MarginLeft = 1
+            MarginRight = 1
+            CodePage = cpAnsi
+            Caret.ForeColor = clBlack
+            Caret.LineBackColor = clYellow
+            Caret.LineVisible = False
+            Caret.Width = 1
+            Caret.Period = 500
+            Caret.LineBackAlpha = 0
+            DivOptions.ViewWSpace = sciWsInvisible
+            DivOptions.UsePalette = False
+            DivOptions.OverType = False
+            DivOptions.ViewEOL = False
+            DivOptions.EndAtLastLine = True
+            DivOptions.ScrollBarH = True
+            DivOptions.ScrollBarV = True
+            ActiveHotSpot.BackColor = clDefault
+            ActiveHotSpot.ForeColor = clBlue
+            ActiveHotSpot.Underlined = True
+            ActiveHotSpot.SingleLine = False
+            Colors.SelFore = clHighlightText
+            Colors.SelBack = clHighlight
+            Colors.MarkerFore = clBlue
+            Colors.MarkerBack = clAqua
+            Colors.FoldHi = clBtnFace
+            Colors.FoldLo = clBtnFace
+            Colors.WhiteSpaceFore = clDefault
+            Colors.WhiteSpaceBack = clDefault
+            Bookmark.BackColor = clDefault
+            Bookmark.ForeColor = clDefault
+            Bookmark.MarkerType = sciMCircle
+            Gutter0.Width = 0
+            Gutter0.MarginType = gutLineNumber
+            Gutter0.Sensitive = False
+            Gutter1.Width = 16
+            Gutter1.MarginType = gutSymbol
+            Gutter1.Sensitive = False
+            Gutter2.Width = 0
+            Gutter2.MarginType = gutSymbol
+            Gutter2.Sensitive = False
+            Gutter3.Width = 0
+            Gutter3.MarginType = gutSymbol
+            Gutter3.Sensitive = False
+            Gutter4.Width = 0
+            Gutter4.MarginType = gutSymbol
+            Gutter4.Sensitive = False
+            WordWrapVisualFlags = []
+            WordWrapVisualFlagsLocation = []
+            LayoutCache = sciCacheCaret
+            HideSelect = False
+            WordWrap = sciNoWrap
+            EdgeColor = clSilver
+            WordChars = '_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+            ControlCharSymbol = #0
+            Folding = [foldCompact, foldComment, foldPreprocessor, foldAtElse, foldHTML, foldHTMLPreProcessor]
+            FoldMarkers.MarkerType = sciMarkBox
+            FoldMarkers.FoldOpen.BackColor = clDefault
+            FoldMarkers.FoldOpen.ForeColor = clDefault
+            FoldMarkers.FoldOpen.MarkerType = sciMBoxMinus
+            FoldMarkers.FoldClosed.BackColor = clDefault
+            FoldMarkers.FoldClosed.ForeColor = clDefault
+            FoldMarkers.FoldClosed.MarkerType = sciMBoxPlus
+            FoldMarkers.FoldSub.BackColor = clDefault
+            FoldMarkers.FoldSub.ForeColor = clDefault
+            FoldMarkers.FoldSub.MarkerType = sciMVLine
+            FoldMarkers.FoldTail.BackColor = clDefault
+            FoldMarkers.FoldTail.ForeColor = clDefault
+            FoldMarkers.FoldTail.MarkerType = sciMLCorner
+            FoldMarkers.FoldEnd.BackColor = clDefault
+            FoldMarkers.FoldEnd.ForeColor = clDefault
+            FoldMarkers.FoldEnd.MarkerType = sciMBoxPlusConnected
+            FoldMarkers.FoldOpenMid.BackColor = clDefault
+            FoldMarkers.FoldOpenMid.ForeColor = clDefault
+            FoldMarkers.FoldOpenMid.MarkerType = sciMBoxMinusConnected
+            FoldMarkers.FoldMidTail.BackColor = clDefault
+            FoldMarkers.FoldMidTail.ForeColor = clDefault
+            FoldMarkers.FoldMidTail.MarkerType = sciMTCorner
+            LanguageManager.LanguageList = <
               item
-                Command = ecContextHelp
-                ShortCut = 112
+                Name = 'null'
+                Lexer = 'null'
+                Styles = <>
+                Keywords = <>
+                AssignmentOperator = '='
+                EndOfStatementOperator = ';'
+                CommentBoxStart = '/*'
+                CommentBoxEnd = '*/'
+                CommentBoxMiddle = '*'
+                CommentBlock = '//'
+                CommentAtLineStart = True
+                CommentStreamStart = '/*'
+                CommentStreamEnd = '*/'
+                NumStyleBits = 5
               end>
-            AddedKeystrokes = <
+            LanguageManager.SelectedLanguage = 'null'
+            FoldDrawFlags = [sciBelowIfNotExpanded]
+            KeyCommands = <
               item
-                Command = ecContextHelp
-                ShortCut = 16496
+                Command = 2300
+                ShortCut = 40
+              end
+              item
+                Command = 2301
+                ShortCut = 8232
+              end
+              item
+                Command = 2342
+                ShortCut = 16424
+              end
+              item
+                Command = 2426
+                ShortCut = 41000
+              end
+              item
+                Command = 2302
+                ShortCut = 38
+              end
+              item
+                Command = 2303
+                ShortCut = 8230
+              end
+              item
+                Command = 2343
+                ShortCut = 16422
+              end
+              item
+                Command = 2427
+                ShortCut = 40998
+              end
+              item
+                Command = 2415
+                ShortCut = 49190
+              end
+              item
+                Command = 2416
+                ShortCut = 57382
+              end
+              item
+                Command = 2413
+                ShortCut = 49192
+              end
+              item
+                Command = 2414
+                ShortCut = 57384
+              end
+              item
+                Command = 2304
+                ShortCut = 37
+              end
+              item
+                Command = 2305
+                ShortCut = 8229
+              end
+              item
+                Command = 2308
+                ShortCut = 16421
+              end
+              item
+                Command = 2309
+                ShortCut = 24613
+              end
+              item
+                Command = 2428
+                ShortCut = 40997
+              end
+              item
+                Command = 2306
+                ShortCut = 39
+              end
+              item
+                Command = 2307
+                ShortCut = 8231
+              end
+              item
+                Command = 2310
+                ShortCut = 16423
+              end
+              item
+                Command = 2311
+                ShortCut = 24615
+              end
+              item
+                Command = 2429
+                ShortCut = 40999
+              end
+              item
+                Command = 2390
+                ShortCut = 49189
+              end
+              item
+                Command = 2391
+                ShortCut = 57381
+              end
+              item
+                Command = 2392
+                ShortCut = 49191
+              end
+              item
+                Command = 2393
+                ShortCut = 57383
+              end
+              item
+                Command = 2331
+                ShortCut = 36
+              end
+              item
+                Command = 2332
+                ShortCut = 8228
+              end
+              item
+                Command = 2431
+                ShortCut = 40996
+              end
+              item
+                Command = 2316
+                ShortCut = 16420
+              end
+              item
+                Command = 2317
+                ShortCut = 24612
+              end
+              item
+                Command = 2345
+                ShortCut = 32804
+              end
+              item
+                Command = 2314
+                ShortCut = 35
+              end
+              item
+                Command = 2315
+                ShortCut = 8227
+              end
+              item
+                Command = 2318
+                ShortCut = 16419
+              end
+              item
+                Command = 2319
+                ShortCut = 24611
+              end
+              item
+                Command = 2347
+                ShortCut = 32803
+              end
+              item
+                Command = 2432
+                ShortCut = 40995
+              end
+              item
+                Command = 2320
+                ShortCut = 33
+              end
+              item
+                Command = 2321
+                ShortCut = 8225
+              end
+              item
+                Command = 2433
+                ShortCut = 40993
+              end
+              item
+                Command = 2322
+                ShortCut = 34
+              end
+              item
+                Command = 2323
+                ShortCut = 8226
+              end
+              item
+                Command = 2434
+                ShortCut = 40994
+              end
+              item
+                Command = 2180
+                ShortCut = 46
+              end
+              item
+                Command = 2177
+                ShortCut = 8238
+              end
+              item
+                Command = 2336
+                ShortCut = 16430
+              end
+              item
+                Command = 2396
+                ShortCut = 24622
+              end
+              item
+                Command = 2324
+                ShortCut = 45
+              end
+              item
+                Command = 2179
+                ShortCut = 8237
+              end
+              item
+                Command = 2178
+                ShortCut = 16429
+              end
+              item
+                Command = 2325
+                ShortCut = 27
+              end
+              item
+                Command = 2326
+                ShortCut = 8
+              end
+              item
+                Command = 2326
+                ShortCut = 8200
+              end
+              item
+                Command = 2335
+                ShortCut = 16392
+              end
+              item
+                Command = 2176
+                ShortCut = 32776
+              end
+              item
+                Command = 2395
+                ShortCut = 24584
+              end
+              item
+                Command = 2176
+                ShortCut = 16474
+              end
+              item
+                Command = 2011
+                ShortCut = 16473
+              end
+              item
+                Command = 2177
+                ShortCut = 16472
+              end
+              item
+                Command = 2178
+                ShortCut = 16451
+              end
+              item
+                Command = 2179
+                ShortCut = 16470
+              end
+              item
+                Command = 2013
+                ShortCut = 16449
+              end
+              item
+                Command = 2327
+                ShortCut = 9
+              end
+              item
+                Command = 2328
+                ShortCut = 8201
+              end
+              item
+                Command = 2329
+                ShortCut = 13
+              end
+              item
+                Command = 2329
+                ShortCut = 8205
+              end
+              item
+                Command = 2333
+                ShortCut = 16491
+              end
+              item
+                Command = 2334
+                ShortCut = 16493
+              end
+              item
+                Command = 2373
+                ShortCut = 16495
+              end
+              item
+                Command = 2337
+                ShortCut = 16460
+              end
+              item
+                Command = 2338
+                ShortCut = 24652
+              end
+              item
+                Command = 2455
+                ShortCut = 24660
+              end
+              item
+                Command = 2339
+                ShortCut = 16468
+              end
+              item
+                Command = 2469
+                ShortCut = 16452
+              end
+              item
+                Command = 2340
+                ShortCut = 16469
+              end
+              item
+                Command = 2341
+                ShortCut = 24661
               end>
           end
           object cbDefaultintoprj: TCheckBox
-            Left = 0
-            Top = 289
-            Width = 388
+            Left = 2
+            Top = 277
+            Width = 382
             Height = 17
             Caption = 'Insert Default Code into Empty Projects'
             TabOrder = 1
@@ -980,7 +1672,8 @@ object EditorOptForm: TEditorOptForm
         Top = 28
         Width = 397
         Height = 310
-        ActivePage = tabCBBrowser
+        ActivePage = tabCBCompletion
+        TabIndex = 1
         TabOrder = 1
         OnChange = devPages1Change
         object tabCBBrowser: TTabSheet
@@ -1139,6 +1832,8 @@ object EditorOptForm: TEditorOptForm
             Top = 175
             Width = 89
             Height = 16
+            Min = 0
+            Max = 100
             TabOrder = 3
             Visible = False
           end
@@ -1223,11 +1918,6 @@ object EditorOptForm: TEditorOptForm
     OnClick = btnHelpClick
     Kind = bkHelp
   end
-  object cpp: TSynCppSyn
-    DefaultFilter = 'C++ Files (*.c,*.cpp,*.h,*.hpp)|*.c;*.cpp;*.h;*.hpp'
-    Left = 7
-    Top = 384
-  end
   object CppTokenizer1: TCppTokenizer
     LogTokens = False
     Left = 35
@@ -1274,6 +1964,17 @@ object EditorOptForm: TEditorOptForm
     XPControls = [xcMainMenu, xcPopupMenu, xcToolbar, xcControlbar, xcCombo, xcListBox, xcEdit, xcMaskEdit, xcMemo, xcRichEdit, xcMiscEdit, xcCheckBox, xcRadioButton, xcButton, xcBitBtn, xcSpeedButton, xcUpDown, xcPanel, xcTreeView, xcListView, xcProgressBar, xcHotKey]
     Active = False
     Left = 91
+    Top = 384
+  end
+  object pLoadEdit: TSciPropertyLoader
+    Editor = CppEdit
+    StoreWhat = [stDefaults, stColors, stStyles, stOther, stLexerProperties, stExtensions]
+    Top = 384
+  end
+  object ScintillaOptionsDlg1: TScintillaOptionsDlg
+    Editor = CppEdit
+    Pages = [opOptions, opColors, opHighlighter, opKeyboard]
+    Left = 128
     Top = 384
   end
 end

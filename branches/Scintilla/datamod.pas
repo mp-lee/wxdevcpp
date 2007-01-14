@@ -25,14 +25,13 @@ interface
 
 uses
 {$IFDEF WX_BUILD}
-  SynHighlighterXML,
+    ScintillaLanguageManager,
 {$ENDIF}
 {$IFDEF WIN32}
   SysUtils, Classes, Menus, Dialogs, ImgList, Controls,
-  SynEditExport, SynExportHTML, SynExportRTF,
-  SynEditHighlighter, SynHighlighterCpp, SynEditPrint,
-  oysUtils, CodeIns, SynHighlighterRC, SynCompletionProposal,
-  SynEditMiscClasses, SynEditSearch, SynHighlighterAsm, SynHighlighterMulti;
+  SciPropertyMgr, sciPrint,
+  oysUtils, CodeIns, SynCompletionProposal, SynEditHighlighter,
+  SynHighlighterRC;
 {$ENDIF}
 {$IFDEF LINUX}
   SysUtils, Classes, QMenus, QDialogs, QImgList, QControls,
@@ -44,13 +43,7 @@ uses
 
 type
   TdmMain = class(TDataModule)
-    Cpp: TSynCppSyn;
-    Res: TSynRCSyn;
-    XML: TSynXMLSyn;
-    SynExporterRTF: TSynExporterRTF;
-    SynExporterHTML: TSynExporterHTML;
     PrinterSetupDialog: TPrinterSetupDialog;
-    SynEditPrint: TSynEditPrint;
     OpenDialog: TOpenDialog;
     SaveDialog: TSaveDialog;
     ProjectImage_Gnome: TImageList;
@@ -67,10 +60,9 @@ type
     ProjectImage_Blue: TImageList;
     Specialimages_Blue: TImageList;
     ResourceDialog: TOpenDialog;
-    SynHint: TSynCompletionProposal;
     ClassImages: TImageList;
-    Assembly: TSynAsmSyn;
-    CppMultiSyn: TSynMultiSyn;
+    SciPrinter: TSciPrinter;
+
     procedure DataModuleCreate(Sender: TObject);
     procedure DataModuleDestroy(Sender: TObject);
   private
@@ -119,7 +111,7 @@ type
     function GetNum: integer;
     procedure InitHighlighterFirstTime;
     procedure UpdateHighlighter;
-    function GetHighlighter(const FileName: string): TSynCustomHighlighter;
+    function GetHighlighter(const FileName: string): string;
 
     procedure ExportToHtml(FileLines: TStrings; ExportFilename: string);
     procedure ExportToRtf(FileLines: TStrings; ExportFilename: string);
@@ -142,11 +134,7 @@ begin
   fMRU := ToysStringList.Create;
   fCodeList := TCodeInsList.Create;
 
-  //Set up the syntax highlighter stuff
-  CppMultiSyn.Schemes[0].StartExpr := '(asm|_asm|__asm)(['#32#9']*)\{';
-  CppMultiSyn.Schemes[0].EndExpr   := '\}';
-  CppMultiSyn.Schemes[1].StartExpr := '(asm|_asm|__asm)(['#32#9']+)';
-  CppMultiSyn.Schemes[1].EndExpr := '(;*)$';
+
 end;
 
 procedure TdmMain.DataModuleDestroy(Sender: TObject);
@@ -169,38 +157,61 @@ procedure TdmMain.InitHighlighterFirstTime;
   end;
 var
   i, a, offset: integer;
-  Attr: TSynHighlighterAttributes;
+  InitialStylesFile: String;
+  Attrs: integer;
 begin
   offset := 0 * 1000; // default to style-set '0'
-  for i := 0 to pred(cpp.AttrCount) do
+  InitialStylesFile := devDirs.Styles + 'devcpp' + STYLES_EXT;
+
+  if FileExists(InitialStylesFile) then  //is there a rogue devcpp.Styles file hanging around?
+
   begin
-    attr := TSynHighlighterAttributes.Create(cpp.Attribute[i].Name);
-    try
-      StrtoAttr(Attr, LoadStr(i + offset + 1));
-      cpp.Attribute[i].Assign(Attr);
-      a := devEditor.Syntax.IndexOfName(cpp.Attribute[i].Name);
-      if a = -1 then
-        devEditor.Syntax.Append(format('%s=%s', [cpp.Attribute[i].Name, AttrtoStr(Attr)]))
-      else
-        devEditor.Syntax.Values[cpp.Attribute[i].Name] := AttrtoStr(Attr);
-    finally
-      Attr.Free;
-    end;
+    if FileIsReadOnly(InitialStylesFile)then //we are going to delete the file so remove read only if there
+  begin
+      Attrs := FileGetAttr(InitialStylesFile);
+      FileSetAttr(InitialStylesFile, Attrs - faReadOnly);
   end;
-  AddSpecial(cBP, offset + 17); // breakpoint
-  AddSpecial(cErr, offset + 18); // error line
-  AddSpecial(cABP, offset + 19); // active breakpoint
-  AddSpecial(cGut, offset + 20); // gutter
-  AddSpecial(cSel, offset + 21); // selected text
+    DeleteFile(PChar(InitialStylesFile));// delete the file so that we can create a new one
+  end;
+
+  // we create a new devcpp.Styles file here, totally from scratch just in case
+  // we do this so that we can quickly get the scintilla component up and running
+  //have to find a better method later
+
+  //first create the Styles Folder
+  if not DirectoryExists(devDirs.Styles) then
+    if not CreateDir(devDirs.Styles) then
+      raise Exception.Create('Cannot create Styles folder');
+
+    if not (MainForm.pLoader.SaveStyles(InitialStylesFile)) then
+      MessageDlg('Cannot create default style file...', mtError, [mbOk], 0);//UpdateOutputStyles;
+
 end;
 
 procedure TdmMain.UpdateHighlighter;
 var
-  Attr: TSynHighlighterAttributes;
+{$IFDEF SCINTILLA}
+  InitialStylesFile : string;
+{$ELSE}
   aName: string;
   a,
     idx: integer;
+{$ENDIF}
 begin
+{$IFDEF SCINTILLA}
+  InitialStylesFile := devDirs.Styles + 'devcpp' + STYLES_EXT;
+
+//   MainForm.pLoader.FileName:=ExtractFileDir( ParamStr(0) )+'\sci.properties';
+   MainForm.pLoader.FileName:=InitialStylesFile;
+   if not FileExists(MainForm.pLoader.FileName) then //exit;
+//     if not FileExists(InitialStylesFile) then
+       MessageDlg('Cannot load default style file. Please go to Tools | Editor Options | Syntax and create a new set of editor options', mtError, [mbOk], 0)
+     else
+begin
+       MainForm.pLoader.Load;
+       MainForm.pLoader.LoadStyles(InitialStylesFile);
+     end;
+{$ELSE}
   for idx := 0 to pred(cpp.AttrCount) do
   begin
     aName := cpp.Attribute[idx].Name;
@@ -238,30 +249,32 @@ begin
     StringAttri.Assign(cpp.StringAttri);
     SymbolAttri.Assign(cpp.SymbolAttri);
   end;
+{$ENDIF}
 end;
 
-function TdmMain.GetHighlighter(const FileName: string): TSynCustomHighlighter;
+function TdmMain.GetHighlighter(const FileName: string): string;
 var
   ext: string;
   idx: integer;
   tmp: TStrings;
 begin
   UpdateHighlighter;
-  result := nil;
+  result := '';//nil;
   if devEditor.UseSyntax then
   begin
     if (FileName = '') or (AnsiPos(Lang[ID_UNTITLED], FileName) = 1) then
-      result := CppMultiSyn
+      result := 'C++/C'
     else
     begin
       ext := ExtractFileExt(FileName);
       if AnsiCompareText(ext, RC_EXT) = 0 then
-        result := Res
+        result := 'Resource'
       else if (AnsiCompareText(ext, '.s') = 0) or (AnsiCompareText(ext, '.asm') = 0) then
-        result := Assembly
+        result := 'ASM'
+  
 {$IFDEF WX_BUILD}
       else if (AnsiCompareText(ext, XRC_EXT) = 0) then
-        result := Xml
+          result := 'XML'
 {$ENDIF}
       else
       begin
@@ -274,7 +287,7 @@ begin
             for idx := 0 to pred(tmp.Count) do
               if AnsiCompareText(Ext, tmp[idx]) = 0 then
               begin
-                result := CppMultiSyn;
+                result := 'C++/C';
                 Exit;
               end;
         finally
@@ -533,12 +546,15 @@ procedure TdmMain.ExportToHtml(FileLines: TStrings; ExportFilename: string);
 begin
   if (not Assigned(FileLines)) or (FileLines.Count=0) or (ExportFilename='') then
     Exit;
+{$IFDEF SCINTILLA}
+{$ELSE}
   SynExporterHTML.Title := ExtractFileName(ExportFileName);
   SynExporterHTML.CreateHTMLFragment := False;
   SynExporterHTML.ExportAsText := True;
   SynExporterHTML.Color := Cpp.SpaceAttri.Background;
   SynExporterHTML.ExportAll(FileLines);
   SynExporterHTML.SavetoFile(ExportFileName);
+{$ENDIF}
 end;
 
 procedure TdmMain.ExportToRtf(FileLines: TStrings; ExportFilename: string);
@@ -546,8 +562,11 @@ begin
   if (not Assigned(FileLines)) or (FileLines.Count=0) or (ExportFilename='') then
     Exit;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
   SynExporterRTF.ExportAll(FileLines);
   SynExporterRTF.SavetoFile(ExportFileName);
+{$ENDIF}
 end;
 
 end.

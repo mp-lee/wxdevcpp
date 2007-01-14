@@ -25,7 +25,13 @@ uses
   Search_Center, StrUtils,
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  SynEdit, StdCtrls, devTabs, SynEditTypes, XPMenu, ExtCtrls, Menus;
+  SciLexer, SciLexerMemo, SciLexerMod, sciPrint, sciAbbrevationManager, SciActions,
+  SciActionsRes, sciAddLanguageFormUnit, SciAutoComplete, SciCallTips, SciConfirmReplaceDlg,
+  SciControllerHandler, SciDetectUtils, SciDocuments, SciFileExtensionsManager, SciKeyBindings,
+  SciKeyEditForm, SciLexerOptionsDlg, SciMacroRecording, ScintillaLanguageManager,
+  SciPropertyMgr, SciReplaceTextDlg, SciResLang, SciResLangDcl, SciSearchReplace,
+  SciSearchReplaceBase, SciSearchTextDlg, SciStreamDefault, SciStyleLoader, SciSupport,
+  sciUtils, SciWhatToFillUnit, StdCtrls, devTabs, XPMenu, ExtCtrls, Menus;
 {$ENDIF}
 {$IFDEF LINUX}
   SysUtils, Classes, QGraphics, QControls, QForms,
@@ -76,7 +82,12 @@ type
     procedure LookInChange(Sender: TObject);
     procedure OnBuildExpr(Sender: TObject);
   private
+{$IFDEF SCINTILLA}
+    fSearchOptions: integer; //scintilla search options
+{$ELSE}
     fSearchOptions: TSynSearchOptions;
+{$ENDIF}
+
     fClose: boolean;
     fFindAll: boolean;
     fRegex: boolean;
@@ -85,7 +96,11 @@ type
     function GetFindWhat: TLookIn;
 
   public
+{$IFDEF SCINTILLA}
+    property SearchOptions: integer read fSearchOptions; //scintilla search options
+{$ELSE}
     property SearchOptions: TSynSearchOptions read fSearchOptions;
+{$ENDIF}
     property FindAll: boolean read fFindAll write fFindAll;
     property FindWhat: TLookIn read GetFindWhat;
     property Regex: boolean read fRegex write fRegex;
@@ -159,31 +174,55 @@ begin
     if cboFindText.Items.IndexOf(cboFindText.Text) = -1 then
       cboFindText.Items.Insert(0, cboFindText.Text);
 
+{$IFDEF SCINTILLA}
+    fSearchOptions := 0;
+{$ELSE}
     fSearchOptions := [];
+{$ENDIF}
 
     fRegex := cbRegex.Checked;
     if cbMatchCase.checked then
+{$IFDEF SCINTILLA}
+      fSearchOptions := fSearchOptions + SCFIND_MATCHCASE; //mn need to define some stuff to make it work better
+{$ELSE}
       include(fSearchOptions, ssoMatchCase);
+{$ENDIF}
+
     if cbWholeWord.Checked then
+{$IFDEF SCINTILLA}
+      fSearchOptions := fSearchOptions + SCFIND_WHOLEWORD;
+{$ELSE}
       include(fSearchOptions, ssoWholeWord);
+{$ENDIF}
 
     if TLookIn(LookIn.Items.Objects[LookIn.ItemIndex]) in [liSelected, liFile] then
     begin
       fFindAll := False;
       if TLookIn(LookIn.Items.Objects[LookIn.ItemIndex]) = liSelected then
+{$IFDEF SCINTILLA}
+        fSearchOptions := fSearchOptions + 4;
+{$ELSE}
         include(fSearchOptions, ssoSelectedOnly);
+{$ENDIF} 
       if grpDirection.ItemIndex = 1 then
+{$IFDEF SCINTILLA}
+      fSearchOptions := fSearchOptions + 16;
+{$ELSE}
         include(fSearchOptions, ssoBackwards);
       if grpOrigin.ItemIndex = 1 then
         include(fSearchOptions, ssoEntireScope);
+{$ENDIF}
     end
     else
     begin
       fFindAll := True;
       MainForm.FindOutput.Items.Clear;
+{$IFDEF SCINTILLA}
+{$ELSE}
       include(fSearchOptions, ssoEntireScope);
       include(fSearchOptions, ssoReplaceAll);
       include(fSearchOptions, ssoPrompt);
+{$ENDIF}
     end;
     fClose := True;
   end;

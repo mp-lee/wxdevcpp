@@ -40,7 +40,7 @@ uses
   Wxcombobox, WxToolButton, WxSeparator, wxChoice,
   WxListbox, WxGauge, wxListCtrl, wxTreeCtrl, WxMemo, wxScrollbar, wxSpinButton,
   WxSizerPanel, WxSplitterWindow,
-  ComCtrls, SynEdit, Menus, xprocs, version;
+  ComCtrls, SciLexer, SciLexerMemo, SciLexerMod, Menus, xprocs, version;
 
 type
 
@@ -70,7 +70,11 @@ type
     FWxFrm_GeneralStyle: TWxStdStyleSet;
     FWxFrm_DialogStyle: TWxDlgStyleSet;
     FWxFrm_SizeToContents: Boolean;
+{$IFDEF SCINTILLA}
+    fScintilla: TScintilla;
+{$ELSE}
     fsynEdit: TSynEdit;
+{$ENDIF}
 
     FEVT_CHAR, FEVT_KEY_UP, FEVT_KEY_DOWN, FEVT_ERASE_BACKGROUND,
     FEVT_SIZE, FEVT_SET_FOCUS, FEVT_KILL_FOCUS, FEVT_ENTER_WINDOW,
@@ -190,7 +194,11 @@ type
     property EVT_MOUSEWHEEL: string Read FEVT_MOUSEWHEEL Write FEVT_MOUSEWHEEL;
     property EVT_MOUSE_EVENTS: string Read FEVT_MOUSE_EVENTS Write FEVT_MOUSE_EVENTS;
 
+{$IFDEF SCINTILLA}
+    property Scintilla: TScintilla Read fScintilla Write fScintilla;
+{$ELSE}
     property synEdit: TSynEdit Read fsynEdit Write fsynEdit;
+{$ENDIF}
     property Wx_ICON: TPicture Read FWx_ICON Write FWx_ICON;
     property Wx_Name: string Read FWx_Name Write FWx_Name;
     property Wx_IDName: string Read FWxFrm_IDName Write FWxFrm_IDName;
@@ -216,13 +224,24 @@ type
 var
   frmNewFormX: TfrmNewForm;
 
+{$IFDEF SCINTILLA}
+procedure GenerateCpp(frmNewForm: TfrmNewForm; strClassName: string;
+  Scintilla: TScintilla; strFileName: string);
+procedure GenerateHpp(frmNewForm: TfrmNewForm; strClassName: string; Scintilla: TScintilla);
+{$ELSE}
 procedure GenerateCpp(frmNewForm: TfrmNewForm; strClassName: string;
   synEdit: TSynEdit; strFileName: string);
 procedure GenerateHpp(frmNewForm: TfrmNewForm; strClassName: string; synEdit: TSynEdit);
+{$ENDIF}
 procedure GenerateXPM(frmNewForm: TfrmNewForm; strFileName: string;
   onlyForForm: boolean = False);
+{$IFDEF SCINTILLA}
+procedure GenerateXRC(frmNewForm: TfrmNewForm; strClassName: string;
+  Scintilla: TScintilla; strFileName: string);
+{$ELSE}
 procedure GenerateXRC(frmNewForm: TfrmNewForm; strClassName: string;
   synEdit: TSynEdit; strFileName: string);
+{$ENDIF}
 
 implementation
 
@@ -230,8 +249,13 @@ uses dmCodeGen, main, WxStaticBitmap;
 
 {$R *.DFM}
 
+{$IFDEF SCINTILLA}
+procedure GenerateCpp(frmNewForm: TfrmNewForm; strClassName: string;
+  Scintilla: TScintilla; strFileName: string);
+{$ELSE}
 procedure GenerateCpp(frmNewForm: TfrmNewForm; strClassName: string;
   synEdit: TSynEdit; strFileName: string);
+{$ENDIF}
 var
   i: integer;
   intBlockStart, intBlockEnd: integer;
@@ -246,10 +270,18 @@ var
   CntIntf: IWxContainerAndSizerInterface;
   strTemp: string;
 begin
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName,btClassNameGUIItemsCreation, intBlockStart, intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btClassNameGUIItemsCreation, intBlockStart, intBlockEnd) then
+{$ENDIF}
   begin
     //Clear Declaration and Creation Field
+{$IFDEF SCINTILLA}
+    DeleteAllClassNameGUIItemsCreation(Scintilla, strClassName,intBlockStart, intBlockEnd);
+{$ELSE}
     DeleteAllClassNameGUIItemsCreation(synEdit, strClassName, intBlockStart, intBlockEnd);
+{$ENDIF}
     
     isSizerAvailable := False;
     for I := 0 to frmNewForm.ComponentCount - 1 do // Iterate
@@ -263,8 +295,11 @@ begin
 
     if isSizerAvailable then
     begin
+{$IFDEF SCINTILLA}
+      AddClassNameGUIItemsCreation(Scintilla, strClassName, intBlockStart, intBlockEnd, frmNewForm.GenerateGUIControlCreation);
+{$ELSE}
       AddClassNameGUIItemsCreation(synEdit, strClassName, intBlockStart, intBlockEnd, frmNewForm.GenerateGUIControlCreation);
-      
+{$ENDIF}
       //Add the Code Generation Items that need to be added after the creation with new
       for I := frmNewForm.ComponentCount - 1 downto 0 do // Iterate
       begin
@@ -273,8 +308,13 @@ begin
         strTemp := CntIntf.GenerateLastCreationCode;
         if trim(strTemp) = '' then
           continue;
+{$IFDEF SCINTILLA}
+        AddClassNameGUIItemsCreation(Scintilla, strClassName, intBlockStart, intBlockEnd, strTemp);
+        AddClassNameGUIItemsCreation(Scintilla, strClassName, intBlockStart, intBlockEnd, '');
+{$ELSE}
         AddClassNameGUIItemsCreation(synEdit, strClassName, intBlockStart, intBlockEnd, strTemp);
         AddClassNameGUIItemsCreation(synEdit, strClassName, intBlockStart, intBlockEnd, '');
+{$ENDIF}
       end; // for
     end;
 
@@ -285,8 +325,13 @@ begin
         if frmNewForm.Components[i].GetInterface(IID_IWxContainerAndSizerInterface, CntIntf) then
           continue;
         if frmNewForm.Components[i].GetInterface(IID_IWxComponentInterface, wxcompInterface) then
+{$IFDEF SCINTILLA}
+          AddClassNameGUIItemsCreation(Scintilla, strClassName, intBlockStart, intBlockEnd, wxcompInterface.GenerateGUIControlCreation);
+        AddClassNameGUIItemsCreation(Scintilla, strClassName, intBlockStart, intBlockEnd, '');
+{$ELSE}
           AddClassNameGUIItemsCreation(synEdit, strClassName, intBlockStart, intBlockEnd, wxcompInterface.GenerateGUIControlCreation);
         AddClassNameGUIItemsCreation(synEdit, strClassName, intBlockStart, intBlockEnd, '');
+{$ENDIF}
       end// for
     end
     else
@@ -295,20 +340,38 @@ begin
         if frmNewForm.Components[i].GetInterface(IID_IWxComponentInterface, wxcompInterface) then
         begin
           strTemp := wxcompInterface.GenerateGUIControlCreation;
+{$IFDEF SCINTILLA}
+{$ELSE}
           AddClassNameGUIItemsCreation(synEdit, strClassName,intBlockStart, intBlockEnd, wxcompInterface.GenerateGUIControlCreation);
+{$ENDIF}
         end;
+{$IFDEF SCINTILLA}
+{$ELSE}
         AddClassNameGUIItemsCreation(synEdit, strClassName, intBlockStart, intBlockEnd, '');
+{$ENDIF}
       end;// for
 
     //Form data should come first, if not the child will be resized to
     if not isSizerAvailable then
+{$IFDEF SCINTILLA}
+      AddClassNameGUIItemsCreation(Scintilla, strClassName, intBlockStart, intBlockEnd, frmNewForm.GenerateGUIControlCreation);
+{$ELSE}
       AddClassNameGUIItemsCreation(synEdit, strClassName, intBlockStart, intBlockEnd, frmNewForm.GenerateGUIControlCreation);
+{$ENDIF}
   end;
 
   // RHS Variable
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName, btRHSVariables, intBlockStart, intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btRHSVariables, intBlockStart, intBlockEnd) then
+{$ENDIF}
   begin
+{$IFDEF SCINTILLA}
+    DeleteAllRHSVariableList(Scintilla, strClassName,intBlockStart, intBlockEnd);
+{$ELSE}
     DeleteAllRHSVariableList(synEdit, strClassName,intBlockStart, intBlockEnd);
+{$ENDIF}
       for I := frmNewForm.ComponentCount - 1 downto 0 do // Iterate
       begin
         //            if frmNewForm.Components[i] is TPanel then
@@ -318,17 +381,33 @@ begin
             strTemp :=varIntf.GetRHSVariableAssignment;
             if (strTemp) = '' then
                 continue;
+{$IFDEF SCINTILLA}
+          AddRHSVariableList(Scintilla, strClassName,intBlockStart, intBlockEnd, varIntf.GetRHSVariableAssignment);
+{$ELSE}
           AddRHSVariableList(synEdit, strClassName,intBlockStart, intBlockEnd, varIntf.GetRHSVariableAssignment);
+{$ENDIF}
         end;
+{$IFDEF SCINTILLA}
+        AddRHSVariableList(Scintilla, strClassName, intBlockStart, intBlockEnd, '');
+{$ELSE}
         AddRHSVariableList(synEdit, strClassName, intBlockStart, intBlockEnd, '');
+{$ENDIF}
       end// for;
 
   end;
 
   // LHS Variable
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName, btLHSVariables, intBlockStart, intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btLHSVariables, intBlockStart, intBlockEnd) then
+{$ENDIF}
   begin
+{$IFDEF SCINTILLA}
+    DeleteAllLHSVariableList(Scintilla, strClassName,intBlockStart, intBlockEnd);
+{$ELSE}
     DeleteAllLHSVariableList(synEdit, strClassName,intBlockStart, intBlockEnd);
+{$ENDIF}
       for I := frmNewForm.ComponentCount - 1 downto 0 do // Iterate
       begin
         //            if frmNewForm.Components[i] is TPanel then
@@ -338,28 +417,53 @@ begin
             strTemp :=varIntf.GetLHSVariableAssignment;
             if (strTemp) = '' then
                 continue;
+{$IFDEF SCINTILLA}
+          AddLHSVariableList(Scintilla, strClassName,intBlockStart, intBlockEnd, varIntf.GetLHSVariableAssignment);
+{$ELSE}
           AddLHSVariableList(synEdit, strClassName,intBlockStart, intBlockEnd, varIntf.GetLHSVariableAssignment);
+{$ENDIF}
         end;
+{$IFDEF SCINTILLA}
+        AddLHSVariableList(Scintilla, strClassName, intBlockStart, intBlockEnd, '');
+{$ELSE}
         AddLHSVariableList(synEdit, strClassName, intBlockStart, intBlockEnd, '');
+{$ENDIF}
       end// for;
   end;
 
   // Event table
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName, btClassNameEventTableEntries, intBlockStart, intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btClassNameEventTableEntries, intBlockStart, intBlockEnd) then
+{$ENDIF}
   begin
     GetStartAndEndBlockStrings('', btManualCode, strStartStr, strEndStr);
 
+{$IFDEF SCINTILLA}
+   if GetBlockStartAndEndPos(Scintilla, strClassName, btManualCode, intManualBlockStart, intManualBlockEnd) then
+      strlstManualCode := GetBlockCode(Scintilla, strClassName, btManualCode, intManualBlockStart, intManualBlockEnd)
+{$ELSE}
     if GetBlockStartAndEndPos(synEdit, strClassName, btManualCode, intManualBlockStart, intManualBlockEnd) then
       strlstManualCode := GetBlockCode(synEdit, strClassName, btManualCode, intManualBlockStart, intManualBlockEnd)
+{$ENDIF}
     else
       strlstManualCode := TStringList.Create;
 
     try
 
+{$IFDEF SCINTILLA}
+    DeleteAllClassNameEventTableEntries(Scintilla, strClassName, intBlockStart, intBlockEnd);
+{$ELSE}
     DeleteAllClassNameEventTableEntries(synEdit, strClassName, intBlockStart, intBlockEnd);
+{$ENDIF}
 
     strEventTableEnd := 'END_EVENT_TABLE()';
+{$IFDEF SCINTILLA}
+    AddClassNameEventTableEntries(Scintilla, strClassName, intBlockStart, intBlockEnd, strEventTableEnd, False);
+{$ELSE}
     AddClassNameEventTableEntries(synEdit, strClassName, intBlockStart, intBlockEnd, strEventTableEnd, False);
+{$ENDIF}
 
 
     //EVT_CLOSE(%CLASS_NAME%:: OnQuit )
@@ -370,38 +474,70 @@ begin
       begin
         strEntry := wxcompInterface.GenerateEventTableEntries(strClassName);
         //SendDebug(strEntry);
+{$IFDEF SCINTILLA}
+        AddClassNameEventTableEntries(Scintilla, strClassName, intBlockStart, intBlockEnd, strEntry);
+{$ELSE}
         AddClassNameEventTableEntries(synEdit, strClassName, intBlockStart, intBlockEnd, strEntry);
+{$ENDIF}
       end;
       //AddClassNameEventTableEntries(strCppSrc, strClassName, intBlockStart, intBlockEnd, '');
     end; // for
          //Form data should come first, if not the child will be resized to
     strEntry := frmNewForm.GenerateEventTableEntries(strClassName);
     //SendDebug(strEntry);
+{$IFDEF SCINTILLA}
+    AddClassNameEventTableEntries(Scintilla, strClassName, intBlockStart,intBlockEnd, strEntry);
+{$ELSE}
     AddClassNameEventTableEntries(synEdit, strClassName, intBlockStart,intBlockEnd, strEntry);
+{$ENDIF}
 
      //Manual Code Clear Declaration and Creation Field
 
+{$IFDEF SCINTILLA}
+    AddClassNameEventTableEntries(Scintilla, strClassName, intBlockStart,intBlockEnd, strEndStr);
+{$ELSE}
     AddClassNameEventTableEntries(synEdit, strClassName, intBlockStart,intBlockEnd, strEndStr);
+{$ENDIF}
     for I := strlstManualCode.Count - 1 downto 0 do    // Iterate
+{$IFDEF SCINTILLA}
+      AddClassNameEventTableEntries(Scintilla, strClassName, intBlockStart, intBlockEnd,
+{$ELSE}
       AddClassNameEventTableEntries(synEdit, strClassName, intBlockStart, intBlockEnd,
+{$ENDIF}
         strlstManualCode[i]);    // for
 
    finally
    strlstManualCode.Destroy;
     end;
 
+{$IFDEF SCINTILLA}
+    AddClassNameEventTableEntries(Scintilla, strClassName, intBlockStart, intBlockEnd,strStartStr);
+{$ELSE}
     AddClassNameEventTableEntries(synEdit, strClassName, intBlockStart, intBlockEnd,strStartStr);
+{$ENDIF}
       
     strEventTableStart := Format('BEGIN_EVENT_TABLE(%s,%s)',[frmNewForm.Wx_Name, frmNewForm.Wx_Class]);
+{$IFDEF SCINTILLA}
+    AddClassNameEventTableEntries(Scintilla, strClassName, intBlockStart, intBlockEnd,strEventTableStart, False);
+{$ELSE}
     AddClassNameEventTableEntries(synEdit, strClassName, intBlockStart, intBlockEnd,strEventTableStart, False);
+{$ENDIF}
   end;
 
   //Adding XPM Header files
   //A stupid way to find
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName, btHeaderIncludes, intBlockStart,intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btHeaderIncludes, intBlockStart,intBlockEnd) then
+{$ENDIF}
   begin
     //Clear Declaration and Creation Field
+{$IFDEF SCINTILLA}
+    DeleteAllClassNameIncludeHeader(Scintilla, strClassName, intBlockStart, intBlockEnd);
+{$ELSE}
     DeleteAllClassNameIncludeHeader(synEdit, strClassName, intBlockStart, intBlockEnd);
+{$ENDIF}
     strHdrValue := '';
     strLst      := TStringList.Create;
     for I := 0 to frmNewForm.ComponentCount - 1 do // Iterate
@@ -411,7 +547,11 @@ begin
         if strLst.indexOf(strHdrValue) = -1 then
         begin
           strLst.add(strHdrValue);
+{$IFDEF SCINTILLA}
+          AddClassNameIncludeHeader(Scintilla, strClassName,
+{$ELSE}
           AddClassNameIncludeHeader(synEdit, strClassName,
+{$ENDIF}
             intBlockStart, intBlockEnd, strHdrValue);
         end;
       end;
@@ -421,26 +561,52 @@ begin
       if strLst.indexOf(strHdrValue) = -1 then
       begin
         strLst.add(strHdrValue);
+{$IFDEF SCINTILLA}
+        AddClassNameIncludeHeader(Scintilla, strClassName, intBlockStart, intBlockEnd, strHdrValue);
+{$ELSE}
         AddClassNameIncludeHeader(synEdit, strClassName, intBlockStart, intBlockEnd, strHdrValue);
+{$ENDIF}
       end;
 
     strLst.Destroy;
   end;
 end;
 
+{$IFDEF SCINTILLA}
+procedure GenerateXRC(frmNewForm: TfrmNewForm; strClassName: string;
+  Scintilla: TScintilla; strFileName: string);
+{$ELSE}
 procedure GenerateXRC(frmNewForm: TfrmNewForm; strClassName: string;
   synEdit: TSynEdit; strFileName: string);
+{$ENDIF}
 var
   i: integer;
   wxcompInterface: IWxComponentInterface;
   tempstring: TStringList;
 begin
 
+{$IFDEF SCINTILLA}
+  Scintilla.Clear;
+  Scintilla.Lines.Add('<?xml version="1.0" encoding="ISO-8859-1"?>');
+  Scintilla.Lines.Add('<resource version="2.3.0.1">');
+  Scintilla.Lines.Add('<!-- Created by wxDev-C++ ' + DEVCPP_VERSION + ' -->');
+{$ELSE}
   synEdit.Clear;
   synEdit.Lines.Add('<?xml version="1.0" encoding="ISO-8859-1"?>');
   synEdit.Lines.Add('<resource version="2.3.0.1">');
   synEdit.Lines.Add('<!-- Created by wxDev-C++ ' + DEVCPP_VERSION + ' -->');
+{$ENDIF}
 
+{$IFDEF SCINTILLA}
+  Scintilla.Lines.Add(Format('<object class="%s" name="%s">',
+    [frmNewForm.Wx_class, frmNewForm.Wx_Name]));
+  Scintilla.Lines.Add(Format('<title>%s</title>', [frmNewForm.Caption]));
+  Scintilla.Lines.Add(Format('<IDident>%s</IDident>', [frmNewForm.Wx_IDName]));
+  Scintilla.Lines.Add(Format('<ID>%d</ID>', [frmNewForm.Wx_IDValue]));
+  Scintilla.Lines.Add(Format('<pos>%d,%d</pos>', [frmNewForm.Left, frmNewForm.Top]));
+  Scintilla.Lines.Add(Format('<size>%d,%d</size>',
+    [frmNewForm.Height, frmNewForm.Width]));
+{$ELSE}
   synEdit.Lines.Add(Format('<object class="%s" name="%s">',
     [frmNewForm.Wx_class, frmNewForm.Wx_Name]));
   synEdit.Lines.Add(Format('<title>%s</title>', [frmNewForm.Caption]));
@@ -449,14 +615,27 @@ begin
   synEdit.Lines.Add(Format('<pos>%d,%d</pos>', [frmNewForm.Left, frmNewForm.Top]));
   synEdit.Lines.Add(Format('<size>%d,%d</size>',
     [frmNewForm.Width, frmNewForm.Height]));
+{$ENDIF}
 
   if GetStdStyleString(frmNewForm.Wx_GeneralStyle) = '' then
     if strEqual(frmNewForm.Wx_class, 'WxFrame') then
+{$IFDEF SCINTILLA}
+      Scintilla.Lines.Add('<style>wxDEFAULT_FRAME_STYLE</style>')
+{$ELSE}
       synEdit.Lines.Add('<style>wxDEFAULT_FRAME_STYLE</style>')
+{$ENDIF}
     else
+{$IFDEF SCINTILLA}
+      Scintilla.Lines.Add('<style>wxDEFAULT_DIALOG_STYLE</style>')
+{$ELSE}
       synEdit.Lines.Add('<style>wxDEFAULT_DIALOG_STYLE</style>')
+{$ENDIF}
   else
+{$IFDEF SCINTILLA}
+    Scintilla.Lines.Add(Format('<style>%s</style>',
+{$ELSE}
     synEdit.Lines.Add(Format('<style>%s</style>',
+{$ENDIF}
       [GetStdStyleString(frmNewForm.Wx_GeneralStyle)]));
 
   for i := 0 to frmNewForm.ComponentCount - 1 do // Iterate
@@ -469,18 +648,31 @@ begin
       begin
         tempstring := wxcompInterface.GenerateXRCControlCreation('  ');
         try
+{$IFDEF SCINTILLA}
+          Scintilla.Lines.AddStrings(tempstring);
+{$ELSE}
           synEdit.Lines.AddStrings(tempstring);
+{$ENDIF}
         finally
           tempstring.Free;
         end
       end; // for
 
+{$IFDEF SCINTILLA}
+  Scintilla.Lines.Add('</object>');
+  Scintilla.Lines.Add('</resource>');
+{$ELSE}
   synEdit.Lines.Add('</object>');
   synEdit.Lines.Add('</resource>');
+{$ENDIF}
 
 end;
 
+{$IFDEF SCINTILLA}
+procedure GenerateHpp(frmNewForm: TfrmNewForm; strClassName: string; Scintilla: TScintilla);
+{$ELSE}
 procedure GenerateHpp(frmNewForm: TfrmNewForm; strClassName: string; synEdit: TSynEdit);
+{$ENDIF}
 var
   i:      integer;
   intBlockStart, intBlockEnd: integer;
@@ -488,26 +680,49 @@ var
   strLst: TStringList;
   strHdrValue, strIDValue, strLine: string;
 begin
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName, btClassNameGUIItemsDeclaration,
+    intBlockStart, intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btClassNameGUIItemsDeclaration,
     intBlockStart, intBlockEnd) then
+{$ENDIF}
   begin
     //Clear Declaration and Creation Field
+{$IFDEF SCINTILLA}
+    DeleteAllClassNameGUIItemsDeclaration(Scintilla, strClassName, intBlockStart,
+{$ELSE}
     DeleteAllClassNameGUIItemsDeclaration(synEdit, strClassName, intBlockStart,
+{$ENDIF}
       intBlockEnd);
     for I := 0 to frmNewForm.ComponentCount - 1 do // Iterate
       if frmNewForm.Components[i].GetInterface(IID_IWxComponentInterface,
         wxcompInterface) then
+{$IFDEF SCINTILLA}
+        AddClassNameGUIItemsDeclaration(Scintilla, strClassName, intBlockStart,
+{$ELSE}
         AddClassNameGUIItemsDeclaration(synEdit, strClassName, intBlockStart,
+{$ENDIF}
           intBlockEnd, wxcompInterface.GenerateGUIControlDeclaration());
   end;
 
   //For Old #define styled Control Ids
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName, btClassNameControlIdentifiers,
+    intBlockStart, intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btClassNameControlIdentifiers,
     intBlockStart, intBlockEnd) then
+{$ENDIF}
   begin
     //Clear Declaration and Creation Field
+{$IFDEF SCINTILLA}
+    DeleteAllClassNameControlIndentifiers(Scintilla, strClassName, intBlockStart,
+      intBlockEnd);
+{$ELSE}
     DeleteAllClassNameControlIndentifiers(synEdit, strClassName, intBlockStart,
       intBlockEnd);
+{$ENDIF}
     strLst := TStringList.Create;
     for I := 0 to frmNewForm.ComponentCount - 1 do // Iterate
       if frmNewForm.Components[i].GetInterface(IID_IWxComponentInterface,
@@ -521,19 +736,34 @@ begin
           if strLst.indexOf(strIDValue) = -1 then
           begin
             strLst.Add(strIDValue);
+{$IFDEF SCINTILLA}
+            AddClassNameControlIndentifiers(Scintilla, strClassName, intBlockStart,
+              intBlockEnd, strIDValue);
+{$ELSE}
             AddClassNameControlIndentifiers(synEdit, strClassName, intBlockStart,
               intBlockEnd, strIDValue);
+{$ENDIF}
           end;
       end;
     strLst.Destroy;
   end;
   //New Enum Based Control Ids
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName, btClassNameEnumControlIdentifiers,
+    intBlockStart, intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btClassNameEnumControlIdentifiers,
     intBlockStart, intBlockEnd) then
+{$ENDIF}
   begin
     //Clear Declaration and Creation Field
+{$IFDEF SCINTILLA}
+    DeleteAllClassNameEnumControlIndentifiers(Scintilla, strClassName,
+      intBlockStart, intBlockEnd);
+{$ELSE}
     DeleteAllClassNameEnumControlIndentifiers(synEdit, strClassName,
       intBlockStart, intBlockEnd);
+{$ENDIF}
     strLst := TStringList.Create;
     for I := 0 to frmNewForm.ComponentCount - 1 do // Iterate
       if frmNewForm.Components[i].GetInterface(IID_IWxComponentInterface,
@@ -547,15 +777,25 @@ begin
           if strLst.indexOf(strIDValue) = -1 then
           begin
             strLst.Add(strIDValue);
+{$IFDEF SCINTILLA}
+            AddClassNameEnumControlIndentifiers(Scintilla,
+              strClassName, intBlockStart, intBlockEnd, strIDValue);
+{$ELSE}
             AddClassNameEnumControlIndentifiers(synEdit,
               strClassName, intBlockStart, intBlockEnd, strIDValue);
+{$ENDIF}
           end;
       end;
     strLst.Destroy;
   end;
 
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName, btDialogStyle, intBlockStart,
+    intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btDialogStyle, intBlockStart,
     intBlockEnd) then
+{$ENDIF}
   begin
     //Clear Declaration and Creation Field
 
@@ -566,8 +806,13 @@ begin
     //    itself.
     // Get the #define line  (it should be just after the start of the block)
     for I := intBlockStart to intBlockEnd do // Iterate
+{$IFDEF SCINTILLA}
+      if (strContainsU('#define', Scintilla.Lines[I])) then
+        strLine := Trim(Scintilla.Lines[I]);
+{$ELSE}
       if (strContainsU('#define', synEdit.Lines[I])) then
         strLine := Trim(synEdit.Lines[I]);
+{$ENDIF}
 
     // Tokenize the line by spaces
     strLst := TStringList.Create;   // Create a string list
@@ -579,19 +824,36 @@ begin
 
     strLst.Destroy; // Destroy the string list
 
+{$IFDEF SCINTILLA}
+    DeleteAllDialogStyleDeclaration(Scintilla, strClassName, intBlockStart,
+      intBlockEnd);
+    AddDialogStyleDeclaration(Scintilla, strClassName, intBlockStart, intBlockEnd,
+      strLine);
+{$ELSE}
     DeleteAllDialogStyleDeclaration(synEdit, strClassName, intBlockStart,
       intBlockEnd);
     AddDialogStyleDeclaration(synEdit, strClassName, intBlockStart, intBlockEnd,
       strLine);
+{$ENDIF}
 
   end;
 
+{$IFDEF SCINTILLA}
+  if GetBlockStartAndEndPos(Scintilla, strClassName, btHeaderIncludes,
+    intBlockStart, intBlockEnd) then
+{$ELSE}
   if GetBlockStartAndEndPos(synEdit, strClassName, btHeaderIncludes,
     intBlockStart, intBlockEnd) then
+{$ENDIF}
   begin
     //Clear Declaration and Creation Field
+{$IFDEF SCINTILLA}
+    DeleteAllClassNameIncludeHeader(Scintilla, strClassName, intBlockStart,
+      intBlockEnd);
+{$ELSE}
     DeleteAllClassNameIncludeHeader(synEdit, strClassName, intBlockStart,
       intBlockEnd);
+{$ENDIF}
     strLst := TStringList.Create;
     for I := 0 to frmNewForm.ComponentCount - 1 do // Iterate
       if frmNewForm.Components[i].GetInterface(IID_IWxComponentInterface,
@@ -601,8 +863,12 @@ begin
         if strLst.indexOf(strHdrValue) = -1 then
         begin
           strLst.add(strHdrValue);
+{$IFDEF SCINTILLA}
+{$ELSE}
+
           AddClassNameIncludeHeader(synEdit, strClassName,
             intBlockStart, intBlockEnd, strHdrValue);
+{$ENDIF}
         end;
       end;
     strLst.Destroy;
@@ -611,7 +877,12 @@ begin
 end;
 
 
+{$IFDEF SCINTILLA}
+procedure GenerateXPM(frmNewForm: TfrmNewForm; strFileName: string;
+  onlyForForm: boolean);
+{$ELSE}
 procedure GenerateXPM(frmNewForm: TfrmNewForm; strFileName: string;onlyForForm: boolean);
+{$ENDIF}
 var
   I: integer;
   xpmFileDir,xpmNewFileDir: string;

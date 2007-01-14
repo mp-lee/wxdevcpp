@@ -26,7 +26,13 @@ uses
 {$IFDEF WIN32}
   Windows, Messages, SysUtils, Variants, Graphics, Controls, Forms,
   Dialogs, ComCtrls, devTabs, StdCtrls, ExtCtrls, Spin, ColorPickerButton,
-  SynEdit, SynEditHighlighter, SynHighlighterCpp, CheckLst, SynMemo,
+  SciLexer, SciLexerMemo, SciLexerMod, sciPrint, sciAbbrevationManager, SciActions,
+  SciActionsRes, sciAddLanguageFormUnit, SciAutoComplete, SciCallTips, SciConfirmReplaceDlg,
+  SciControllerHandler, SciDetectUtils, SciDocuments, SciFileExtensionsManager, SciKeyBindings,
+  SciKeyEditForm, SciLexerOptionsDlg, SciMacroRecording, ScintillaLanguageManager,
+  SciPropertyMgr, SciReplaceTextDlg, SciResLang, SciResLangDcl, SciSearchReplace,
+  SciSearchReplaceBase, SciSearchTextDlg, SciStreamDefault, SciStyleLoader, SciSupport,
+  sciUtils, SciWhatToFillUnit, CheckLst,
   Buttons, ClassBrowser, CppParser, CppTokenizer, StrUtils, XPMenu, Classes;
 {$ENDIF}
 {$IFDEF LINUX}
@@ -39,46 +45,14 @@ uses
 type
   TEditorOptForm = class(TForm)
     PagesMain: TPageControl;
-    tabDisplay: TTabSheet;
-    grpGutter: TGroupBox;
-    cbGutterVis: TCheckBox;
-    cbGutterAuto: TCheckBox;
-    cbLineNum: TCheckBox;
-    cbFirstZero: TCheckBox;
-    cbLeadZero: TCheckBox;
-    cbGutterFnt: TCheckBox;
-    pnlGutterPreview: TPanel;
-    lblGutterFont: TLabel;
-    cboGutterFont: TComboBox;
-    lblGutterWidth: TLabel;
-    lblGutterFontSize: TLabel;
-    cboGutterSize: TComboBox;
     tabGeneral: TTabSheet;
     tabSyntax: TTabSheet;
-    CppEdit: TSynEdit;
-    ElementList: TListBox;
-    cpp: TSynCppSyn;
-    grpEditorFont: TGroupBox;
-    lblEditorSize: TLabel;
-    lblEditorFont: TLabel;
-    cboEditorFont: TComboBox;
-    cboEditorSize: TComboBox;
-    pnlEditorPreview: TPanel;
-    grpMargin: TGroupBox;
-    lblMarginWidth: TLabel;
-    lblMarginColor: TLabel;
-    cpMarginColor: TColorPickerButton;
-    cbMarginVis: TCheckBox;
-    grpCaret: TGroupBox;
-    lblInsertCaret: TLabel;
-    lblOverCaret: TLabel;
-    cboInsertCaret: TComboBox;
-    cboOverwriteCaret: TComboBox;
+    CppEdit: TScintilla;
     tabCode: TTabSheet;
     codepages: TPageControl;
     tabCPInserts: TTabSheet;
     tabCPDefault: TTabSheet;
-    seDefault: TSynEdit;
+    seDefault: TScintilla;
     btnAdd: TButton;
     btnEdit: TButton;
     btnRemove: TButton;
@@ -88,9 +62,8 @@ type
     btnCancel: TBitBtn;
     btnHelp: TBitBtn;
     cboQuickColor: TComboBox;
-    lblElements: TLabel;
     lblSpeed: TLabel;
-    CodeIns: TSynEdit;
+    CodeIns: TScintilla;
     tabClassBrowsing: TTabSheet;
     chkEnableClassBrowser: TCheckBox;
     devPages1: TPageControl;
@@ -115,20 +88,15 @@ type
     pbCCCache: TProgressBar;
     XPMenu: TXPMenu;
     chkCBShowInherited: TCheckBox;
-    cbMatch: TCheckBox;
-    edMarginWidth: TSpinEdit;
-    edGutterWidth: TSpinEdit;
     lblEditorOpts: TGroupBox;
     cbAppendNewline: TCheckBox;
     cbSpecialChars: TCheckBox;
     cbDropFiles: TCheckBox;
     cbGroupUndo: TCheckBox;
-    cbSmartUnIndent: TCheckBox;
     cbTrailingBlanks: TCheckBox;
     cbTabtoSpaces: TCheckBox;
     cbSmartTabs: TCheckBox;
     cbInsertMode: TCheckBox;
-    cbAutoIndent: TCheckBox;
     cbPastEOL: TCheckBox;
     cbFindText: TCheckBox;
     cbHalfPage: TCheckBox;
@@ -140,35 +108,30 @@ type
     cbPastEOF: TCheckBox;
     btnCCCnew: TButton;
     btnCCCdelete: TButton;
-    lblTabSize: TLabel;
-    seTabSize: TSpinEdit;
-    cbSyntaxHighlight: TCheckBox;
-    cbHighCurrLine: TCheckBox;
-    cpHighColor: TColorPickerButton;
-    grpStyle: TGroupBox;
-    lblForeground: TLabel;
-    cpForeground: TColorPickerButton;
-    lblBackground: TLabel;
-    cpBackground: TColorPickerButton;
-    cbBold: TCheckBox;
-    cbItalic: TCheckBox;
-    cbUnderlined: TCheckBox;
-    edSyntaxExt: TEdit;
     btnSaveSyntax: TSpeedButton;
-    lblSyntaxExt: TLabel;
-    cbDefaultintoprj: TCheckBox;
     edCompletionDelay: TSpinEdit;
-    cbGutterGradient: TCheckBox;
+    cbDefaultintoprj: TCheckBox;
+    btnScintillaOptions: TSpeedButton;
+    StaticText1: TStaticText;
+    pLoadEdit: TSciPropertyLoader;
+    ScintillaOptionsDlg1: TScintillaOptionsDlg;
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure FormActivate(Sender: TObject);
+{$IFDEF SCINTILLA}
+{$ELSE}
     procedure ElementListClick(Sender: TObject);
-    procedure FontChange(Sender: TObject);
     procedure FontSizeChange(Sender: TObject);
+{$ENDIF}
+    procedure FontChange(Sender: TObject);
     procedure cpMarginColorHint(Sender: TObject; Cell: Integer;
       var Hint: String);
     procedure cpMarginColorDefaultSelect(Sender: TObject);
+{$IFDEF SCINTILLA}
+    procedure cppEditStatusChange(Sender: TObject{; Changes: TSynStatusChanges});
+{$ELSE}
     procedure cppEditStatusChange(Sender: TObject; Changes: TSynStatusChanges);
+{$ENDIF}
     procedure DefaultSelect(Sender: TObject);
     procedure PickerHint(Sender: TObject; Cell: integer; var Hint: string);
     procedure StyleChange(Sender: TObject);
@@ -187,8 +150,12 @@ type
       Data: Integer; var Compare: Integer);
     procedure lvCodeinsSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
+{$IFDEF SCINTILLA}
+{$ELSE}
     procedure CodeInsStatusChange(Sender: TObject;
       Changes: TSynStatusChanges);
+{$ENDIF}
+
     function FormHelp(Command: Word; Data: Integer;
       var CallHelp: Boolean): Boolean;
     procedure FormKeyDown(Sender: TObject; var Key: Word;
@@ -212,10 +179,15 @@ type
       Total, Current: Integer);
     procedure devPages1Change(Sender: TObject);
     procedure chkCBShowInheritedClick(Sender: TObject);
+{$IFDEF SCINTILLA}
+{$ELSE}
     procedure OnGutterClick(Sender: TObject; Button: TMouseButton; X, Y,
       Line: Integer; Mark: TSynEditMark);
+{$ENDIF}
+
     procedure cbHighCurrLineClick(Sender: TObject);
     procedure seTabSizeChange(Sender: TObject);
+    procedure btnScintillaOptionsClick(Sender: TObject);
   private
     ffgColor: TColor;
     fbgColor: TColor;
@@ -282,6 +254,10 @@ var
   { ---------- Form Events ---------- }
 
 procedure TEditorOptForm.FormCreate(Sender: TObject);
+var
+{$IFDEF SCINTILLA}
+  InitialStylesFile: String;
+{$ENDIF}
 begin
   LoadText;
   LoadCodeIns;
@@ -290,6 +266,14 @@ begin
   PagesMainChange(Self);
   cbLineNumClick(Self);
   FillSyntaxSets;
+
+{$IFDEF SCINTILLA}
+  InitialStylesFile := devDirs.Styles + 'devcpp' + STYLES_EXT;
+   pLoadEdit.FileName:=InitialStylesFile;
+
+  pLoadEdit.Load;
+  pLoadEdit.LoadStyles(InitialStylesFile);
+{$ENDIF}
 end;
 
 procedure TEditorOptForm.FormShow(Sender: TObject);
@@ -346,12 +330,15 @@ procedure TEditorOptForm.LoadFontNames;
 var
   DC: HDC;
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   DC := GetDC(0);
   EnumFontFamilies(DC, nil, @EnumFontFamilyProc, integer(cboEditorFont.Items));
   ReleaseDC(0, DC);
   cboEditorFont.Sorted := TRUE;
   cboGutterFont.Items := cboEditorFont.Items;
   cboGutterFont.Sorted := TRUE;
+{$ENDIF}
 end;
 
 (*
@@ -386,6 +373,8 @@ var
   Items: TStrings;
   FontName: string;
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   fUseDefaults := FALSE;
   DC := GetDC(0);
   Items := TStringList.Create;
@@ -420,8 +409,11 @@ begin
     Items.Free;
     ReleaseDC(0, DC);
   end;
+{$ENDIF}
 end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 procedure TEditorOptForm.FontSizeChange(Sender: TObject);
   procedure UpdateSynEdits(ASynEdit: TSynEdit);
   begin
@@ -439,6 +431,7 @@ procedure TEditorOptForm.FontSizeChange(Sender: TObject);
       ASynEdit.Refresh;
     end;
   end;
+
 begin
   try
     UpdateSynEdits(CppEdit);
@@ -457,11 +450,14 @@ begin
     end;
   end;
 end;
+{$ENDIF}
 
 procedure TEditorOptForm.FontChange(Sender: TObject);
 var
   Size: string;
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   fGutter := Sender = cboGutterFont;
   if fGutter then
   begin
@@ -487,13 +483,20 @@ begin
     CppEdit.Font.Size := strtoint(cboEditorSize.Text);
     CppEdit.Refresh;
   end;
+{$ENDIF}
 end;
+
 
 procedure TEditorOptForm.cbGutterFntClick(Sender: TObject);
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   cboGutterFont.Enabled := cbGutterFnt.Checked;
   cboGutterSize.Enabled := cbGutterfnt.Checked;
+{$ENDIF}
 end;
+
+
 
 { ---------- Form Init/Done Methods ----------}
 
@@ -507,7 +510,10 @@ begin
 
   Caption                       := Lang[ID_EOPT];
   tabGeneral.Caption            := Lang[ID_EOPT_GENTAB];
+{$IFDEF SCINTILLA}
+{$ELSE}
   tabDisplay.Caption            := Lang[ID_EOPT_DISPLAYTAB];
+{$ENDIF}
   tabSyntax.Caption             := Lang[ID_EOPT_SYNTAXTAB];
   tabCode.Caption               := Lang[ID_EOPT_CODETAB];
   tabClassBrowsing.Caption      := Lang[ID_EOPT_BROWSERTAB];
@@ -520,12 +526,10 @@ begin
 
   // General Tab
   lblEditorOpts.Caption         := Lang[ID_EOPT_EDOPTIONS];
-  cbAutoIndent.Caption          := Lang[ID_EOPT_AUTOINDENT];
   cbInsertMode.Caption          := Lang[ID_EOPT_INSERTMODE];
   cbTabtoSpaces.Caption         := Lang[ID_EOPT_TAB2SPC];
   cbSmartTabs.Caption           := Lang[ID_EOPT_SMARTTABS];
   cbTrailingBlanks.Caption      := Lang[ID_EOPT_TRAILBLANKS];
-  cbSmartUnIndent.Caption       := Lang[ID_EOPT_SMARTUN];
   cbGroupUndo.Caption           := Lang[ID_EOPT_GROUPUNDO];
   cbDropFiles.Caption           := Lang[ID_EOPT_DROPFILES];
   cbSpecialChars.Caption        := Lang[ID_EOPT_SPECIALCHARS];
@@ -540,58 +544,7 @@ begin
   cbScrollHint.Caption          := Lang[ID_EOPT_SCROLLHINT];
   cbParserHints.Caption         := Lang[ID_EOPT_PARSERHINTS];
 
-  cbSyntaxHighlight.Caption     := Lang[ID_EOPT_USESYNTAX];
-  lblTabSize.Caption            := Lang[ID_EOPT_TABSIZE];
-
-  grpMargin.Caption             := Lang[ID_EOPT_MARGIN];
-  cbMarginVis.Caption           := Lang[ID_EOPT_VISIBLE];
-  lblMarginWidth.Caption        := Lang[ID_EOPT_WIDTH];
-  lblMarginColor.Caption        := Lang[ID_EOPT_COLOR];
-
-  grpCaret.Caption              := Lang[ID_EOPT_CARET];
-  lblInsertCaret.Caption        := Lang[ID_EOPT_INSCARET];
-  lblOverCaret.Caption          := Lang[ID_EOPT_OVERCARET];
-  cbMatch.Caption               := Lang[ID_EOPT_MATCH];
-  cbHighCurrLine.Caption        := Lang[ID_EOPT_HIGHLIGHTCURRLINE];
-
-  cboInsertCaret.Clear;
-  cboInsertCaret.Items.Append(Lang[ID_EOPT_CARET1]);
-  cboInsertCaret.Items.Append(Lang[ID_EOPT_CARET2]);
-  cboInsertCaret.Items.Append(Lang[ID_EOPT_CARET3]);
-  cboInsertCaret.Items.Append(Lang[ID_EOPT_CARET4]);
-
-  cboOverwriteCaret.Clear;
-  cboOverwriteCaret.Items.Append(Lang[ID_EOPT_CARET1]);
-  cboOverwriteCaret.Items.Append(Lang[ID_EOPT_CARET2]);
-  cboOverwriteCaret.Items.Append(Lang[ID_EOPT_CARET3]);
-  cboOverwriteCaret.Items.Append(Lang[ID_EOPT_CARET4]);
-
-  // Display Tab
-  grpEditorFont.Caption         := Lang[ID_EOPT_EDFONT];
-  lblEditorFont.Caption         := Lang[ID_EOPT_FONT];
-  lblEditorSize.Caption         := Lang[ID_EOPT_SIZE];
-  pnlEditorPreview.Caption      := Lang[ID_EOPT_EDITORPRE];
-
-  grpGutter.Caption             := Lang[ID_EOPT_GUTTER];
-  cbGutterVis.Caption           := Lang[ID_EOPT_VISIBLE];
-  cbGutterAuto.Caption          := Lang[ID_EOPT_GUTTERAUTO];
-  cbLineNum.Caption             := Lang[ID_EOPT_LINENUM];
-  cbLeadZero.Caption            := Lang[ID_EOPT_LEADZERO];
-  cbFirstZero.Caption           := Lang[ID_EOPT_FIRSTZERO];
-  cbGutterFnt.Caption           := Lang[ID_EOPT_GUTTERFNT];
-  lblGutterWidth.Caption        := Lang[ID_EOPT_WIDTH];
-  lblGutterFont.Caption         := Lang[ID_EOPT_FONT];
-  lblGutterFontSize.Caption     := Lang[ID_EOPT_SIZE];
-  pnlGutterPreview.Caption      := Lang[ID_EOPT_GUTTERPRE];
-
   // Syntax tab
-  lblElements.Caption           := Lang[ID_EOPT_ELEMENTS];
-  lblForeground.Caption         := Lang[ID_EOPT_FORE];
-  lblBackground.Caption         := Lang[ID_EOPT_BACK];
-  grpStyle.Caption              := Lang[ID_EOPT_STYLE];
-  cbBold.Caption                := Lang[ID_EOPT_BOLD];
-  cbItalic.Caption              := Lang[ID_EOPT_ITALIC];
-  cbUnderlined.Caption          := Lang[ID_EOPT_UNDERLINE];
   lblSpeed.Caption              := Lang[ID_EOPT_SPEED];
   btnSaveSyntax.Hint            := Lang[ID_EOPT_SAVESYNTAX];
 
@@ -663,12 +616,17 @@ end;
 procedure TEditorOptForm.GetOptions;
 var
   aName: string;
+{$IFDEF SCINTILLA}
+{$ELSE}
   attr: TSynHighlighterAttributes;
+{$ENDIF}
   a,
     idx: integer;
 begin
   with devEditor do
   begin
+{$IFDEF SCINTILLA}
+{$ELSE}
     cboEditorFont.ItemIndex := cboEditorFont.Items.IndexOf(Font.Name);
     cboEditorSize.Text := inttostr(Font.Size);
     FontSizeChange(cboEditorSize);
@@ -688,11 +646,10 @@ begin
     cbLeadZero.Checked := LeadZero;
     cbFirstZero.Checked := FirstLineZero;
 
-    cbAutoIndent.Checked := AutoIndent;
+{$ENDIF}
     cbInsertMode.Checked := InsertMode;
     cbTabtoSpaces.Checked := not TabToSpaces;
     cbSmartTabs.Checked := SmartTabs;
-    cbSmartUnindent.Checked := SmartUnindent;
     cbTrailingBlanks.Checked := not TrailBlank;
     cbGroupUndo.Checked := GroupUndo;
     cbEHomeKey.Checked := EHomeKey;
@@ -706,24 +663,17 @@ begin
     cbSpecialChars.Checked := SpecialChars;
     cbAppendNewline.Checked:= AppendNewline;
 
-    cbMarginVis.Checked := MarginVis;
-    edMarginWidth.Value := MarginSize;
-    cpMarginColor.SelectionColor := MarginColor;
-
-    seTabSize.Value := TabSize;
-    cbSyntaxHighlight.Checked := UseSyntax;
-    edSyntaxExt.Text := SyntaxExt;
-    cboInsertCaret.ItemIndex := InsertCaret;
-    cboOverwriteCaret.ItemIndex := OverwriteCaret;
     cbDropFiles.Checked := InsDropFiles;
 
-    cbParserHints.Checked := ParserHints;
-    cbMatch.Checked := Match;
-    cbDefaultintoprj.Checked := DefaulttoPrj;
+{$IFDEF SCINTILLA}
 
-    cbHighCurrLine.Checked := HighCurrLine;
-    cpHighColor.SelectionColor := HighColor;
-    cpHighColor.Enabled := cbHighCurrLine.Checked;
+    //Language Manager
+    cppEdit.LanguageManager.SelectedLanguage :='C++/C';
+
+{$ELSE}
+{$ENDIF}
+    cbParserHints.Checked := ParserHints;
+    cbDefaultintoprj.Checked := DefaulttoPrj;
 
     StrtoPoint(fGutColor, Syntax.Values[cGut]);
     StrtoPoint(fbpColor, Syntax.Values[cBP]);
@@ -734,6 +684,9 @@ begin
 
   CheckAssoc;
 
+
+{$IFDEF SCINTILLA}
+{$ELSE}
   for idx := 0 to pred(cpp.AttrCount) do
   begin
     aName := cpp.Attribute[idx].Name;
@@ -795,7 +748,7 @@ begin
   SetGutter;
   if FileExists(devDirs.Config + DEV_DEFAULTCODE_FILE) then
     seDefault.Lines.LoadFromFile(devDirs.Config + DEV_DEFAULTCODE_FILE);
-
+{$ENDIF}
   // CODE_COMPLETION //
   chkEnableCompletion.OnClick := nil;
   chkEnableCompletion.Checked := devCodeCompletion.Enabled;
@@ -837,12 +790,19 @@ end;
 
 procedure TEditorOptForm.btnOkClick(Sender: TObject);
 var
+{$IFDEF SCINTILLA}
+  InitialStylesFile: String;
+  Attrs: integer;
+{$ENDIF}
   s, aName: string;
   a, idx: integer;
   e: TEditor;
 begin
   with devEditor do
   begin
+{$IFDEF SCINTILLA}
+{$ELSE}
+
     AutoIndent := cbAutoIndent.Checked;
     InsertMode := cbInsertMode.Checked;
     TabToSpaces := not cbTabtoSpaces.Checked;
@@ -889,10 +849,23 @@ begin
     LineNumbers := cbLineNum.Checked;
     LeadZero := cbLeadZero.Checked;
     FirstLineZero := cbFirstZero.Checked;
+
+{$ENDIF}
     InsDropFiles := cbDropFiles.Checked;
     ParserHints := cbParserHints.Checked;
 
+{$IFDEF SCINTILLA}
     // load in attributes
+  InitialStylesFile := devDirs.Styles + 'devcpp' + STYLES_EXT;
+
+    if FileIsReadOnly(InitialStylesFile)then //we are going to delete the file so remove read only if there
+    begin
+      Attrs := FileGetAttr(InitialStylesFile);
+      FileSetAttr(InitialStylesFile, Attrs - faReadOnly);
+    end;
+    pLoadEdit.Save;
+//    pLoadEdit.SaveStyles(InitialStylesFile);
+{$ELSE}
     for idx := 0 to pred(cpp.AttrCount) do
     begin
       aName := cpp.Attribute[idx].Name;
@@ -904,6 +877,7 @@ begin
         Syntax.Values[aName] := AttrtoStr(cpp.Attribute[idx]);
     end;
     // additional attributes
+{$ENDIF}
 
     //gutter
     if fgutColor.x = clNone then
@@ -977,16 +951,28 @@ begin
   dmMain.LoadDataMod;
   if not devEditor.Match then begin
     e := MainForm.GetEditor;
+{$IFDEF SCINTILLA}
+{$ELSE}
     if assigned(e) then
       e.PaintMatchingBrackets(ttBefore);
+{$ENDIF}
   end;
 
   e := MainForm.GetEditor;
   if Assigned(e) then
+{$IFDEF SCINTILLA}
+{
+    if cbHighCurrLine.Checked then
+      e.Text.Caret.LineBackColor := cpHighColor.SelectionColor
+    else
+        e.Text.Caret.LineBackColor := clNone;
+}
+{$ELSE}
     if cbHighCurrLine.Checked then
       e.Text.ActiveLineColor := cpHighColor.SelectionColor
     else
       e.Text.ActiveLineColor := clNone;
+{$ENDIF}
 end;
 
 procedure TEditorOptForm.btnHelpClick(Sender: TObject);
@@ -1016,11 +1002,14 @@ begin
      if idx>= Items.Count then idx:= 0;
     ItemIndex := idx;
   end;
+{$IFDEF SCINTILLA}
+{$ELSE}
   if (Sender = cboGutterFont) or (Sender = cboEditorFont) then
     FontChange(Sender)
   else
    if (Sender =  cboEditorSize) or (Sender = cboGutterSize) then
     FontSizeChange(Sender);
+{$ENDIF}
 end;
 
 { ---------- Syntax Style Methods ---------- }
@@ -1036,10 +1025,15 @@ begin
     fgutcolor.y := clBlack;
 
   // update preview
+{$IFDEF SCINTILLA}
+{$ELSE}
   cppedit.Gutter.Color := fgutColor.x;
   cppedit.Gutter.Font.Color := fgutColor.y;
+{$ENDIF}
 end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 procedure TEditorOptForm.ElementListClick(Sender: TObject);
 var
   pt: TPoint;
@@ -1098,6 +1092,7 @@ begin
       fUpdate := TRUE;
     end;
 end;
+{$ENDIF}
 
 procedure TEditorOptForm.DefaultSelect(Sender: TObject);
 begin
@@ -1113,10 +1108,15 @@ end;
 
 procedure TEditorOptForm.StyleChange(Sender: TObject);
 var
+{$IFDEF SCINTILLA}
+{$ELSE}
   attr: TSynHighlighterAttributes;
-  pt: TPoint;
+{$ENDIF}
   s: string;
+  pt: TPoint;
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   if (not fUpdate) or (ElementList.ItemIndex < 0) then
     Exit;
 
@@ -1186,14 +1186,27 @@ begin
   cppEdit.InvalidateLine(cErrorLine);
   cppEdit.Highlighter := cpp;
   cboQuickColor.ItemIndex := -1;
+{$ENDIF}
 end;
 
+
+{$IFDEF SCINTILLA}
+procedure TEditorOptForm.cppEditStatusChange(Sender: TObject);
+{$ELSE}
 procedure TEditorOptForm.cppEditStatusChange(Sender: TObject;
   Changes: TSynStatusChanges);
+{$ENDIF}
 var
   Token: string;
+{$IFDEF SCINTILLA}
+{$ELSE}
   attr: TSynHighlighterAttributes;
+{$ENDIF}
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
+
+
   if assigned(cppEdit.Highlighter) and
     (Changes * [scAll, scCaretX, scCaretY] <> []) then
     case cppEdit.CaretY of
@@ -1228,6 +1241,7 @@ begin
         end;
       end;
     end;
+{$ENDIF}
 end;
 
 procedure TEditorOptForm.CppEditSpecialLineColors(Sender: TObject;
@@ -1278,26 +1292,50 @@ end;
 
 procedure TEditorOptForm.cpMarginColorDefaultSelect(Sender: TObject);
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   cpMarginColor.SelectionColor := clHighlightText;
+
+{$ENDIF}
 end;
 
 procedure TEditorOptForm.cbLineNumClick(Sender: TObject);
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
+
   cbLeadZero.Enabled := cbLineNum.Checked;
   cbFirstZero.Enabled := cbLineNum.Checked;
+{$ENDIF}
 end;
 
 procedure TEditorOptForm.cbSyntaxHighlightClick(Sender: TObject);
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   edSyntaxExt.Enabled := cbSyntaxHighlight.Checked;
+{$ENDIF}
 end;
 
 procedure TEditorOptForm.cboQuickColorSelect(Sender: TObject);
 var
+{$IFDEF SCINTILLA}
+  StylesFile: String;
+{$ELSE}
   offset: integer;
   i: integer;
   attr: TSynHighlighterAttributes;
+{$ENDIF}
 begin
+{$IFDEF SCINTILLA}
+  StylesFile := devDirs.Styles + cboQuickColor.Items[cboQuickColor.ItemIndex] + STYLES_EXT;
+  if not FileExists(StylesFile)        //has the user deleted the styles file?
+  then
+      MessageDlg('Style file does not exist...', mtError, [mbOk], 0)  //UpdateOutputStyles;
+  else
+    if not (pLoadEdit.LoadStyles(StylesFile)) then
+      MessageDlg('Cannot load style file...', mtError, [mbOk], 0);//UpdateOutputStyles;
+{$ELSE}
   if cboQuickColor.ItemIndex > 5 then begin
     // custom style; load from disk
     LoadSyntax(cboQuickColor.Items[cboQuickColor.ItemIndex]);
@@ -1329,6 +1367,7 @@ begin
 
   //update gutter
   setgutter;
+{$ENDIF}
 end;
 
 { ---------- Code insert's methods ---------- }
@@ -1423,10 +1462,16 @@ procedure TEditorOptForm.lvCodeinsSelectItem(Sender: TObject;
   Item: TListItem; Selected: Boolean);
 begin
   Codeins.ClearAll;
+{$IFDEF SCINTILLA}
+  CodeIns.Lines.Text := StrtoCodeIns(Item.SubItems[2]);
+{$ELSE}
   CodeIns.Text := StrtoCodeIns(Item.SubItems[2]);
+{$ENDIF}
   UpdateCIButtons;
 end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 procedure TEditorOptForm.CodeInsStatusChange(Sender: TObject;
   Changes: TSynStatusChanges);
 begin
@@ -1437,6 +1482,7 @@ begin
       CodeIns.Modified := false;
     end;
 end;
+{$ENDIF}
 
 procedure TEditorOptForm.LoadCodeIns;
 var
@@ -1505,15 +1551,31 @@ end;
 
 procedure TEditorOptForm.btnSaveSyntaxClick(Sender: TObject);
 var
+{$IFDEF SCINTILLA}
+  StylesFile: String;
+{$ELSE}
   idx: integer;
   fINI: TIniFile;
-  S: string;
   pt: TPoint;
+{$ENDIF}
+  S: string;
 begin
   s := 'New syntax';
   if not InputQuery(Lang[ID_EOPT_SAVESYNTAX], Lang[ID_EOPT_SAVESYNTAXQUESTION], s) or (s='') then
     Exit;
+                                      
+{$IFDEF SCINTILLA}
+  StylesFile := devDirs.Styles + s + STYLES_EXT;
+  if FileExists(StylesFile)
+  then  //is there a rogue devcpp.Styles file hanging around?
+  begin
+    if not (pLoadEdit.SaveStyles(StylesFile)) then
+      MessageDlg('Cannot Save style file...', mtError, [mbOk], 0);//UpdateOutputStyles;
+  end
+  else
+      MessageDlg('Style file does not exist...', mtError, [mbOk], 0);//UpdateOutputStyles;
 
+{$ELSE}
   fINI := TIniFile.Create(devDirs.Config + s + SYNTAX_EXT);
   try
     for idx := 0 to pred(Cpp.AttrCount) do
@@ -1535,6 +1597,7 @@ begin
   finally
     fINI.Free;
   end;
+{$ENDIF}
   if cboQuickColor.Items.IndexOf(S) = -1 then
     cboQuickColor.Items.Add(S);
   cboQuickColor.ItemIndex := cboQuickColor.Items.IndexOf(S);
@@ -1544,9 +1607,15 @@ procedure TEditorOptForm.LoadSyntax(Value: string);
 var
   idx: integer;
   fINI: TIniFile;
+{$IFDEF SCINTILLA}
+  filename : String;
+{$ELSE}
   Attr: TSynHighlighterAttributes;
+{$ENDIF}
   pt: TPoint;
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   fINI := TIniFile.Create(devDirs.Config + Value + SYNTAX_EXT);
   try
     for idx:= 0 to pred(Cpp.AttrCount) do begin
@@ -1578,6 +1647,7 @@ begin
     fINI.Free;
   end;
   ElementListClick(nil);
+{$ENDIF}
 end;
 
 procedure TEditorOptForm.FillSyntaxSets;
@@ -1761,6 +1831,8 @@ begin
   ClassBrowser1.Refresh;
 end;
 
+{$IFDEF SCINTILLA}
+{$ELSE}
 procedure TEditorOptForm.OnGutterClick(Sender: TObject;
   Button: TMouseButton; X, Y, Line: Integer; Mark: TSynEditMark);
 var
@@ -1773,15 +1845,29 @@ begin
      ElementListClick(Self);
    end;
 end;
+{$ENDIF}
+
+
 
 procedure TEditorOptForm.cbHighCurrLineClick(Sender: TObject);
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   cpHighColor.Enabled := cbHighCurrLine.Checked;
+{$ENDIF}
 end;
 
 procedure TEditorOptForm.seTabSizeChange(Sender: TObject);
 begin
+{$IFDEF SCINTILLA}
+{$ELSE}
   CppEdit.TabWidth := seTabSize.Value;
+{$ENDIF}
+end;
+
+procedure TEditorOptForm.btnScintillaOptionsClick(Sender: TObject);
+begin
+   ScintillaOptionsDlg1.Execute;
 end;
 
 end.

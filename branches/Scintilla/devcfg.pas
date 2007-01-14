@@ -40,7 +40,7 @@ interface
 
 uses
 {$IFDEF WIN32}
-Dialogs, Windows, Classes, Graphics, SynEdit, CFGData, CFGTypes, IniFiles, prjtypes, DbugIntf;
+Dialogs, Windows, Classes, Graphics, SciLexer, SciLexerMemo, SciLexerMod, ScintillaLanguageManager, SciSupport, SciKeyBindings, CFGData, CFGTypes, IniFiles, prjtypes, DbugIntf;
 {$ENDIF}
 {$IFDEF LINUX}
   QDialogs, Classes, QGraphics, QSynEdit, CFGData, CFGTypes, IniFiles, prjtypes;
@@ -389,6 +389,7 @@ type
   // global directories
   TdevDirs = class(TCFGOptions)
   private
+    fStyles: string; //Styles Directory
     fCompilerType:Integer;
     fThemes: string; // Themes Directory
     fIcons: string; // Icon Library
@@ -427,6 +428,7 @@ type
     property Templates: string read fTemp write fTemp;
     property Themes: string read fThemes write fThemes;
     property CompilerType: integer read fCompilerType write fCompilerType; 
+    property Styles: string read fStyles write fStyles;
   end;
 
   // editor options -- syntax, synedit options, etc...
@@ -480,16 +482,88 @@ type
     fHighCurrLine: boolean;     // Highlight current line
     fHighColor: TColor;         // Color of current line when highlighted
 
+// These are pure Scintilla
+    fIndentMarks: boolean; //whether we show the indentation marks in the editor
+    fMarkIndent:integer; //defines the character location of the indent mark (e.g. every 4th character)
+    fCodePage : CodePageType;
+    fReadOnly : boolean;
+    fWordWrap: TWordWrapType;
+    fIndentation : TIndentationOptions;
+//testmn    fCodeFolding: sciCodeFoldingFlags;
+    fCaretFore : TColor;
+    fCaretWidth: Integer;
+    fIndentWidth: Integer;
+    fEOLStyle: TEOLStyle;
+    fSaveClearsUndo : Boolean;
+//mn??    fLanguageManager: TSciLanguageManager;
+//mn??   fKeyCommands : TSciKeyCommandCollection;
+    fSelFore : TColor;
+    fSelBack : TColor;
+    fFoldLo : TColor;
+    fFoldHi : TColor;
+    fMarkerFore : TColor;
+    fMarkerBack : TColor;
+    fBMarkFore : TColor;
+    fBMarkBack : TColor;
+    fHotActiveFore : TColor;
+    fHotActiveBack : TColor;
+    fHotActiveUnderline : Boolean;
+    fHotActiveSingleLine : Boolean;
+    fColor : TColor;
+    fMarkerType : sciMarkerType;
+    fStaticHighlighter, //The highlighter to use if we detect highlighter with highlUseStatic is set.
+    fNoExtHighlighter : String; //The highlighter to use the file has'nt any extension, and we detect highlighter with highlFromExtension.
+    fHighlightIfNoExt : Boolean; // If true, the highlighter FNoExtHighlighter is used if there's no extension, and highlFromExtension is selected.
+//mn    fHighlighterMode : TUseHighlighter; //The highlightingdetermining mode to use.
+    fUseScripting,FSafeSubset : Boolean; //True if we want to use scripting.
+    fDefaultScriptingLang : String; //The default scripting language
+    fDefaultExt : String;
+    fAutoCloseBraces,FAutoCloseQuotes : Boolean;
+
+    fDisplayCommandLine, //True if we should display the commandline when running a external command.
+    fCommandAutoScroll, //True if we should scroll the output window when more data arrives
+    fCommandClearBeforeExecute : Boolean; //True if we should clear the output window before executing a command.
+//??mn    fCommandRunPriority : TTPriority; //The priority for commands.
+//??mn    fSaveBeforeRun : TSaveBeforeRun; //Save current file before running command mode.
+//mn-removed    fLinenumbersAutoExpand, //True if the linenumbersmargin should automatically be expanded when needed.
+    fStripTrailing : Boolean; //True if we should strip trailing spaces when saving.
+    fButtonScripts : TStrings;
+    fChanged : Boolean;
+    fUseTabs : Boolean;
+    fErrorSelectLine : Boolean;
+    fErrorMarkerFore,FErrorMarkerBack : TColor;
+    fOpenDialogInFileDirectory : Boolean;
+    fScriptPath : String;
+    fAbbrevPath : String;
+    fTemplatePath : String;
+{$IFDEF SCINTILLA}
+{$ELSE}
+    procedure SetFont(const Value: TFont);
+{$ENDIF}
+    procedure SetLanguageManager(const Value: TSciLanguageManager);
+{$IFDEF SCINTILLA}
+{$ELSE}
+    procedure SetKeyCommands(const Value: TSciKeyCommandCollection);
+{$ENDIF}
+
   public
     constructor Create;
     destructor Destroy; override;
     procedure SettoDefaults; override;
     procedure SaveSettings; override;
     procedure LoadSettings; override;
+{$IFDEF SCINTILLA}
+    procedure AssignEditor(Editor: TScintilla);
+{$ELSE}
     procedure AssignEditor(Editor: TSynEdit);
+{$ENDIF}
     property Name;
   published
     //Editor props
+{$IFDEF SCINTILLA}
+    property IndentMarks: boolean read fIndentMarks write fIndentMarks;
+    property MarkIndent: integer read fMarkIndent write fMarkIndent;
+{$ENDIF}
     property AutoIndent: boolean read fAutoIndent write fAutoIndent;
     property InsertMode: boolean read fInsertMode write fInsertMode;
     property TabToSpaces: boolean read fTabToSpaces write fTabtoSpaces;
@@ -513,8 +587,11 @@ type
     property MarginVis: boolean read fMarginVis write fMarginVis;
     property MarginSize: integer read fMarginSize write fMarginSize;
     property MarginColor: TColor read fMarginColor write fMarginColor;
+{$IFDEF SCINTILLA}
+{$ELSE}
     property InsertCaret: integer read fInsertCaret write fInsertCaret;
     property OverwriteCaret: integer read fOverwriteCaret write fOverwriteCaret;
+{$ENDIF}
     property InsDropFiles: boolean read fInsDropFiles write fInsDropFiles;
     property Font: TFont read fFont write fFont;
 
@@ -541,6 +618,87 @@ type
     property Match: boolean read fMatch write fMatch;
     property HighCurrLine: boolean read fHighCurrLine write fHighCurrLine;
     property HighColor: TColor read fHighColor write fHighColor;
+
+//mn??    procedure Assign(Source: TPersistent);override;
+//mn??    procedure GetOptions(Scintilla : TScintilla);
+//mn??    procedure SetOptions(Scintilla : TScintilla);
+  published
+//mn??    property LanguageManager : TSciLanguageManager read FLanguageManager write SetLanguageManager;
+    property ReadOnly : boolean read fReadOnly write fReadOnly default False;
+//mn    property BraceHilite : boolean read FBraceHilite write FBraceHilite default True;
+//mn    property Gutter : boolean read FGutter write FGutter default True;
+    property Indentation : TIndentationOptions read FIndentation write fIndentation;
+//mn    property LineNumbers : boolean read FLineNumbers write FLineNumbers default False;
+    property WordWrap : TWordWrapType read FWordWrap write FWordWrap;
+//testmn    property CodeFolding : sciCodeFoldingFlags read FCodeFolding write FCodeFolding default [foldFold,foldCompact,foldComment,foldPreprocessor,foldAtElse,foldHTML,foldHTMLPreProcessor];
+    property EOLStyle : TEOLStyle read FEOLStyle write FEOLStyle default eolCRLF;
+//mn    property TabWidth : integer read FTabWidth write FTabWidth  default 8;
+    property IndentWidth : integer read FIndentWidth write FIndentWidth default 0;
+//mn??    property KeyCommands : TSciKeyCommandCollection read FKeyCommands write SetKeyCommands;
+    property CaretFore : TColor read FCaretFore Write FCaretFore;
+//mn    property CaretBack : TColor read FCaretBack Write FCaretBack;
+//mn    property Font : TFont read FFont write SetFont;
+    property CaretWidth : Integer read FCaretWidth write FCaretWidth;
+//mn    property CaretLineVisible : Boolean read FCaretLineVisible write FCaretLineVisible;
+    property SelFore : TColor read FSelFore write FSelFore default clDefault;
+    property SelBack : TColor read FSelBack write FSelBack default clDefault;
+    property FoldLo : TColor read FFoldLo write FFoldLo default clDefault;
+    property FoldHi : TColor read FFoldHi write FFoldHi default clDefault;
+    property MarkerFore : TColor read FMarkerFore write FMarkerFore default clDefault;
+    property MarkerBack : TColor read FMarkerBack write FMarkerBack default clDefault;
+    property BMarkFore : TColor read FBMarkFore write FBMarkFore default clDefault;
+    property BMarkBack : TColor read FBMarkBack write FBMarkBack default clDefault;
+    property XSaveClearsUndo : Boolean read FSaveClearsUndo write FSaveClearsUndo default false;
+    property HotActiveFore : TColor read FHotActiveFore write FHotActiveFore default clDefault;
+    property HotActiveBack : TColor read FHotActiveBack write FHotActiveBack default clDefault;
+    property HotActiveUnderline : Boolean read FHotActiveUnderline write FHotActiveUnderline;
+    property HotActiveSingleLine : Boolean read FHotActiveSingleLine write FHotActiveSingleLine;
+//mn    property EdgeColor : TColor read FEdgeColor write FEdgeColor;
+//mn    property EdgeColumn : TColor read FEdgeColumn write FEdgeColumn;
+//mn    property EdgeType : sciEdgeType read FEdgeType write FEdgeType;
+    property MarkerType : sciMarkerType read FMarkerType write FMarkerType;
+    property Color : TColor read FColor write FColor;
+    property StripTrailingSpaces : Boolean read fStripTrailing write fStripTrailing;
+//mn    property LinenumbersAutoExpand : Boolean read FLinenumbersAutoExpand write FLinenumbersAutoExpand;
+
+    property DisplayCommandLine : Boolean read FDisplayCommandLine write FDisplayCommandLine;
+    property CommandAutoScroll : Boolean read FCommandAutoScroll write FCommandAutoScroll;
+    property CommandClearBeforeExecute : Boolean read FCommandClearBeforeExecute write FCommandClearBeforeExecute;
+//mn    property CommandRunPriority : TTPriority read FCommandRunPriority write FCommandRunPriority;
+//mn    property SaveBeforeRun : TSaveBeforeRun read FSaveBeforeRun write FSaveBeforeRun;
+    property CodePage : CodePageType read FCodePage write FCodePage;    
+
+{
+    property TagsAreRegex : Boolean read FTagsAreRegex write FTagsAreRegex;
+    property CtagsIsEnabled : Boolean read FCtagsEnabled write FCtagsEnabled;
+    property ShowFullCTagsIfPossible : Boolean read FShowFullCTagsIfPossible write FShowFullCTagsIfPossible;
+    property CTagFilter : String read FCTagFilter write FCTagFilter;
+}
+    property StaticHighlighter : String read FStaticHighlighter write FStaticHighlighter;
+    property NoExtHighlighter : String read FNoExtHighlighter write FNoExtHighlighter;
+    property HighlightIfNoExt : Boolean read FHighlightIfNoExt write FHighlightIfNoExt;
+{$IFDEF SCINTILLA}
+{$ELSE}
+    property HighlighterMode : TUseHighlighter read FHighlighterMode write FHighlighterMode;
+{$ENDIF}
+    property UseScripting : Boolean read FUseScripting write FUseScripting;
+    property SafeSubset : Boolean read FSafeSubset write FSafeSubset;
+    property DefaultScriptingLang : String read FDefaultScriptingLang write FDefaultScriptingLang;
+
+
+    property DefaultExt : String read FDefaultExt write FDefaultExt;
+    property AutoCloseBraces : Boolean read FAutoCloseBraces write FAutoCloseBraces;
+    property AutoCloseQuotes : Boolean read FAutoCloseQuotes write FAutoCloseQuotes;
+    property UseTabs : Boolean read FUseTabs write FUseTabs;
+
+    property ErrorMarkerFore : TColor read FErrorMarkerFore write FErrorMarkerFore;
+    property ErrorMarkerBack : TColor read FErrorMarkerBack write FErrorMarkerBack;
+    property ErrorSelectLine : Boolean read FErrorSelectLine write FErrorSelectLine;
+
+    property OpenDialogInFileDirectory : Boolean read FOpenDialogInFileDirectory write FOpenDialogInFileDirectory;
+    property AbbrevPath : String read FAbbrevPath write FAbbrevPath;
+    property TemplatePath : String read FTemplatePath write FTemplatePath;
+    property ScriptPath : String read FScriptPath write FScriptPath;
 
   end;
 
@@ -760,7 +918,7 @@ implementation
 uses
   main,
 {$IFDEF WIN32}
-  MultiLangSupport, SysUtils, Forms, Controls, version, utils, SynEditMiscClasses,
+  MultiLangSupport, SysUtils, Forms, Controls, version, utils,
   datamod, FileAssocs;
 {$ENDIF}
 {$IFDEF LINUX}
@@ -1652,6 +1810,7 @@ begin
   fLang := fExec + LANGUAGE_DIR;
   fTemp := fExec + TEMPLATE_DIR;
   fThemes := fExec + THEME_DIR;
+  fStyles := fExec + STYLES_DIR;
   fOldPath := GetEnvironmentVariable('PATH');
 end;
 
@@ -1664,6 +1823,7 @@ begin
   if fLang = '' then fLang:= fExec +LANGUAGE_DIR;
   if fTemp = '' then fTemp:= fExec +TEMPLATE_DIR;
   if fThemes = '' then  fThemes:= fExec +THEME_DIR;
+  if fStyles = '' then  fStyles:= fExec +STYLES_DIR;
   FixPaths;
 end;
 
@@ -1674,6 +1834,7 @@ begin
   fLang := ExtractRelativePath(fExec, fLang);
   fTemp := ExtractRelativePath(fExec, fTemp);
   fThemes := ExtractRelativePath(fExec, fThemes);
+  fStyles := ExtractRelativePath(fExec, fStyles);
   devData.SaveObject(Self);
   FixPaths;
 end;
@@ -1695,6 +1856,8 @@ begin
     fTemp := fExec + fTemp;
   if ExtractFileDrive(fThemes) = '' then
     fThemes := fExec + fThemes;
+  if ExtractFileDrive(fStyles) = '' then
+    fStyles := fExec + fStyles;
 end;
 
 { TDevEditor }
@@ -1743,8 +1906,13 @@ begin
   fGutterAuto := FALSE;
   GutterGradient := TRUE;
 
+{$IFDEF SCINTILLA}
+//testmn  fCaretWidth := 1;
+//testmn  fCaretFore := clBlack;
+{$ELSE}
   fInsertCaret := 0;
   fOverwriteCaret := 0;
+{$ENDIF}
 
   fMarginVis := TRUE;
   fMarginSize := 80;
@@ -1774,7 +1942,8 @@ begin
   fSmartTabs := FALSE;
   fSmartUnindent := TRUE;
   fTabtoSpaces := TRUE;
-
+  fIndentMarks := TRUE;
+  fMarkIndent := 8;
   fUseSyn := TRUE;
   //last ; is for files with no extension
   //which should be treated as cpp header files
@@ -1787,21 +1956,90 @@ begin
   fHighColor := $FFFFCC; //Light Turquoise
 
   fAppendNewline := True;
+
+//testmn  fCodeFolding := fCodeFolding + [foldFold]; // needs to be True;
+//testmn  fFoldLo:= clSilver;
+//testmn  fFoldHi:= clRed;
+//testmn  fMarkerType := sciMarkCircle;
+
+
+{  fStaticHighlighter:='cpp';
+  fHighlighterMode:=highlFromExtension;
+  fNoExtHighlighter:='null';
+}
 end;
 
-procedure TdevEditor.AssignEditor(Editor: TSynEdit);
+//needed for the scintilla component
+procedure TdevEditor.SetLanguageManager(const Value: TSciLanguageManager);
+begin
+ //mn??	fLanguageManager.Assign(Value);
+end;
+
+procedure TdevEditor.AssignEditor(Editor: TScintilla);
 var
   pt: TPoint;
   x: integer;
 begin
+{$IFDEF SCINTILLA}
+  if (not assigned(Editor)) or (not (Editor is TScintilla)) then exit;
+{$ELSE}
   if (not assigned(Editor)) or (not (Editor is TCustomSynEdit)) then exit;
+{$ENDIF}
   with Editor do
   begin
+{$IFDEF SCINTILLA}
+{$ELSE}
     BeginUpdate;
+{$ENDIF}
     try
       TabWidth := fTabSize;
 
       Font.Assign(fFont);
+{$IFDEF SCINTILLA}
+//testmn
+{    if fShowGutter then
+    begin
+      // do we need to show line numbers?
+      if fLineNumbers <> (Gutter0.Width <> 0) then
+      begin
+        if fLineNumbers then
+        begin
+          Gutter0.Width := fGutterSize;
+          Gutter0.MarginType := gutLineNumber;
+        end
+        else
+          Gutter0.Width := 0;
+      end;
+
+      Gutter1.Width := 16; // Symbols for debugging and such
+
+      if foldFold in CodeFolding then
+      begin
+        Gutter2.Width := 16;
+        Gutter2.MarginType := gutSymbol;
+      end
+      else
+        Gutter2.Width := 0;
+        
+      Gutter3.Width := 0;    //Not used yet
+      Gutter4.Width := 0;    //Not used yet
+
+    end
+    else
+    begin
+      Gutter0.Width := 0;
+      Gutter1.Width := 0;
+      Gutter2.Width := 0;
+      Gutter3.Width := 0;
+      Gutter4.Width := 0;
+    end;
+ }
+{mn need to look at this
+    if fGutterAuto and (Gutter0.Width <> 0) then
+        AutoAdjustLineNumberWidth;
+}
+{$ELSE}
+
       with Gutter do
       begin
         UseFontStyle := fCustomGutter;
@@ -1821,24 +2059,73 @@ begin
           Font.Color := pt.y;
         end;
       end;
+{$ENDIF}
 
       if fMarginVis then
+{$IFDEF SCINTILLA}
+      begin
+        EdgeColumn := fMarginSize;
+        EdgeMode :=  sciEdgeLine; //we could also make this a change in background colour
+      end
+      else
+      begin
+        EdgeColumn := 0;
+        EdgeMode :=  sciEdgeNone; //we could also make this a change in background colour
+      end;
+      EdgeColor := fMarginColor;
+{$ELSE}
         RightEdge := fMarginSize
       else
         RightEdge := 0;
 
       RightEdgeColor := fMarginColor;
+{$ENDIF}
 
+//take care of the caret shape in Synedit, With Scintilla we have colours and size
+{$IFDEF SCINTILLA}
+      Caret.Width := fCaretWidth;
+      Caret.ForeColor := fCaretFore;
+      Caret.LineBackColor := fHighColor;
+{$ELSE}
       InsertCaret := TSynEditCaretType(fInsertCaret);
       OverwriteCaret := TSynEditCaretType(fOverwriteCaret);
+{$ENDIF}
 
+
+{$IFDEF SCINTILLA}
+{$ELSE}
       ScrollHintFormat := shfTopToBottom;
+{$ENDIF}
 
       if HighCurrLine then
+{$IFDEF SCINTILLA}
+      begin
+//        Caret.LineBackColor := HighColor;
+        Caret.LineVisible := True;
+      end
+      else
+        Caret.LineBackColor := clNone;
+//mn???        Caret.LineVisible := False;
+{$ELSE}
         ActiveLineColor := HighColor
       else
         ActiveLineColor := clNone;
+{$ENDIF}
 
+{$IFDEF SCINTILLA}
+        Indentation := []; //Needed for Scintilla Component
+      if fAutoIndent then
+        Indentation := Indentation + [KeepIndent];
+      if fSmartTabs then
+        Indentation := Indentation + [TabIndents];
+      if fSmartUnindent then
+        Indentation := Indentation + [BackSpaceUnindents];
+      if fIndentMarks then
+      begin
+        Indentation := Indentation + [IndentationGuides];
+        IndentWidth := MarkIndent
+      end;
+{$ELSE}
       Options := [
         eoAltSetsColumnMode, eoDisableScrollArrows,
         eoDragDropEditing, eoDropFiles, eoKeepCaretX,
@@ -1874,9 +2161,26 @@ begin
         Options := Options + [eoTrimTrailingSpaces];
       if fSpecialChar then
         Options := Options + [eoShowSpecialChars];
+{$ENDIF}
+        BraceHilite := fMatch;
+
+//testmn        Folding := fCodeFolding;
+//testmn        Colors.FoldLo := fFoldLo;
+//testmn        Colors.FoldHi := fFoldHi;
+//        SetLexer(SCLEX_CPP);
+        // These need implementing in the Editor Form
+//testmn        FoldMarkers.MarkerType := sciMarkerType(fMarkerType);//markerTypeCB.ItemIndex);//fMarkerType;
+
+//mn dunno if this is right        LanguageManager.Assign(fLanguageManager);
+  LanguageManager.Assign(MainForm.HiddenSci.LanguageManager);
+
+//mn    FoldDrawFlags := [sciBelowIfNotExpanded];
 
     finally
+{$IFDEF SCINTILLA}
+{$ELSE}
       EndUpdate;
+{$ENDIF}
     end;
   end;
 end;
