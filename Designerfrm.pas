@@ -48,10 +48,7 @@ type
     procedure CreateInitVars;
     procedure FormCreate(Sender: TObject);
     procedure FormResize(Sender: TObject);
-    procedure NewFormResize(Sender: TObject);
-    procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure FormDestroy(Sender: TObject);
-    procedure FormKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
     procedure SetFrameProperties();
     procedure SetDialogProperties();
 
@@ -308,8 +305,7 @@ begin
     AddClassNameGUIItemsCreation(synEdit, strClassName,intBlockStart, intBlockEnd,
     'wxXmlResource::Get()->InitAllHandlers();' + #13 +'wxXmlResource::Get()->Load("' + strClassName + '.xml");');
    end;
-
-  end;
+ end;
 
   // RHS Variable
   if GetBlockStartAndEndPos(synEdit, strClassName, btRHSVariables, intBlockStart, intBlockEnd) then
@@ -480,9 +476,8 @@ begin
           tempstring.Free;
         end
       end; // for
-{$IFDEF XRC_ONLY_BUILD}
-  synEdit.Lines.Add('</object>');//NUKLEAR ZELPH
-{$ENDIF}
+
+  synEdit.Lines.Add('</object>');
   synEdit.Lines.Add('</resource>');
 
 end;
@@ -617,7 +612,6 @@ begin
   AddClassNameGUIItemsCreation(synEdit, strClassName,intBlockStart, intBlockEnd,
     '#include <wx/xrc/xmlres.h>' + #13 + '#include <wx/xrc/xh_all.h>');
  end;
-
     strLst.Destroy;
   end;
 
@@ -713,7 +707,7 @@ begin
   end;
 end;
 
-procedure TfrmNewForm.SetDialogProperties();
+procedure TfrmNewForm.SetDialogProperties;
 begin
   //Free the old property list
   if Assigned(wx_PropertyList) then
@@ -1181,9 +1175,8 @@ end;
 
 procedure TfrmNewForm.FormMove(var Msg: TWMMove);
 begin
+  MainForm.ELDesigner1Modified(MainForm.ELDesigner1);
   inherited;
-  //if MainForm.ELDesigner1.Active then
-  //  SetModifiedFlag;
 end;
 
 function TfrmNewForm.GenerateControlIDs: string;
@@ -1579,7 +1572,8 @@ end;
 procedure TfrmNewForm.CreateInitVars;
 begin
   OldCreateOrder    := True;
-  Caption           := 'New Project';
+  AutoScroll        := False;
+  Caption           := 'New Dialog';
   Wx_IDName         := 'ID_DIALOG1';
   Wx_IDValue        := 1000;
   Wx_Class          := 'wxDialog';
@@ -1588,10 +1582,8 @@ begin
   Wx_Hidden         := False;
   Wx_SizeToContents := True;
   Wx_Icon           := TPicture.Create;
-  self.AutoScroll:=false;
   
-  SetDialogProperties();
-
+  SetDialogProperties;
   FWx_EventList := TStringList.Create;
   FWx_EventList.add('  EVT_CLOSE: OnClose');
   FWx_EventList.add('  EVT_CHAR: OnChar');
@@ -1669,32 +1661,11 @@ begin
   MainForm.ELDesigner1Modified(MainForm.ELDesigner1);
 end;
 
-procedure TfrmNewForm.NewFormResize(Sender: TObject);
-begin
-{$IFDEF WX_BUILD}
-  MainForm.ELDesigner1Modified(MainForm.ELDesigner1);
-{$ENDIF}
-end;
-
-procedure TfrmNewForm.FormCloseQuery(Sender: TObject; var CanClose: boolean);
-begin
-  //    if frmMainForm.ELDesigner1.Active then
-  //    begin
-  //        CanClose := false;
-  //        self.visible := false;
-  //    end;
-end;
-
 procedure TfrmNewForm.FormDestroy(Sender: TObject);
 begin
-  wx_PropertyList.Destroy;
+  Wx_PropertyList.Destroy;
   FWx_EventList.Destroy;
-end;
-
-procedure TfrmNewForm.FormKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
-begin
-  // Tony Reina 24 July 2005 - I don't think this procedure ever gets called.
-  //MainForm.ELDesigner1KeyDown(Sender,Key, Shift);
+  FWx_Icon.Destroy;
 end;
 
 function TfrmNewForm.GetGenericColor(strVariableName:String): string;
