@@ -483,8 +483,8 @@ begin
   fText.OnMouseMove := EditorMouseMove;
 
   // monitor this file for outside changes
-  MainForm.devFileMonitor1.Files.Add(fFileName);
-  MainForm.devFileMonitor1.Refresh(True);
+  MainForm.devFileMonitor.Files.Add(fFileName);
+  MainForm.devFileMonitor.Refresh(False);
 
   // set any breakpoints that should be set in this file
   SetBreakPointsOnOpen;
@@ -500,11 +500,11 @@ begin
     MainForm.SelectedComponent := nil;
 {$ENDIF}
 
-  idx := MainForm.devFileMonitor1.Files.IndexOf(fFileName);
+  idx := MainForm.devFileMonitor.Files.IndexOf(fFileName);
   if idx <> -1 then begin
     // do not monitor this file for outside changes anymore
-    MainForm.devFileMonitor1.Files.Delete(idx);
-    MainForm.devFileMonitor1.Refresh(False);
+    MainForm.devFileMonitor.Files.Delete(idx);
+    MainForm.devFileMonitor.Refresh(False);
   end;
 
   if Assigned(fDebugHintTimer) then
@@ -654,6 +654,8 @@ end;
         
 procedure TEditor.Close;
 begin
+  if Assigned(fText) then
+  begin
   fText.OnStatusChange := nil;
   fText.OnSpecialLineColors := nil;
   fText.OnGutterClick := nil;
@@ -663,6 +665,7 @@ begin
   fText.OnMouseDown := nil;
   fText.OnPaintTransient := nil;
   fText.OnKeyPress := nil;
+  end;
 
 {$IFDEF WX_BUILD}
   //Disable all the form designer features since we no longer exist
