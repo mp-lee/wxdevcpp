@@ -167,7 +167,11 @@ begin
 end;
 
 destructor TWxCustomMenuItem.Destroy;
+var
+  I: Integer;
 begin
+  for I := 0 to FItems.Count - 1 do
+    TWxCustomMenuItem(FItems[I]).Destroy;
   FItems.Destroy;
   FWX_BITMAP.Destroy;
   inherited Destroy;
