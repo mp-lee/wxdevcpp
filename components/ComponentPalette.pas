@@ -36,10 +36,12 @@ type
     function GetSelectedComponent: string;
 
     //Control custom draw etc
-    procedure OnComponentListDraw(Sender: TCustomTreeView; Node: TTreeNode; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure OnStartSearching(Sender: TObject);
     procedure OnSearching(Sender: TObject);
     procedure OnSearched(Sender: TObject);
+
+    procedure tvCollapsed(Sender: TObject; Node: TTreeNode);
+    procedure tvExpanded(Sender: TObject; Node: TTreeNode);
   protected
     //Contorl handles
     SearchBox: TEdit;
@@ -49,6 +51,7 @@ type
     //Special variables
     SearchNode: TTreeNode;
     SearchImage: Integer;
+    FolderImage: Integer;
   public
     constructor Create(Panel: TComponent); override;
     destructor Destroy; override;
@@ -124,13 +127,13 @@ begin
     //Tree-view styles
     RowSelect := True;
     ShowLines := False;
-    AutoExpand := True;
-    ShowButtons := True;
+    ShowButtons := False;
     HideSelection := False;
     Images := ComponentImages;
 
     //Events
-    OnCustomDrawItem := OnComponentListDraw;
+    OnCollapsed := tvCollapsed;
+    OnExpanded := tvExpanded;
   end;
 
   //Populate the tree-view
@@ -166,7 +169,7 @@ end;
 procedure TComponentPalette.PopulateComponents;
 var
   ComponentsList, CurrentGroup: TStringList;
-  BitmapIndex, FolderIndex: Integer;
+  BitmapIndex: Integer;
   CurrentComponent: String;
   ComponentBitmap: TBitmap;
   ParentNode: TTreeNode;
@@ -195,7 +198,9 @@ begin
 
     //Then load the folder icon
     ComponentBitmap.Handle := LoadBitmap(hInstance, PChar('FOLDER'));
-    FolderIndex := ComponentImages.AddMasked(ComponentBitmap, clDefault);
+    FolderImage := ComponentImages.AddMasked(ComponentBitmap, clDefault);
+    ComponentBitmap.Handle := LoadBitmap(hInstance, PChar('SELFOLDER'));
+    ComponentImages.AddMasked(ComponentBitmap, clDefault);
 
     //Sizers
     ComponentsList.Add('Sizers;TwxBoxSizer;TwxStaticBoxSizer;TwxGridSizer;TwxFlexGridSizer;' +
@@ -206,7 +211,9 @@ begin
                        'TwxRadioButton;TwxComboBox;TwxListBox;TwxListCtrl;TwxTreeCtrl;' +
                        'TwxGauge;TwxScrollBar;TwxSpinButton;TwxStaticBox;TwxRadioBox;' +
                        'TwxDatePickerCtrl;TwxSlider;TwxStaticLine;TwxStaticBitmap;' +
-                       'TwxStatusBar;TwxCheckListBox;TwxSpinCtrl');
+                       'TwxStatusBar;TwxCheckListBox;TwxSpinCtrl;TwxRichTextCtrl;' +
+                       'TwxCalendarCtrl;TwxOwnerDrawnComboBox;TwxHyperLinkCtrl;' +
+                       'TwxDialUpManager;TwxMediaCtrl');
     //Container controls
     ComponentsList.Add('Containers;TwxPanel;TwxNotebook;TwxNotebookPage;TwxGrid;' +
                        'TwxScrolledWindow;TwxHtmlWindow;TwxSplitterWindow');
@@ -218,15 +225,12 @@ begin
     //Dialogs
     ComponentsList.Add('Dialogs;TwxOpenFileDialog;TwxSaveFileDialog;TwxProgressDialog;' +
                        'TwxColourDialog;TwxDirDialog;TwxFindReplaceDialog;TwxFontDialog;' +
-                       'TwxPageSetupDialog;TwxPrintDialog;TwxMessageDialog');
+                       'TwxPageSetupDialog;TwxPrintDialog;TwxMessageDialog;TwxTextEntryDialog;' +
+                       'TwxPasswordEntryDialog;TwxSingleChoiceDialog;TwxMultiChoiceDialog');
     //Non-visual components
-    ComponentsList.Add('Components;TwxTimer');
+    ComponentsList.Add('Components;TwxTimer;TwxHtmlEasyPrinting');
     //Unofficial components
-    ComponentsList.Add('"Unofficial Controls";TwxTreeListCtrl;TwxRichTextCtrl;' +
-                       'TwxStyledTextCtrl;TwxCalendarCtrl;TwxOwnerDrawnComboBox;' +
-                       'TwxTextEntryDialog;TwxPasswordEntryDialog;TwxSingleChoiceDialog;' +
-                       'TwxMultiChoiceDialog;TwxHyperLinkCtrl;TwxDialUpManager;' +
-                       'TwxHtmlEasyPrinting;TwxMediaCtrl');
+    ComponentsList.Add('"Unofficial Controls";TwxTreeListCtrl;TwxStyledTextCtrl');
 
     RegisterClasses([TWxStdDialogButtonSizer, TWxBoxSizer, TWxStaticBoxSizer, TWxGridSizer,
                      TWxFlexGridSizer, TWxStaticText, TWxEdit, TWxButton, TWxBitmapButton,
@@ -260,8 +264,8 @@ begin
 
         //Add the parent node                      
         ParentNode := ComponentList.Items.AddChild(nil, CurrentGroup[0]);
-        ParentNode.SelectedIndex := FolderIndex;
-        ParentNode.ImageIndex := FolderIndex;
+        ParentNode.SelectedIndex := FolderImage;
+        ParentNode.ImageIndex := FolderImage;
 
         //And then add the child nodes
         for J := 1 to CurrentGroup.Count - 1 do
@@ -303,6 +307,10 @@ begin
     ComponentBitmap.Destroy;
     ComponentsList.Destroy;
   end;
+
+  //Then sort the entries
+  for I := 0 to ComponentList.Items.Count - 1 do
+    ComponentList.Items[I].AlphaSort;
 end;
 
 function TComponentPalette.GetSelectedComponent: string;
@@ -318,10 +326,6 @@ end;
 procedure TComponentPalette.UnselectComponents;
 begin
   ComponentList.Selected := ComponentList.Items.GetFirstNode;
-end;
-
-procedure TComponentPalette.OnComponentListDraw(Sender: TCustomTreeView; Node: TTreeNode; State: TCustomDrawState; var DefaultDraw: Boolean);
-begin
 end;
 
 procedure TComponentPalette.OnStartSearching(Sender: TObject);
@@ -410,6 +414,24 @@ begin
       SearchNode.Delete;
       SearchNode := nil;
     end;
+  end;
+end;
+
+procedure TComponentPalette.tvCollapsed(Sender: TObject; Node: TTreeNode);
+begin
+  if Node.ImageIndex = FolderImage + 1 then
+  begin
+    Node.ImageIndex := FolderImage;
+    Node.SelectedIndex := FolderImage;
+  end;
+end;
+
+procedure TComponentPalette.tvExpanded(Sender: TObject; Node: TTreeNode);
+begin
+  if Node.ImageIndex = FolderImage then
+  begin
+    Node.ImageIndex := FolderImage + 1;
+    Node.SelectedIndex := FolderImage + 1;
   end;
 end;
 

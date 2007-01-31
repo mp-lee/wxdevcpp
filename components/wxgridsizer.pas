@@ -51,7 +51,7 @@ type
     FInvisibleBGColorString: string;
     FInvisibleFGColorString: string;
     FWx_Comments: TStrings;
-    FWx_Alignment: TWxSizerAlignment;
+    FWx_Alignment: TWxSizerAlignmentSet;
     FWx_BorderAlignment: TWxBorderAlignment;
 
     { Private methods of TWxGridSizer }
@@ -66,10 +66,6 @@ type
     { Protected fields of TWxGridSizer }
 
     { Protected methods of TWxGridSizer }
-    procedure Click; override;
-    procedure KeyPress(var Key: char); override;
-    procedure Resize; override;
-    procedure Loaded; override;
 
   public
     { Public fields and properties of TWxGridSizer }
@@ -143,7 +139,7 @@ type
 
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
     property Wx_BorderAlignment: TWxBorderAlignment Read GetBorderAlignment Write SetBorderAlignment default [wxALL];
-    property Wx_Alignment: TWxSizerAlignment Read FWx_Alignment Write FWx_Alignment default wxALIGN_CENTER;
+    property Wx_Alignment: TWxSizerAlignmentSet Read FWx_Alignment Write FWx_Alignment default [wxALIGN_CENTER];
     property Wx_StretchFactor: integer Read GetStretchFactor Write SetStretchFactor default 0;
 
     property InvisibleBGColorString: string Read FInvisibleBGColorString Write FInvisibleBGColorString;
@@ -174,8 +170,8 @@ begin
   Wx_Border := 5;
   FWx_Class := 'wxGridSizer';
   FWx_EventList := TStringList.Create;
-  FWx_Alignment  := wxALIGN_CENTER;
   FWx_BorderAlignment := [wxAll];
+  FWx_Alignment  := [wxALIGN_CENTER];
   FWx_IDValue := -1;
   FWx_StretchFactor := 0;
   FWx_Comments := TStringList.Create;
@@ -196,55 +192,6 @@ begin
      { Use Assign method because TStringList is an object type
        and FWx_EventList has been created. }
   FWx_EventList.Assign(Value);
-
-     { If changing this property affects the appearance of
-       the component, call Invalidate here so the image will be
-       updated. }
-  { Invalidate; }
-end;
-
-{ Override OnClick handler from TWxSizerPanel,IWxComponentInterface }
-procedure TWxGridSizer.Click;
-begin
-     { Code to execute before activating click
-       behavior of component's parent class }
-
-  { Activate click behavior of parent }
-  inherited Click;
-
-     { Code to execute after click behavior
-       of parent }
-
-end;
-
-{ Override OnKeyPress handler from TWxSizerPanel,IWxComponentInterface }
-procedure TWxGridSizer.KeyPress(var Key: char);
-const
-  TabKey   = char(VK_TAB);
-  EnterKey = char(VK_RETURN);
-begin
-     { Key contains the character produced by the keypress.
-       It can be tested or assigned a new value before the
-       call to the inherited KeyPress method.  Setting Key
-       to #0 before call to the inherited KeyPress method
-       terminates any further processing of the character. }
-
-  { Activate KeyPress behavior of parent }
-  inherited KeyPress(Key);
-
-  { Code to execute after KeyPress behavior of parent }
-
-end;
-
-{ Override OnResize handler from TWxSizerPanel,IWxComponentInterface }
-procedure TWxGridSizer.Resize;
-begin
-  { Parent's Resize method }
-  inherited Resize;
-
-     { Code to perform other actions (e.g., resizing any sub-
-       components) needed in response to change in size of this
-       component }
 end;
 
 constructor TWxGridSizer.Create(AOwner: TComponent);
@@ -268,6 +215,14 @@ begin
 
   FWx_PropertyList.add('Wx_StretchFactor:Stretch Factor');
   FWx_PropertyList.add('Wx_Alignment:Alignment');
+  FWx_PropertyList.Add('wxALIGN_LEFT:wxALIGN_LEFT');
+  FWx_PropertyList.Add('wxALIGN_RIGHT:wxALIGN_RIGHT');
+  FWx_PropertyList.Add('wxALIGN_TOP:wxALIGN_TOP');
+  FWx_PropertyList.Add('wxALIGN_BOTTOM:wxALIGN_BOTTOM');
+  FWx_PropertyList.Add('wxALIGN_CENTER:wxALIGN_CENTER');
+  FWx_PropertyList.Add('wxALIGN_CENTER_HORIZONTAL:wxALIGN_CENTER_HORIZONTAL');
+  FWx_PropertyList.Add('wxALIGN_CENTER_VERTICAL:wxALIGN_CENTER_VERTICAL');
+  FWx_PropertyList.Add('wxEXPAND:wxEXPAND');
   FWx_PropertyList.add('Wx_Border: Border');
   FWx_PropertyList.add('Wx_BorderAlignment:Borders');
   FWx_PropertyList.add('wxALL:wxALL');
@@ -276,13 +231,7 @@ begin
   FWx_PropertyList.add('wxRIGHT:wxRIGHT');
   FWx_PropertyList.add('wxBOTTOM:wxBOTTOM');
 
-  FWx_PropertyList.add('Top:Top');
   FWx_PropertyList.add('Name:Name');
-  FWx_PropertyList.add('Left:Left');
-  FWx_PropertyList.add('Width:Width');
-  FWx_PropertyList.add('Height:Height');
-  
-  FWx_PropertyList.add('Orientation:Orientation');
   FWx_PropertyList.add('Rows:Rows');
   FWx_PropertyList.add('Columns:Columns');
   FWx_PropertyList.add('RowSpacing:Row Spacing');
@@ -309,15 +258,11 @@ end;
 function TWxGridSizer.GenerateEnumControlIDs: string;
 begin
   Result := '';
-  //     if (Wx_IDValue > 0) and (trim(Wx_IDName) <> '') then
-  //        Result:=Format('%s = %d , ',[Wx_IDName,Wx_IDValue]);
 end;
 
 function TWxGridSizer.GenerateControlIDs: string;
 begin
   Result := '';
-  //     if (Wx_IDValue > 0) and (trim(Wx_IDName) <> '') then
-  //        Result:=Format('#define %s %d ',[Wx_IDName,Wx_IDValue]);
 end;
 
 function TWxGridSizer.GenerateEventTableEntries(CurrClassName: string): string;
@@ -506,15 +451,6 @@ begin
   if trim(wx_Class) = '' then
     wx_Class := 'wxGridSizer';
   Result := wx_Class;
-end;
-
-procedure TWxGridSizer.Loaded;
-begin
-  inherited Loaded;
-
-     { Perform any component setup that depends on the property
-       values having been set }
-
 end;
 
 procedure TWxGridSizer.SaveControlOrientation(ControlOrientation: TWxControlOrientation);

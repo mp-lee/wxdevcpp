@@ -95,6 +95,7 @@ type
   TWxStdDialogButtons = set of (wxID_OK, wxID_YES, wxID_NO, wxID_CANCEL, wxID_HELP);
   TWxSizerAlignment = (wxALIGN_TOP, wxALIGN_LEFT, wxALIGN_RIGHT, wxALIGN_BOTTOM,
     wxALIGN_CENTER, wxALIGN_CENTER_VERTICAL, wxALIGN_CENTER_HORIZONTAL, wxEXPAND);
+  TWxSizerAlignmentSet = set of TWxSizerAlignment;
   TWxBorderAlignment = set of(wxTOP, wxLEFT, wxRIGHT, wxBOTTOM, wxALL);
   TWxControlOrientation = (wxControlVertical, wxControlHorizontal, wxControlNone);
   TWxGridSelection = (wxGridSelectCells, wxGridSelectColumns, wxGridSelectRows);
@@ -313,9 +314,6 @@ type
   TWxHyperLnkStyleItem = (wxHL_ALIGN_LEFT, wxHL_ALIGN_RIGHT, wxHL_ALIGN_CENTRE, wxHL_CONTEXTMENU, wxHL_DEFAULT_STYLE);
   TWxHyperLnkStyleSet  = set of TWxHyperLnkStyleItem;
 
-  //TWxslnStyleSet = Set of TWxslnStyleItem ;
-  //TWxsbtmpStyleSet = Set of TWxsbtmpStyleItem ;
-  //TWxsbxStyleSet = Set of TWxsbxStyleItem ;
   TWxcalctrlStyleItem = (wxCAL_SUNDAY_FIRST, wxCAL_MONDAY_FIRST, wxCAL_SHOW_HOLIDAYS,
     wxCAL_NO_YEAR_CHANGE, wxCAL_NO_MONTH_CHANGE,
     wxCAL_SHOW_SURROUNDING_WEEKS,
@@ -425,22 +423,17 @@ type
     property strColorValue: string Read FstrColorValue Write FstrColorValue;
   end;
 
-{$Warnings Off}
   TWxValidatorString = class(TComponent)
   public
     FstrValidatorValue: string;
     FValidatorType: Integer;
     FFilterType: Integer;
     FValidatorVarName:String;
-    constructor Create;
+    constructor Create(Owner: TComponent); override;
 
   published
     property strValidatorValue: string Read FstrValidatorValue Write FstrValidatorValue;
-    //property ValidatorType: Integer Read FValidatorType Write FValidatorType ;
-    //property FilterType: Integer Read FFilterType Write FFilterType ;
-    //property strValidatorVarName: string Read FValidatorVarName Write FValidatorVarName;
   end;
-{$Warnings On}
 
   // Added 11 May 2005 - Tony
   TWxFileNameString = class
@@ -596,16 +589,10 @@ function GetHyperLnkStyleString(stdStyle: TWxHyperLnkStyleSet): string;
 
 
 function GetPickCalStyleString(stdStyle: TWxPickCalStyleSet): string;
- //function GetStaticBoxStyleString(stdStyle:TWxsbxStyleSet):String;
- //function GetStaticLineStyleString(stdStyle:TWxslnStyleSet):String;
- //function GetStaticBitmapStyleString(stdStyle:TWxsbtmpStyleSet):String;
 function GetCalendarCtrlStyleString(stdStyle: TWxcalctrlStyleSet): string;
- //function GetCheckListBoxStyleString(stdStyle:TWxcklbxStyleSet):String;
- //function GetChoiceStyleString(stdStyle:TWxchStyleSet):String;
 function GetNotebookStyleString(stdStyle: TWxnbxStyleSet): string;
 function GetRadioBoxStyleString(stdStyle: TWxrbxStyleSet): string;
 function GetStatusBarStyleString(stdStyle: TWxsbrStyleSet): string;
-//function GetToggleButtonStyleString(stdStyle:TWxtbtnStyleSet):String;
 function GetToolBarStyleString(stdStyle: TWxtbrStyleSet): string;
 function GetScrolledWindowStyleString(stdStyle: TWxScrWinStyleSet): string;
 function GetHtmlWindowStyleString(stdStyle: TWxHtmlWinStyleSet): string;
@@ -632,26 +619,24 @@ function GetGaugeSpecificStyle(stdstyle: TWxStdStyleSet;
   gagstyle: TWxgagStyleSet): string;
 function GetScrollbarSpecificStyle(stdstyle: TWxStdStyleSet;
   scbrstyle: TWxsbrStyleSet): string;
-function GetHyperLnkSpecificStyle(stdstyle: TWxStdStyleSet;edtstyle: TWxHyperLnkStyleSet): string;  
-function GetSpinButtonSpecificStyle(stdstyle: TWxStdStyleSet; sbtnstyle: TWxsbtnStyleSet; edtstyle: TWxEdtGeneralStyleSet): string;
-
+function GetHyperLnkSpecificStyle(stdstyle: TWxStdStyleSet;
+  edtstyle: TWxHyperLnkStyleSet): string;  
+function GetSpinButtonSpecificStyle(stdstyle: TWxStdStyleSet;
+  sbtnstyle: TWxsbtnStyleSet;
+  edtstyle: TWxEdtGeneralStyleSet): string;
 function GetSliderSpecificStyle(stdstyle: TWxStdStyleSet;
   sldrstyle: TWxsldrStyleSet): string;
-//function GetStaticBoxSpecificStyle(stdstyle: TWxStdStyleSet;sbxstyle:TWxsbxStyleSet):String;
-//function GetStaticLineSpecificStyle(stdstyle: TWxStdStyleSet;slnstyle:TWxslnStyleSet):String;
-//function GetStaticBitmapSpecificStyle(stdstyle: TWxStdStyleSet;sbtmpstyle:TWxsbtmpStyleSet):String;
 function GetDateVariableExpansion(value:TDateTime):string;
-function GetCalendarCtrlSpecificStyle(stdstyle: TWxStdStyleSet; calctrlstyle: TWxcalctrlStyleSet): string;
-function GetPickCalSpecificStyle(stdstyle: TWxStdStyleSet; calctrlstyle: TWxPickCalStyleSet): string;
-//function GetCheckListBoxSpecificStyle(stdstyle: TWxStdStyleSet;cklbxstyle:TWxcklbxStyleSet):String;
-//function GetChoiceSpecificStyle(stdstyle: TWxStdStyleSet;chstyle:TWxchStyleSet):String;
+function GetCalendarCtrlSpecificStyle(stdstyle: TWxStdStyleSet;
+  calctrlstyle: TWxcalctrlStyleSet): string;
+function GetPickCalSpecificStyle(stdstyle: TWxStdStyleSet;
+  calctrlstyle: TWxPickCalStyleSet): string;
 function GetNotebookSpecificStyle(stdstyle: TWxStdStyleSet;
   nbxstyle: TWxnbxStyleSet): string;
 function GetRadioBoxSpecificStyle(stdstyle: TWxStdStyleSet;
   rbxstyle: TWxrbxStyleSet): string;
 function GetStatusBarSpecificStyle(stdstyle: TWxStdStyleSet;
   sbrstyle: TWxsbrStyleSet): string;
-//function GetToggleButtonSpecificStyle(stdstyle: TWxStdStyleSet;tbtnstyle:TWxtbtnStyleSet):String;
 function GetToolBarSpecificStyle(stdstyle: TWxStdStyleSet;
   tbrstyle: TWxtbrStyleSet): string;
 function GetScrolledWindowSpecificStyle(stdstyle: TWxStdStyleSet;
@@ -660,9 +645,8 @@ function GetHtmlWindowSpecificStyle(stdstyle: TWxStdStyleSet;
   htmlWinStyle: TWxHtmlWinStyleSet): string;
 function GetSplitterWindowSpecificStyle(stdstyle: TWxStdStyleSet;
   splitterWinStyle: TWxSplitterWinStyleSet): string;
-
-/////////////////////////////
-function GetRichTextSpecificStyle(stdstyle: TWxStdStyleSet; dlgstyle: TWxRichTextStyleSet): string;
+function GetRichTextSpecificStyle(stdstyle: TWxStdStyleSet;
+  dlgstyle: TWxRichTextStyleSet): string;
 
 function GetListViewSpecificStyle(stdstyle: TWxStdStyleSet;
   lstvwstyle: TWxLVStyleSet; view: TWxLvView): string;
@@ -676,13 +660,14 @@ function GetLabelSpecificStyle(stdstyle: TWxStdStyleSet;
 function GetcomboBoxSpecificStyle(stdstyle: TWxStdStyleSet;
   cmbstyle: TWxCmbStyleSet; edtstyle: TWxEdtGeneralStyleSet): string;
 function GetOwncomboBoxSpecificStyle(stdstyle: TWxStdStyleSet;
-  cmbstyle: TWxCmbStyleSet; edtstyle: TWxEdtGeneralStyleSet;owncmbstyle: TWxOwnCmbStyleSet): string;
+  cmbstyle: TWxCmbStyleSet; edtstyle: TWxEdtGeneralStyleSet;
+  owncmbstyle: TWxOwnCmbStyleSet): string;
 function GetStdDialogButtonsSpecificStyle(btnstyle: TWxStdDialogButtons): string;
-function GetDialogSpecificStyle(stdstyle: TWxStdStyleSet; dlgstyle: TWxDlgStyleSet;
-  wxclassname: string): string;
+function GetDialogSpecificStyle(stdstyle: TWxStdStyleSet;
+  dlgstyle: TWxDlgStyleSet; wxclassname: string): string;
 
-function SizerAlignmentToStr(SizerAlignment: TWxSizerAlignment): string;
-  overload;
+procedure PopulateGenericProperties(var PropertyList: TStringList);
+function SizerAlignmentToStr(SizerAlignment: TWxSizerAlignmentSet): string; overload;
 function BorderAlignmentToStr(BorderAlignment: TWxBorderAlignment): string;
 function RGBFormatStrToColor(strColorValue: string): TColor;
 function GetColorFromString(strColorValue: string): TColor;
@@ -725,7 +710,7 @@ function GetMaxIDofWxForm(ParentControl: TWinControl): integer;
 function GetMenuKindAsText(menuStyle: TWxMenuItemStyleItem): string;
 function GetToolButtonKindAsText(toolStyle: TWxToolbottonItemStyleItem): string;
 
-function GetTotalHtOfAllToolBarAndStatusBar(ParentControl: TWinControl): integer;
+function GetTotalHtOfAllToolBarAndStatusBar(ParentControl: TWinControl): Integer;
 
 function GetPredefinedwxIds: TStringList;
 function IsIDPredefined(str: string; strlst: TStringList): boolean;
@@ -741,9 +726,9 @@ uses DesignerFrm, wxlistCtrl, WxStaticBitmap, WxBitmapButton, WxSizerPanel, WxTo
   UColorEdit, UMenuitem, WxCustomMenuItem, WxPopupMenu, WxMenuBar,
   WxNonVisibleBaseComponent;
 
-constructor TWxValidatorString.Create;
+constructor TWxValidatorString.Create(Owner: TComponent);
 begin
-  inherited Create(nil);
+  inherited;
 end;
 
 function TranslateChar(const Str: string; FromChar, ToChar: Char): string;
@@ -959,32 +944,11 @@ end;
 function GetWxFontDeclaration(fnt: TFont): string;
 var
   strStyle, strWeight, strUnderline: string;
-  fntDefault:      TFont;
-  defaultFontName: string;
 begin
-  fntDefault      := TFont.Create;
-  defaultFontName := fntDefault.Name;
-
-  Result := '';
-  try
-    if fnt.Name = fntDefault.Name then
-      if fnt.Size = fntDefault.Size then
-      begin
-        if fnt.Style = fntDefault.Style then
-        begin
-          Result := '';
-          exit;
-        end
-        else
-        begin
-          //Result := 'S_C';
-          //exit;          
-        end;
-      end;
-  finally
-    fntDefault.Destroy;
-  end;
-  //if Result <> 'S_C' then
+  if (fnt.Name = Screen.HintFont.Name) and (fnt.Size = Screen.HintFont.Size) and
+     (fnt.Style = Screen.HintFont.Style) then
+     Result := ''
+  else
   begin
     if fsItalic in fnt.Style then
       strStyle := 'wxITALIC'
@@ -997,16 +961,14 @@ begin
       strWeight := 'wxNORMAL';
 
     if fsUnderline in fnt.Style then
-      strUnderline := 'TRUE'
+      strUnderline := 'true'
     else
-      strUnderline := 'FALSE';
+      strUnderline := 'false';
 
-    if fnt.Name <> defaultFontName then
-      Result := Result + 'wxFont(' + IntToStr(fnt.size) + ', wxSWISS, ' + strStyle + ',' +
-        strWeight + ', ' + strUnderline + ', ' + GetCppString(fnt.Name) + ')'
+    if fnt.Name <> Screen.IconFont.Name then
+      Result := Format('wxFont(%d, wxSWISS, %s, %s, %s, %s)', [fnt.Size, strStyle, strWeight, strUnderline, GetCppString(fnt.Name)])
     else
-      Result := Result + 'wxFont(' + IntToStr(fnt.size) + ', wxSWISS, ' + strStyle + ',' +
-        strWeight + ', ' + strUnderline + ')';
+      Result := Format('wxFont(%d, wxSWISS, %s, %s, %s)', [fnt.Size, strStyle, strWeight, strUnderline]);
   end;
 end;
 
@@ -3155,49 +3117,103 @@ begin
   Result := GetGeneralColorFromString(strChoice);
 end;
 
-function SizerAlignmentToStr(SizerAlignment: TWxSizerAlignment): string;
+procedure PopulateGenericProperties(var PropertyList: TStringList);
 begin
-  Result := '';
-  if SizerAlignment = wxALIGN_LEFT then
+  PropertyList.Add('Wx_Enabled:Enabled');
+  PropertyList.Add('Wx_Class:Base Class');
+  PropertyList.Add('Wx_Hidden:Hidden');
+  PropertyList.Add('Wx_Default:Default');
+  PropertyList.Add('Wx_HelpText:Help Text');
+  PropertyList.Add('Wx_IDName:ID Name');
+  PropertyList.Add('Wx_IDValue:ID Value');
+  PropertyList.Add('Wx_ToolTip:Tooltip');
+  PropertyList.Add('Wx_Comments:Comments');
+  PropertyList.Add('Wx_Validator:Validator Code');
+  PropertyList.Add('Wx_ProxyBGColorString:Background Color');
+  PropertyList.Add('Wx_ProxyFGColorString:Foreground Color');
+
+  PropertyList.Add('Wx_StretchFactor:Stretch Factor');
+  PropertyList.Add('Wx_Alignment:Alignment');
+  PropertyList.Add('wxALIGN_LEFT:wxALIGN_LEFT');
+  PropertyList.Add('wxALIGN_RIGHT:wxALIGN_RIGHT');
+  PropertyList.Add('wxALIGN_TOP:wxALIGN_TOP');
+  PropertyList.Add('wxALIGN_BOTTOM:wxALIGN_BOTTOM');
+  PropertyList.Add('wxALIGN_CENTER:wxALIGN_CENTER');
+  PropertyList.Add('wxALIGN_CENTER_HORIZONTAL:wxALIGN_CENTER_HORIZONTAL');
+  PropertyList.Add('wxALIGN_CENTER_VERTICAL:wxALIGN_CENTER_VERTICAL');
+  PropertyList.Add('wxEXPAND:wxEXPAND');
+
+  PropertyList.Add('Wx_Border:Border');
+  PropertyList.Add('Wx_BorderAlignment:Borders');
+  PropertyList.Add('wxALL:wxALL');
+  PropertyList.Add('wxTOP:wxTOP');
+  PropertyList.Add('wxLEFT:wxLEFT');
+  PropertyList.Add('wxRIGHT:wxRIGHT');
+  PropertyList.Add('wxBOTTOM:wxBOTTOM');
+  
+  PropertyList.Add('Wx_GeneralStyle:General Styles');
+  PropertyList.Add('wxNO_3D:wxNO_3D');
+  PropertyList.Add('wxNO_BORDER:wxNO_BORDER');
+  PropertyList.Add('wxWANTS_CHARS:wxWANTS_CHARS');
+  PropertyList.Add('wxCLIP_CHILDREN:wxCLIP_CHILDREN');
+  PropertyList.Add('wxSIMPLE_BORDER:wxSIMPLE_BORDER');
+  PropertyList.Add('wxDOUBLE_BORDER:wxDOUBLE_BORDER');
+  PropertyList.Add('wxSUNKEN_BORDER:wxSUNKEN_BORDER');
+  PropertyList.Add('wxRAISED_BORDER:wxRAISED_BORDER');
+  PropertyList.Add('wxSTATIC_BORDER:wxSTATIC_BORDER');
+  PropertyList.Add('wxTAB_TRAVERSAL:wxTAB_TRAVERSAL');
+  PropertyList.Add('wxTRANSPARENT_WINDOW:wxTRANSPARENT_WINDOW');
+  PropertyList.Add('wxNO_FULL_REPAINT_ON_RESIZE:wxNO_FULL_REPAINT_ON_RESIZE');
+  PropertyList.Add('wxVSCROLL:wxVSCROLL');
+  PropertyList.Add('wxHSCROLL:wxHSCROLL');
+
+  PropertyList.Add('Font:Font');
+  PropertyList.Add('Name:Name');
+  PropertyList.Add('Width:Width');
+  PropertyList.Add('Height:Height');
+  PropertyList.Add('Left:Left');
+  PropertyList.Add('Top:Top');
+ end;
+function SizerAlignmentToStr(SizerAlignment: TWxSizerAlignmentSet): string;
+var
+  Styles: TStringList;
+  I: Integer;
+begin
+  Styles := TStringList.Create;
+  if wxALIGN_LEFT in SizerAlignment then
+    Styles.Add('wxALIGN_LEFT');
+
+  if wxALIGN_RIGHT in SizerAlignment then
+    Styles.Add('wxALIGN_RIGHT');
+
+  if wxALIGN_TOP in SizerAlignment then
+    Styles.Add('wxALIGN_TOP');
+
+  if wxALIGN_BOTTOM in SizerAlignment then
+    Styles.Add('wxALIGN_BOTTOM');
+
+  if wxALIGN_CENTER in SizerAlignment then
+    Styles.Add('wxALIGN_CENTER');
+
+  if wxALIGN_CENTER_HORIZONTAL in SizerAlignment then
+    Styles.Add('wxALIGN_CENTER_HORIZONTAL');
+
+  if wxALIGN_CENTER_VERTICAL in SizerAlignment then
+    Styles.Add('wxALIGN_CENTER_VERTICAL');
+
+  if wxEXPAND in SizerAlignment then
+    Styles.Add('wxEXPAND');
+
+  if Styles.Count = 0 then
+    Result := '0'
+  else
   begin
-    Result := 'wxALIGN_LEFT';
-    exit;
+    Result := Styles[0];
+    for I := 1 to Styles.Count - 1 do
+      Result := Result + ' | ' + Styles[I];
   end;
-  if SizerAlignment = wxALIGN_RIGHT then
-  begin
-    Result := 'wxALIGN_RIGHT';
-    exit;
-  end;
-  if SizerAlignment = wxALIGN_TOP then
-  begin
-    Result := 'wxALIGN_TOP';
-    exit;
-  end;
-  if SizerAlignment = wxALIGN_BOTTOM then
-  begin
-    Result := 'wxALIGN_BOTTOM';
-    exit;
-  end;
-  if SizerAlignment = wxALIGN_CENTER then
-  begin
-    Result := 'wxALIGN_CENTER';
-    exit;
-  end;
-  if SizerAlignment = wxALIGN_CENTER_HORIZONTAL then
-  begin
-    Result := 'wxALIGN_CENTER_HORIZONTAL';
-    exit;
-  end;
-  if SizerAlignment = wxALIGN_CENTER_VERTICAL then
-  begin
-    Result := 'wxALIGN_CENTER_VERTICAL';
-    exit;
-  end;
-  if SizerAlignment = wxEXPAND then
-  begin
-    Result := 'wxEXPAND';
-    exit;
-  end;
+
+  Styles.Free;
 end;
 
 function BorderAlignmentToStr(BorderAlignment: TWxBorderAlignment): string;
