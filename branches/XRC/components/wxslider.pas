@@ -553,10 +553,12 @@ if (XRCGEN) then
     Result := Result + #13 + Format('%s->SetHelpText(%s);',
       [self.Name, GetCppString(self.Wx_HelpText)]);
 
+ if not (XRCGEN) then
+ begin
   Result := Result + #13 + Format('%s->SetRange(%d,%d);',
     [self.Name, self.Min, self.Max]);
   Result := Result + #13 + Format('%s->SetValue(%d);', [self.Name, self.Position]);
-
+ end;
   strColorStr := trim(GetwxColorFromString(InvisibleFGColorString));
   if strColorStr <> '' then
     Result := Result + #13 + Format('%s->SetForegroundColour(%s);',

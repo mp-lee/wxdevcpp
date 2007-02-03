@@ -371,6 +371,26 @@ function TWxOwnerDrawnComboBox.GenerateEventTableEntries(CurrClassName: string):
 begin
   Result := '';
 
+   if (XRCGEN) then
+ begin//generate xrc loading code  needs to be edited
+  if trim(EVT_COMBOBOX) <> '' then
+    Result := Result + #13 + Format('EVT_COMBOBOX(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_COMBOBOX]) + '';
+
+  if trim(EVT_TEXT) <> '' then
+    Result := Result + #13 + Format('EVT_TEXT(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TEXT]) + '';
+
+  if trim(EVT_UPDATE_UI) <> '' then
+    Result := Result + #13 + Format('EVT_UPDATE_UI(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_UPDATE_UI]) + '';
+
+  if trim(EVT_TEXT_ENTER) <> '' then
+    Result := Result + #13 + Format('EVT_TEXT_ENTER(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TEXT_ENTER]) + '';
+ end
+ else
+ begin//generate the cpp code
   if trim(EVT_COMBOBOX) <> '' then
     Result := Format('EVT_COMBOBOX(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_COMBOBOX]) + '';
@@ -386,7 +406,7 @@ begin
   if trim(EVT_TEXT_ENTER) <> '' then
     Result := Result + #13 + Format('EVT_TEXT_ENTER(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_TEXT_ENTER]) + '';
-
+ end;
 end;
 
 function TWxOwnerDrawnComboBox.GenerateXRCControlCreation(IndentString: string): TStringList;
@@ -406,11 +426,11 @@ begin
     Result.Add(IndentString + Format('  <style>%s</style>',
       [GetOwncomboBoxSpecificStyle(Wx_GeneralStyle, Wx_ComboboxStyle, Wx_EditStyle,Wx_OwnComboboxStyle)]));
 
-    Result.Add('  <content>');
+    Result.Add(IndentString + '  <content>');
     for i := 0 to self.Items.Count - 1 do
       Result.Add(IndentString + '    <item checked="0">' + self.Items[i] + '</item>');
 
-    Result.Add('  </content>');
+    Result.Add(IndentString + '  </content>');
     Result.Add(IndentString + '</object>');
   except
     Result.Free;
@@ -456,13 +476,21 @@ begin
   else
     strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
 
+   if (XRCGEN) then
+ begin//generate xrc loading code
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);   
+ end
+ else
+ begin//generate the cpp code
   Result := Result + #13 + Format(
     '%s = new %s(%s, %s, %s, wxPoint(%d,%d), wxSize(%d,%d), %s%s);',
     [self.Name, self.Wx_Class, ParentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
     GetCppString(self.Caption), self.Left, self.Top, self.Width, self.Height,
     'arrayStringFor_' + self.Name, strStyle]);
-
+ end;//end of if xrc
   if trim(self.Wx_ToolTip) <> '' then
     Result := Result + #13 + Format('%s->SetToolTip(%s);',
       [self.Name, GetCppString(self.Wx_ToolTip)]);

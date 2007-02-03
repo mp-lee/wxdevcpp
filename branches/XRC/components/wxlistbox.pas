@@ -360,10 +360,11 @@ begin
   Result.Add(IndentString + Format('  <size>%d,%d</size>', [self.Width, self.Height]));
   Result.Add(IndentString + Format('  <pos>%d,%d</pos>', [self.Left, self.Top]));
 
-  stylestring := GetListBoxSelectorStyle(Wx_ListboxSubStyle);
+  stylestring := GetListBoxSpecificStyle(self.Wx_GeneralStyle, Wx_ListboxStyle);
   if trim(stylestring) <> '' then
-    stylestring := stylestring + ' | ' + GetListBoxSpecificStyle(
-      self.Wx_GeneralStyle, Wx_ListboxStyle);
+    stylestring := GetListBoxSelectorStyle(Wx_ListboxSubStyle) + ' | ' + GetListBoxSpecificStyle(self.Wx_GeneralStyle, Wx_ListboxStyle)
+  else
+    stylestring := GetListBoxSelectorStyle(Wx_ListboxSubStyle);
 
   Result.Add(IndentString + Format('  <style>%s</style>', [stylestring]));
 

@@ -334,10 +334,19 @@ end;
 function TWxHyperLinkCtrl.GenerateEventTableEntries(CurrClassName: string): string;
 begin
   Result := '';
+
+   if (XRCGEN) then
+ begin//generate xrc loading code  needs to be edited
+  if trim(EVT_HYPERLINK) <> '' then
+    Result := Format('EVT_HYPERLINK(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_HYPERLINK]) + '';
+ end
+ else
+ begin//generate the cpp code
   if trim(EVT_HYPERLINK) <> '' then
     Result := Format('EVT_HYPERLINK(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_HYPERLINK]) + '';
-
+ end;
 end;
 
 function TWxHyperLinkCtrl.GenerateXRCControlCreation(IndentString: string): TStringList;
@@ -384,13 +393,22 @@ begin
     strStyle := '0';
   strStyle := ', ' + strStyle + ', ' + GetCppString(Name);
 
+   if (XRCGEN) then
+ begin//generate xrc loading code
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);   
+ end
+ else
+ begin//generate the cpp code
   //Last comma is removed because it depends on the user selection of the properties.
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, %s, %s, wxPoint(%d,%d), %s%s);',
     [self.Name, self.Wx_Class, ParentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
     GetCppString(self.Caption), GetCppString(wx_URL),self.Left, self.Top, strSize, strStyle]);
-  if trim(self.Wx_ToolTip) <> '' then
+ end;//end of if xrc
+    if trim(self.Wx_ToolTip) <> '' then
     Result := Result + #13 + Format('%s->SetToolTip(%s);',
       [self.Name, GetCppString(self.Wx_ToolTip)]);
 

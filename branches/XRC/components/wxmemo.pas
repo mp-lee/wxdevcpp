@@ -367,6 +367,30 @@ function TWxMemo.GenerateEventTableEntries(CurrClassName: string): string;
 begin
   Result := '';
 
+   if (XRCGEN) then
+ begin//generate xrc loading code  needs to be edited
+  if trim(EVT_TEXT_ENTER) <> '' then
+    Result := Format('EVT_TEXT_ENTER(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TEXT_ENTER]) + '';
+
+  if trim(EVT_UPDATE_UI) <> '' then
+    Result := Result + #13 + Format('EVT_UPDATE_UI(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_UPDATE_UI]) + '';
+
+  if trim(EVT_TEXT) <> '' then
+    Result := Result + #13 + Format('EVT_TEXT(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TEXT]) + '';
+
+  if trim(EVT_TEXT_MAXLEN) <> '' then
+    Result := Result + #13 + Format('EVT_TEXT_MAXLEN(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TEXT_MAXLEN]) + '';
+
+  if trim(EVT_TEXT_URL) <> '' then
+    Result := Result + #13 + Format('EVT_TEXT_URL(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_TEXT_URL]) + '';
+ end
+ else
+ begin//generate the cpp code
   if trim(EVT_TEXT_ENTER) <> '' then
     Result := Format('EVT_TEXT_ENTER(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_TEXT_ENTER]) + '';
@@ -386,7 +410,7 @@ begin
   if trim(EVT_TEXT_URL) <> '' then
     Result := Result + #13 + Format('EVT_TEXT_URL(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_TEXT_URL]) + '';
-
+ end;
 end;
 
 function TWxMemo.GenerateXRCControlCreation(IndentString: string): TStringList;
@@ -428,7 +452,7 @@ begin
   //    else
   //       parentName:=self.Parent.name;
 
-  AutoSize               := False;
+  AutoSize := False;
   
   parentName := GetWxWidgetParent(self);
 
@@ -452,11 +476,20 @@ begin
     strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
 
 
+   if (XRCGEN) then
+ begin//generate xrc loading code
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);   
+ end
+ else
+ begin//generate the cpp code
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
     [self.Name, self.wx_Class, parentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
-    GetCppString(''), self.Left, self.Top, self.Width, self.Height, strStyle]);
+    GetCppString(self.Text), self.Left, self.Top, self.Width, self.Height, strStyle]);
+ end;//end of if xrc
 
   SetWxFileName(self.FWx_LoadFromFile.FstrFileNameValue);
   if FWx_FiletoLoad <> '' then
@@ -484,12 +517,13 @@ begin
     Result := Result + #13 + Format('%s->SetHelpText(%s);',
       [self.Name, GetCppString(self.Wx_HelpText)]);
 
+   if not (XRCGEN) then
+ begin
   if FWx_FiletoLoad = '' then
     begin
     for i := 0 to self.Lines.Count - 1 do
       if i = self.Lines.Count - 1 then
-        Result :=
-          Result + #13 + Format('%s->AppendText(%s);',
+        Result := Result + #13 + Format('%s->AppendText(%s);',
           [self.Name, GetCppString(self.Lines[i])])
       else
         Result := Result + #13 + Format('%s->AppendText(%s);',
@@ -498,6 +532,7 @@ begin
         Result := Result + #13 + self.Name + '->SetFocus();';
         Result := Result + #13 + self.Name + '->SetInsertionPointEnd();';
     end;
+ end;
 
   strColorStr := trim(GetwxColorFromString(InvisibleFGColorString));
   if strColorStr <> '' then

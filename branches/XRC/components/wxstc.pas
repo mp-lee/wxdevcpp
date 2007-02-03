@@ -646,6 +646,8 @@ begin
     Result := Result + #13 + Format('%s->SetHelpText(%s);',
       [self.Name, GetCppString(self.Wx_HelpText)]);
 
+ if not (XRCGEN) then
+ begin
   if FWx_FiletoLoad = '' then
     begin
     for i := 0 to self.Lines.Count - 1 do
@@ -659,6 +661,7 @@ begin
 
         Result := Result + #13 + self.Name + '->SetFocus();';
     end;
+ end;
 
   strColorStr := trim(GetwxColorFromString(InvisibleFGColorString));
   if strColorStr <> '' then
