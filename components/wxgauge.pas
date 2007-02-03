@@ -295,18 +295,18 @@ begin
   try
     Result.Add(IndentString + Format('<object class="%s" name="%s">',
       [self.Wx_Class, self.Name]));
-    Result.Add(IndentString + Format('<IDident>%s</IDident>', [self.Wx_IDName]));
-    Result.Add(IndentString + Format('<ID>%d</ID>', [self.Wx_IDValue]));
-    Result.Add(IndentString + Format('<size>%d,%d</size>', [self.Width, self.Height]));
-    Result.Add(IndentString + Format('<pos>%d,%d</pos>', [self.Left, self.Top]));
+    Result.Add(IndentString + Format('  <IDident>%s</IDident>', [self.Wx_IDName]));
+    Result.Add(IndentString + Format('  <ID>%d</ID>', [self.Wx_IDValue]));
+    Result.Add(IndentString + Format('  <size>%d,%d</size>', [self.Width, self.Height]));
+    Result.Add(IndentString + Format('  <pos>%d,%d</pos>', [self.Left, self.Top]));
 
-    Result.Add(IndentString + Format('<range>%d</range>', [self.Max]));
-    Result.Add(IndentString + Format('<value>%d</value>', [self.Position]));
+    Result.Add(IndentString + Format('  <range>%d</range>', [self.Max]));
+    Result.Add(IndentString + Format('  <value>%d</value>', [self.Position]));
 
-    Result.Add(IndentString + Format('<orient>%s</orient>',
+    Result.Add(IndentString + Format('  <orient>%s</orient>',
       [GetGaugeOrientation(Wx_GaugeOrientation)]));
 
-    Result.Add(IndentString + Format('<style>%s</style>',
+    Result.Add(IndentString + Format('  <style>%s</style>',
       [GetGaugeSpecificStyle(self.Wx_GeneralStyle, Wx_GaugeStyle)]));
     Result.Add(IndentString + '</object>');
   except
@@ -370,9 +370,11 @@ if (XRCGEN) then
     Result := Result + #13 + Format('%s->SetHelpText(%s);',
       [self.Name, GetCppString(self.Wx_HelpText)]);
 
-  Result := Result + #13 + Format('%s->SetRange(%d);', [self.Name, self.Max]);
-  Result := Result + #13 + Format('%s->SetValue(%d);', [self.Name, self.Position]);
-
+  if not (XRCGEN) then
+  begin
+    Result := Result + #13 + Format('%s->SetRange(%d);', [self.Name, self.Max]);
+    Result := Result + #13 + Format('%s->SetValue(%d);', [self.Name, self.Position]);
+  end;
   strColorStr := trim(GetwxColorFromString(InvisibleFGColorString));
   if strColorStr <> '' then
     Result := Result + #13 + Format('%s->SetForegroundColour(%s);',

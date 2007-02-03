@@ -325,6 +325,19 @@ function TWxChoice.GenerateEventTableEntries(CurrClassName: string): string;
 begin
   Result := '';
 
+   if (XRCGEN) then
+ begin//generate xrc loading code  needs to be edited
+  if trim(EVT_CHOICE) <> '' then
+    Result := Result + #13 + Format('EVT_CHOICE(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_CHOICE]) + '';
+
+  if trim(EVT_UPDATE_UI) <> '' then
+    Result := Result + #13 + Format('EVT_UPDATE_UI(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_UPDATE_UI]) + '';
+
+ end
+ else
+ begin//generate the cpp code
   if trim(EVT_CHOICE) <> '' then
     Result := Format('EVT_CHOICE(%s,%s::%s)', [WX_IDName, CurrClassName,
       EVT_CHOICE]) + '';
@@ -332,7 +345,7 @@ begin
   if trim(EVT_UPDATE_UI) <> '' then
     Result := Result + #13 + Format('EVT_UPDATE_UI(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_UPDATE_UI]) + '';
-
+ end;
 end;
 
 function TWxChoice.GenerateXRCControlCreation(IndentString: string): TStringList;
@@ -352,7 +365,7 @@ begin
 
     // Result.Add(IndentString + Format('  <selection>%d</selection>', [self.
 
-    Result.Add(IndentString + '<content>');
+    Result.Add(IndentString + '  <content>');
     for i := 0 to self.Items.Count - 1 do
       Result.Add(IndentString + '    <item checked = "0">' + Items[i] + '</item>');
 
@@ -400,12 +413,21 @@ begin
   else
     strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
 
+   if (XRCGEN) then
+ begin//generate xrc loading code
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);   
+ end
+ else
+ begin//generate the cpp code
   Result := Result + #13 + Format(
     '%s = new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d), %s%s);',
     [self.Name, self.Wx_Class, ParentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
     self.Left, self.Top, self.Width, self.Height, 'arrayStringFor_' +
     self.Name, strStyle]);
+ end;//end of if xrc
 
   if trim(self.Wx_ToolTip) <> '' then
     Result := Result + #13 + Format('%s->SetToolTip(%s);',

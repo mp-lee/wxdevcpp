@@ -279,6 +279,35 @@ function TWxCalendarCtrl.GenerateEventTableEntries(CurrClassName: string): strin
 begin
 
   Result := '';
+   if (XRCGEN) then
+ begin//generate xrc loading code
+  if trim(EVT_UPDATE_UI) <> '' then
+    Result := Result + #13 + Format('EVT_UPDATE_UI(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_UPDATE_UI]) + '';
+
+  if trim(EVT_CALENDAR_SEL_CHANGED) <> '' then
+    Result := Result + #13 + Format('EVT_CALENDAR_SEL_CHANGED(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_CALENDAR_SEL_CHANGED]) + '';
+
+  if trim(EVT_CALENDAR_DAY) <> '' then
+    Result := Result + #13 + Format('EVT_CALENDAR_DAY(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_CALENDAR_DAY]) + '';
+
+  if trim(EVT_CALENDAR_MONTH) <> '' then
+    Result := Result + #13 + Format('EVT_CALENDAR_MONTH(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_CALENDAR_MONTH]) + '';
+
+  if trim(EVT_CALENDAR_YEAR) <> '' then
+    Result := Result + #13 + Format('EVT_CALENDAR_YEAR(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_CALENDAR_YEAR]) + '';
+
+  if trim(EVT_CALENDAR_WEEKDAY_CLICKED) <> '' then
+    Result := Result + #13 + Format('EVT_CALENDAR_WEEKDAY_CLICKED(XRCID(%s("%s")),%s::%s)',
+      [StringFormat, self.Name, CurrClassName, EVT_CALENDAR_WEEKDAY_CLICKED]) + '';
+
+ end
+ else
+ begin//generate the cpp code
   if trim(EVT_UPDATE_UI) <> '' then
     Result := Result + #13 + Format('EVT_UPDATE_UI(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_UPDATE_UI]) + '';
@@ -302,6 +331,7 @@ begin
   if trim(EVT_CALENDAR_WEEKDAY_CLICKED) <> '' then
     Result := Result + #13 + Format('EVT_CALENDAR_WEEKDAY_CLICKED(%s,%s::%s)',
       [WX_IDName, CurrClassName, EVT_CALENDAR_WEEKDAY_CLICKED]) + '';
+ end;
 end;
 
 function TWxCalendarCtrl.GenerateXRCControlCreation(IndentString: string): TStringList;
@@ -350,13 +380,20 @@ begin
   if trim(strStyle) <> '' then
     strStyle := ', ' + strStyle;
 
-
+   if (XRCGEN) then
+ begin//generate xrc loading code
+  Result := GetCommentString(self.FWx_Comments.Text) +
+    Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
+    [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);   
+ end
+ else
+ begin//generate the cpp code
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, %s,wxPoint(%d,%d), wxSize(%d,%d)%s);',
     [self.Name, self.wx_Class, parentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),strDateString,
     self.Left, self.Top, self.Width, self.Height, strStyle]);
-
+ end;//end of if xrc
   if trim(self.Wx_ToolTip) <> '' then
     Result := Result + #13 + Format('%s->SetToolTip(%s);',
       [self.Name, GetCppString(self.Wx_ToolTip)]);

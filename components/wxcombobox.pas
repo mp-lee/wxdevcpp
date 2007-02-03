@@ -423,11 +423,11 @@ begin
     Result.Add(IndentString + Format('  <style>%s</style>',
       [GetcomboBoxSpecificStyle(Wx_GeneralStyle, Wx_ComboboxStyle, Wx_EditStyle)]));
 
-    Result.Add('  <content>');
+    Result.Add(IndentString + '  <content>');
     for i := 0 to self.Items.Count - 1 do
       Result.Add(IndentString + '    <item checked="0">' + self.Items[i] + '</item>');
 
-    Result.Add('  </content>');
+    Result.Add(IndentString + '  </content>');
     Result.Add(IndentString + '</object>');
   except
     Result.Free;
