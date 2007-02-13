@@ -517,8 +517,9 @@ begin
     Result := Result + #13 + Format('%s->SetToolTip(%s);',
       [self.Name, GetCppString(self.Wx_ToolTip)]);
 
-  Result := Result + #13 + Format('%s->SetMaxLength(%d);',
-    [self.Name, self.Wx_MaxLength]);
+  if self.Wx_MaxLength <> 0 then
+    Result := Result + #13 + Format('%s->SetMaxLength(%d);',
+      [self.Name, self.Wx_MaxLength]);
 
   if self.Wx_Hidden then
     Result := Result + #13 + Format('%s->Show(false);', [self.Name]);
@@ -627,6 +628,8 @@ function TWxRichTextCtrl.GenerateHeaderInclude: string;
 begin
   Result := '';
   Result := '#include <wx/richtext/richtextctrl.h>';
+  if (XRCGEN) then
+    Result := Result + #13 + '#include <wx/xrc/xh_richtext.h>';
 end;
 
 function TWxRichTextCtrl.GenerateImageInclude: string;

@@ -475,7 +475,6 @@ begin
   else
     strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
 
-
    if (XRCGEN) then
  begin//generate xrc loading code
   Result := GetCommentString(self.FWx_Comments.Text) +
@@ -497,15 +496,15 @@ begin
     Result := Result + #13 + Format('%s->LoadFile("%s");',
       [self.Name, FWx_FiletoLoad]);
     self.Lines.LoadFromFile(FWx_FiletoLoad);
-
   end;
 
   if trim(self.Wx_ToolTip) <> '' then
     Result := Result + #13 + Format('%s->SetToolTip(%s);',
       [self.Name, GetCppString(self.Wx_ToolTip)]);
 
-  Result := Result + #13 + Format('%s->SetMaxLength(%d);',
-    [self.Name, self.Wx_MaxLength]);
+  if self.Wx_MaxLength <> 0 then
+    Result := Result + #13 + Format('%s->SetMaxLength(%d);',
+      [self.Name, self.Wx_MaxLength]);
 
   if self.Wx_Hidden then
     Result := Result + #13 + Format('%s->Show(false);', [self.Name]);

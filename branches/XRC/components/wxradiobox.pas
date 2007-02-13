@@ -344,6 +344,9 @@ begin
 
     Result.Add(IndentString + Format('  <style>%s</style>',
       [GetRadioboxOrientation(Wx_RadioBoxStyle)]));
+    if Wx_Selection > self.Items.Count - 1 then
+      Wx_Selection := 0;
+    Result.Add(IndentString + Format('  <selection>%d</selection>', [Wx_Selection]));
     Result.Add(IndentString + '  <content>');
     for i := 0 to self.Items.Count - 1 do
       Result.Add(IndentString + '    <item checked="0">' + self.Items[i] + '</item>');
@@ -422,8 +425,9 @@ if (XRCGEN) then
     Result := Result + #13 + Format('%s->Enable(false);', [self.Name]);
 
   if Wx_Selection > self.Items.Count - 1 then
-        Wx_Selection := 0;
-  Result := Result + #13 + Format('%s->SetSelection(%d);', [self.Name, Wx_Selection]);
+     Wx_Selection := 0;
+  if not (XRCGEN) then
+    Result := Result + #13 + Format('%s->SetSelection(%d);', [self.Name, Wx_Selection]);
 
   if trim(self.Wx_HelpText) <> '' then
     Result := Result + #13 + Format('%s->SetHelpText(%s);',
@@ -444,6 +448,7 @@ if (XRCGEN) then
   if strColorStr <> '' then
     Result := Result + #13 + Format('%s->SetFont(%s);', [self.Name, strColorStr]);
 
+ if not (XRCGEN) then
   if (self.Parent is TWxSizerPanel) then
   begin
     strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);

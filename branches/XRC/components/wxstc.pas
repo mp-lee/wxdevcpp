@@ -576,14 +576,14 @@ begin
   Result := TStringList.Create;
 
   try
-    Result.Add(IndentString + Format('<object class="%s" name="%s">',
-      [self.Wx_Class, self.Name]));
-    Result.Add(IndentString + Format('  <IDident>%s</IDident>', [self.Wx_IDName]));
-    Result.Add(IndentString + Format('  <ID>%d</ID>', [self.Wx_IDValue]));
+    Result.Add(IndentString + Format('<object class="unknown" name="%s">',
+      [self.Name]));
+    //Result.Add(IndentString + Format('  <IDident>%s</IDident>', [self.Wx_IDName]));
+    //Result.Add(IndentString + Format('  <ID>%d</ID>', [self.Wx_IDValue]));
     Result.Add(IndentString + Format('  <size>%d,%d</size>', [self.Width, self.Height]));
     Result.Add(IndentString + Format('  <pos>%d,%d</pos>', [self.Left, self.Top]));
-
-    Result.Add(IndentString + Format('  <value>%s</value>', [XML_Label(self.Caption)]));
+    //Result.Add(IndentString + Format('  <style>%s</style>', [trim(GetStdStyleString(self.Wx_GeneralStyle))]));
+    //Result.Add(IndentString + Format('  <value>%s</value>', [XML_Label(self.Caption)]));
 
     Result.Add(IndentString + '</object>');
   except
@@ -609,19 +609,28 @@ begin
   parentName := GetWxWidgetParent(self);
 
 
-  //strStyle := GetEditSpecificStyle(self.Wx_GeneralStyle, self.Wx_EditStyle);
+  strStyle := GetStdStyleString(self.Wx_GeneralStyle);
 
   if trim(strStyle) <> '' then
     strStyle := ', ' + strStyle + ',  ' + GetCppString(Name)
   else
     strStyle := ', 0,  ' + GetCppString(Name);
 
-
+{   if (XRCGEN) then
+ begin//generate xrc loading code
+  Result := '//STC';
+ end
+ else
+ begin//generate the cpp code}
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
     [self.Name, self.wx_Class, parentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue)
     , self.Left, self.Top, self.Width, self.Height, strStyle]);
+// end;
+  if (XRCGEN) then
+    Result := Result + #13 + Format(
+    'wxXmlResource::Get()->AttachUnknownControl(%s("%s"),%s,%s);',[StringFormat, self.Name, self.Name, parentName]);
 
   SetWxFileName(self.FWx_LoadFromFile.FstrFileNameValue);
   if FWx_FiletoLoad <> '' then
@@ -678,7 +687,7 @@ begin
   if strColorStr <> '' then
     Result := Result + #13 + Format('%s->SetFont(%s);', [self.Name, strColorStr]);
 
-  if (self.Parent is TWxSizerPanel) then
+  if not (XRCGEN) and (self.Parent is TWxSizerPanel) then
   begin
     strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
     Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',

@@ -650,7 +650,7 @@ begin
 
   parentName := GetWxWidgetParent(self);
 
-  strStyle := GetListViewSpecificStyle(Wx_GeneralStyle, Wx_ListviewStyle, FWx_ListviewView);
+  strStyle := ', ' + GetListViewSpecificStyle(Wx_GeneralStyle, Wx_ListviewStyle, FWx_ListviewView);
 
 if (XRCGEN) then
  begin

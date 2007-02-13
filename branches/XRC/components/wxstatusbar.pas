@@ -304,7 +304,7 @@ function TWxStatusBar.GenerateGUIControlCreation: string;
 var
   I: integer;
   strColorStr: string;
-  strStyle, parentName, strAlignment: string;
+  strStyle, parentName: string;
   min1used: boolean;
 begin
   Result := '';
@@ -397,13 +397,7 @@ end;
   //if strColorStr <> '' then
   //Result:=Result+#13+Format('%s->SetFont(%s);',[self.Name,strColorStr]);
 
-  if (self.Parent is TWxSizerPanel) then
-  begin
-    strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
-    Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
-      [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
-      self.Wx_Border]);
-  end;
+  Result := Result + #13 + Format('SetStatusBar(%s);', [self.Name]);
 
 end;
 

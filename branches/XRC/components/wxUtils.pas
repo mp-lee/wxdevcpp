@@ -2738,8 +2738,6 @@ begin
       else
         Result := Result + ' | ' + strA;
 
-  if trim(Result) <> '' then
-    Result := ', ' + Result;
 end;
 
 //Start here

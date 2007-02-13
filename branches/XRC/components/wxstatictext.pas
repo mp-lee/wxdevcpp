@@ -358,6 +358,8 @@ begin
     [self.Name, self.Wx_Class, ParentName, GetWxIDString(self.Wx_IDName,
     self.Wx_IDValue),
     GetCppString(self.Caption), self.Left, self.Top, strSize, strStyle]);
+ end;
+
   if trim(self.Wx_ToolTip) <> '' then
     Result := Result + #13 + Format('%s->SetToolTip(%s);',
       [self.Name, GetCppString(self.Wx_ToolTip)]);
@@ -398,7 +400,7 @@ begin
     Result := Result + #13 + Format('%s->AddControl(%s);',
       [self.Parent.Name, self.Name]);
 
-  end;
+
   
   // Change the text justification in the form designer
   if wxST_ALIGN_LEFT in Wx_LabelStyle then
