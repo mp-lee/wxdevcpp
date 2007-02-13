@@ -425,7 +425,7 @@ begin
 if (XRCGEN) then
  begin//generate xrc loading code
   Result := GetCommentString(self.FWx_Comments.Text) +
-    Format('%s = wxXmlResource::Get()->LoadToolBar(%s,%s"%s"));',
+    Format('%s = wxXmlResource::Get()->LoadToolBar(%s,%s("%s"));',
     [self.Name, parentName, StringFormat, self.Name]);
  end
  else
