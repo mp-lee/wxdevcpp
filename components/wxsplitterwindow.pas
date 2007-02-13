@@ -312,13 +312,16 @@ begin
   try
     Result.Add(IndentString + Format('<object class="%s" name="%s">',
       [self.Wx_Class, self.Name]));
-    Result.Add(IndentString + Format('  <label>%s</label>', [self.Caption]));
+    if self.Orientation = wxVertical then
+      Result.Add(IndentString + '  <orientation>horizontal</orientation>')
+    else
+      Result.Add(IndentString + '  <orientation>vertical</orientation>');
     Result.Add(IndentString + Format('  <IDident>%s</IDident>', [self.Wx_IDName]));
     Result.Add(IndentString + Format('  <ID>%d</ID>', [self.Wx_IDValue]));
     Result.Add(IndentString + Format('  <size>%d,%d</size>', [self.Width, self.Height]));
+    Result.Add(IndentString + '  <minsize>AddMe</minsize>');
     Result.Add(IndentString + Format('  <pos>%d,%d</pos>', [self.Left, self.Top]));
-    Result.Add(IndentString + Format('  <sash>%d</sash>', [self.Wx_SashPosition]));
-
+    Result.Add(IndentString + Format('  <sashpos>%d</sashpos>', [self.Wx_SashPosition]));
     Result.Add(IndentString + Format('  <style>%s</style>',
       [GetSplitterWindowSpecificStyle(self.Wx_GeneralStyle, Wx_SplitterStyle)]));
       

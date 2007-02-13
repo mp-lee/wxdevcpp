@@ -363,7 +363,7 @@ begin
     Result.Add(IndentString + Format('  <size>%d,%d</size>', [self.Width, self.Height]));
     Result.Add(IndentString + Format('  <pos>%d,%d</pos>', [self.Left, self.Top]));
 
-    // Result.Add(IndentString + Format('  <selection>%d</selection>', [self.
+    Result.Add(IndentString + Format('  <selection>%d</selection>', [self.ItemIndex]));
 
     Result.Add(IndentString + '  <content>');
     for i := 0 to self.Items.Count - 1 do
@@ -457,8 +457,8 @@ begin
   strColorStr := GetWxFontDeclaration(self.Font);
   if strColorStr <> '' then
     Result := Result + #13 + Format('%s->SetFont(%s);', [self.Name, strColorStr]);
-
-  Result := Result + #13 + Format('%s->SetSelection(%d);', [self.Name, self.ItemIndex]);
+  if not (XRCGEN) then
+    Result := Result + #13 + Format('%s->SetSelection(%d);', [self.Name, self.ItemIndex]);
 
   if (self.Parent is TWxSizerPanel) then
   begin

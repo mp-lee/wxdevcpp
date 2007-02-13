@@ -368,22 +368,22 @@ begin
   strColorStr := GetWxFontDeclaration(self.Font);
   if strColorStr <> '' then
     Result := Result + #13 + Format('%s->SetFont(%s);', [self.Name, strColorStr]);
-if not (XRCGEN) then //NUKLEAR ZELPH
-  if (self.Parent is TWxSizerPanel) then
-  begin
-    strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
-    Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
-      [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
-      self.Wx_Border]);
-  end;
 
-if ((XRCGEN) and (parentName = 'this')) then
-  begin
-    strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
-    Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
-      [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
-      self.Wx_Border]);
-  end;
+    if ((not (XRCGEN)) and (self.Parent is TWxSizerPanel)) or ((self.Parent is TWxSizerPanel) and (self.Parent.Parent is TForm) and (XRCGEN)) then
+    begin
+      strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
+      Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
+        [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
+        self.Wx_Border]);
+    end
+{  else
+    if (self.Parent is TWxSizerPanel) and (self.Parent.Parent is TForm) then
+    begin
+      strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
+      Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
+        [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
+        self.Wx_Border]);
+    end;}
 
 end;
 
