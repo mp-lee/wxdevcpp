@@ -596,7 +596,7 @@ end;
 function TWxStyledTextCtrl.GenerateGUIControlCreation: string;
 var
   strColorStr: string;
-  strStyle, parentName, strAlignment: string;
+  strStyle, parentName, strAlignment, pstr: string;
   i: integer;
 begin
   Result := '';
@@ -607,7 +607,10 @@ begin
   //       parentName:=self.Parent.name;
 
   parentName := GetWxWidgetParent(self);
-
+  if (XRCGEN) then
+    pstr := 'this'
+  else
+    pstr := parentName;
 
   strStyle := GetStdStyleString(self.Wx_GeneralStyle);
 
@@ -616,18 +619,12 @@ begin
   else
     strStyle := ', 0,  ' + GetCppString(Name);
 
-{   if (XRCGEN) then
- begin//generate xrc loading code
-  Result := '//STC';
- end
- else
- begin//generate the cpp code}
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
-    [self.Name, self.wx_Class, parentName, GetWxIDString(self.Wx_IDName,
-    self.Wx_IDValue)
-    , self.Left, self.Top, self.Width, self.Height, strStyle]);
-// end;
+    [self.Name, self.wx_Class, pstr, GetWxIDString(
+    self.Wx_IDName,self.Wx_IDValue), self.Left, self.Top,
+    self.Width, self.Height, strStyle]);
+
   if (XRCGEN) then
     Result := Result + #13 + Format(
     'wxXmlResource::Get()->AttachUnknownControl(%s("%s"),%s,%s);',[StringFormat, self.Name, self.Name, parentName]);
