@@ -303,7 +303,8 @@ begin
     if (XRCGEN) then //NUKLEAR ZELPH
    begin
     AddClassNameGUIItemsCreation(synEdit, strClassName,intBlockStart, intBlockEnd,
-    'wxXmlResource::Get()->InitAllHandlers();' + #13 +'wxXmlResource::Get()->Load("' + strClassName + '.xml");');
+    'wxXmlResource::Get()->InitAllHandlers();' + #13 +'wxXmlResource::Get()->Load("' + strClassName + '.xml");');{+
+    #13 +'wxXmlResource::Get()->AddHandler(new wxRichTextCtrlXmlHandler);');}
    end;
  end;
 
@@ -476,8 +477,9 @@ begin
           tempstring.Free;
         end
       end; // for
-
+{$IFDEF XRC_ONLY_BUILD}
   synEdit.Lines.Add('</object>');
+{$ENDIF}
   synEdit.Lines.Add('</resource>');
 
 end;
@@ -609,8 +611,9 @@ begin
       end;
     if (XRCGEN) then //NUKLEAR ZELPH
  begin
-  AddClassNameGUIItemsCreation(synEdit, strClassName,intBlockStart, intBlockEnd,
-    '#include <wx/xrc/xmlres.h>' + #13 + '#include <wx/xrc/xh_all.h>');
+  AddClassNameIncludeHeader(synEdit, strClassName,intBlockStart, intBlockEnd,
+    '#include <wx/xrc/xmlres.h>' + #13 + '#include <wx/xrc/xh_all.h>');{+
+    #13 + '#include <wx/xrc/xh_richtext.h>'}
  end;
     strLst.Destroy;
   end;
@@ -1452,11 +1455,6 @@ if (XRCGEN) then //NUKLEAR ZELPH
       end;
      end;
 
-      if not (XRCGEN) then //NUKLEAR ZELPH
-	  begin
-      if IsControlWxStatusBar(TControl(Components[i])) then
-        strLst.add(Format('SetStatusBar(%s);', [self.Components[i].Name]));
-    end;
    end;
 
   isSizerAvailable := False;
@@ -1493,7 +1491,7 @@ if (XRCGEN) then //NUKLEAR ZELPH
   else
     strLst.add(Format('SetSize(%d,%d,%d,%d);', [self.left, self.top,
       self.Width, self.Height]));
-      
+
   if self.Wx_Center then
     strLst.add('Center();');
 
