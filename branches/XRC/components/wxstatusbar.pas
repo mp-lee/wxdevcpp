@@ -263,6 +263,7 @@ begin
   Result := TStringList.Create;
 
   try
+    //Result.Add(IndentString + '<object class="wxPanel" name="StatusBar">');
     Result.Add(IndentString + Format('<object class="%s" name="%s">',
       [self.Wx_Class, self.Name]));
     Result.Add(IndentString + Format('  <IDident>%s</IDident>', [self.Wx_IDName]));
@@ -292,6 +293,7 @@ begin
     Result.Add(IndentString + Format('  <style>%s</style>',
       [GetScrollbarSpecificStyle(self.Wx_GeneralStyle, Wx_StatusbarStyleSet)]));
     Result.Add(IndentString + '</object>');
+    //Result.Add(IndentString + '</object>');
 
   except
     Result.Free;
