@@ -1176,7 +1176,7 @@ uses
   NewTemplateFm, FunctionSearchFm, NewMemberFm, NewVarFm, NewClassFm,
   ProfileAnalysisFm, debugwait, FilePropertiesFm, AddToDoFm,
   ImportMSVCFm, CPUFrm, FileAssocs, TipOfTheDayFm, Splash,
-  WindowListFrm, ParamsFrm, WebUpdate, ProcessListFrm, ModifyVarFrm
+  WindowListFrm, ParamsFrm, WebUpdate, ProcessListFrm, ModifyVarFrm, devMsgBox
 
 {$IFDEF WX_BUILD}
   //Our dependencies
@@ -4498,6 +4498,7 @@ end;
 procedure TMainForm.actCloseProjectExecute(Sender: TObject);
 var
   s: string;
+  i: Integer;
 begin
   actStopExecute.Execute;
 
@@ -4506,8 +4507,8 @@ begin
   fProject.SaveLayout;
 
 {$IFNDEF PRIVATE_BUILD}
-  //Added for wx problems : Just close all the file
-  //tabs before closing the project
+  //TODO: Guru: Do we still need this? I've been running wxDev-C++ without this
+  //            code and it never crashes
   actCloseAll.Execute;
 {$ENDIF}
 
@@ -4529,6 +4530,18 @@ begin
 
   fCompiler.Project := nil;
   dmMain.AddtoHistory(fProject.FileName);
+
+  i := 0;
+  while i < debugger.Breakpoints.Count do
+  begin
+    if fProject.Units.Indexof(PBreakpoint(Debugger.Breakpoints[i])^.FileName) <> -1 then
+    begin
+      Dispose(Debugger.Breakpoints.Items[i]);
+      Debugger.Breakpoints.Delete(i);
+    end
+    else
+      Inc(i);
+  end;
 
   try
     FreeandNil(fProject);
@@ -5409,6 +5422,7 @@ end;
 procedure TMainForm.actDebugExecute(Sender: TObject);
 var
   UpToDate: Boolean;
+  MessageResult: Integer;
 begin
   if not fDebugger.Executing then
   begin
@@ -5428,9 +5442,21 @@ begin
 
       //Ask the user if the project is out of date
       if not UpToDate then
-        case MessageBox(Handle, 'The project you are working on is out of date. Do you ' +
-                        'want to rebuild the project before debugging?', 'wxDev-C++',
-                        MB_ICONQUESTION or MB_YESNOCANCEL) of
+      begin
+        if devData.AutoCompile = -1 then
+        begin
+          MessageResult := devMessageBox(Self, 'The project you are working on is out of date. Do you ' +
+                                         'want to rebuild the project before debugging?', 'wxDev-C++',
+                                         'Don''t show this again', MB_ICONQUESTION or MB_YESNOCANCEL);
+
+          if MessageResult > 0 then
+            devData.AutoCompile := abs(MessageResult);
+          MessageResult := abs(MessageResult);
+        end
+        else
+          MessageResult := devData.AutoCompile;
+
+        case MessageResult of
           mrYes:
           begin
             fCompiler.OnCompilationEnded := doDebugAfterCompile;
@@ -5440,6 +5466,7 @@ begin
           mrCancel:
             Exit;
         end;
+      end;
     end;
     doDebugAfterCompile(Sender);
   end
@@ -8226,7 +8253,9 @@ begin
   ModifyVarForm := TModifyVarForm.Create(self);
   try
     ModifyVarForm.NameEdit.Text := s;
+    ModifyVarForm.NameEdit.Enabled := False;
     ModifyVarForm.ValueEdit.Text := Val;
+    ModifyVarForm.ActiveWindow := ModifyVarForm.ValueEdit;
     if ModifyVarForm.ShowModal = mrOK then
     begin
       fDebugger.ModifyVariable(ModifyVarForm.NameEdit.Text, ModifyVarForm.ValueEdit.Text);
@@ -9827,6 +9856,8 @@ var
   componentInstance:TComponent;
   boolIsFilesDirty: Boolean;
   e: TEditor;
+  strDisplayName:String;
+  compSelectedOne:TComponent;
 
   procedure SetPropertyValue(Comp: TComponent; strPropName, strPropValue: String);
   var
@@ -9945,9 +9976,11 @@ begin
       if SelectedComponent <> nil then
       begin
         str := trim(Data.AsString);
+        strDisplayName:=JvInspEvents.Selected.DisplayName;
+        compSelectedOne:=SelectedComponent;
         DisableDesignerControls;
-        LocateFunctionInEditor(Data, Trim(e.GetDesigner.Wx_Name), SelectedComponent,
-                               str, JvInspEvents.Selected.DisplayName);
+        LocateFunctionInEditor(Data, Trim(e.GetDesigner.Wx_Name), compSelectedOne,
+                               str, strDisplayName);
       end;
     end
     else if strNewValue = '<Remove Function>' then
