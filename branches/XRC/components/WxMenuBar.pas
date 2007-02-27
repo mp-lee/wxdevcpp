@@ -532,11 +532,17 @@ begin
   parentName := GetWxWidgetParent(self);
   if trim(strStyle) <> '' then
     strStyle := ',' + strStyle;
-  
-  Result := GetCommentString(self.FWx_Comments.Text) +
-    Format('%s = new %s(%s);', [self.Name, self.Wx_Class, strStyle]);
 
+  Result := GetCommentString(self.FWx_Comments.Text);
+ if (XRCGEN) then
+ begin
+  Result := Result + Format('%s = wxXmlResource::Get()->LoadMenuBar(%s,wxT("%s"));',[self.Name,parentName,self.Name]);
+ end
+ else
+ begin  
+  Result := Result + Format('%s = new %s(%s);', [self.Name, self.Wx_Class, strStyle]);
   Result := Result + #13 + GetMenuItemCode + #13 + 'SetMenuBar(' + self.Name + ');';
+ end;
 end;
 
 function TWxMenuBar.GetCodeForOneMenuItem(parentName: string;

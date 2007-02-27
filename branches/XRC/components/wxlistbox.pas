@@ -449,7 +449,7 @@ if not (XRCGEN) then //NUKLEAR ZELPH
   begin
     strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
     Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
-      [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment, self.Wx_Border]);
+      [parentName, self.Name, self.Wx_StretchFactor, strAlignment, self.Wx_Border]);
   end;
 
 end;

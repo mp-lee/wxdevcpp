@@ -449,12 +449,12 @@ begin
   if trim(strControlString) <> '' then
       Result := Result + #13 + Format('%s->ShowPlayerControls(%s);', [self.Name, strControlString]);
 
-
+if not (XRCGEN) then //NUKLEAR ZELPH
   if (self.Parent is TWxSizerPanel) then
   begin
     strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
     Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
-      [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
+      [parentName, self.Name, self.Wx_StretchFactor, strAlignment,
       self.Wx_Border]);
   end;
 

@@ -175,6 +175,7 @@ begin
   Self.ParentColor := False;
   Self.ParentBackground := False;
 {$ENDIF}
+
 end; { of AutoInitialize }
 
 
@@ -204,7 +205,6 @@ begin
   PopulateGenericProperties(FWx_PropertyList);
 
   FWx_EventList.add('EVT_UPDATE_UI:OnUpdateUI');
-
 end;
 
 destructor TWxPanel.Destroy;
@@ -313,7 +313,6 @@ var
   strStyle, parentName, strAlignment: string;
 begin
   Result := '';
-
   //    if (self.Parent is TForm) or (self.Parent is TWxSizerPanel) then
   //       parentName:=GetWxWidgetParent(self)
   //    else
@@ -325,11 +324,11 @@ begin
   if trim(strStyle) <> '' then
     strStyle := ', ' + strStyle;
 
-   if (XRCGEN) then
+ if (XRCGEN) then
  begin//generate xrc loading code
-  Result := GetCommentString(self.FWx_Comments.Text) +
+   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = wxXmlResource::Get()->LoadPanel(%s,%s("%s"));',
-    [self.Name, parentName, StringFormat, self.Name]);
+    [self.Name, parentName, StringFormat, self.Name])
  end
  else
  begin//generate the cpp code
@@ -373,17 +372,9 @@ begin
     begin
       strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
       Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
-        [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
+        [self.parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
         self.Wx_Border]);
     end
-{  else
-    if (self.Parent is TWxSizerPanel) and (self.Parent.Parent is TForm) then
-    begin
-      strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
-      Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
-        [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
-        self.Wx_Border]);
-    end;}
 
 end;
 
