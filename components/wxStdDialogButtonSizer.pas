@@ -179,12 +179,14 @@ function TWxStdDialogButtonSizer.GenerateXRCControlCreation(IndentString: string
 begin
   Result := TStringList.Create;
   //TODO: Tony: Implement this for XRC
+  //dunno that xrc supports it yet Nuklear
 end;
 
 function TWxStdDialogButtonSizer.GenerateGUIControlCreation: string;
 var
   strAlignment: string;
 begin
+ if not (XRCGEN) then //mess up xrc, but it is not supported yet
   //Create the sizer
   Result := Format('%s = CreateButtonSizer(%s);', [self.Name, GetStdDialogButtonsSpecificStyle(Wx_Buttons)]);
 

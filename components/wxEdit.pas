@@ -513,11 +513,12 @@ begin
     strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
 
 
-   if (XRCGEN) then
+ if (XRCGEN) then
  begin//generate xrc loading code
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = XRCCTRL(*%s, %s("%s"), %s);',
     [self.Name, parentName, StringFormat, self.Name, self.wx_Class]);   
+  parentName := GetWxWidgetParent(self);
  end
  else
  begin//generate the cpp code
@@ -565,12 +566,12 @@ if not (XRCGEN) then //NUKLEAR ZELPH
   begin
     strAlignment := SizerAlignmentToStr(Wx_Alignment) + ' | ' + BorderAlignmentToStr(Wx_BorderAlignment);
     Result := Result + #13 + Format('%s->Add(%s,%d,%s,%d);',
-      [self.Parent.Name, self.Name, self.Wx_StretchFactor, strAlignment,
+      [parentName, self.Name, self.Wx_StretchFactor, strAlignment,
       self.Wx_Border]);
   end;
   if (self.Parent is TWxToolBar) and not (XRCGEN) then
     Result := Result + #13 + Format('%s->AddControl(%s);',
-      [self.Parent.Name, self.Name]);
+      [parentName, self.Name]);
 
   // Set border style
   if wxSUNKEN_BORDER in self.Wx_GeneralStyle then

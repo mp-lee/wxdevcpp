@@ -280,6 +280,7 @@ begin
 end;
 
 function TWxPopupMenu.GenerateXRCControlCreation(IndentString: string): TStringList;
+var i:integer;
 begin
 
   Result := TStringList.Create;
@@ -287,7 +288,75 @@ begin
   try
     Result.Add(IndentString + Format('<object class="%s" name="%s">',
       [self.Wx_Class, self.Name]));
+    
+    
+ {   
+    
+          for i := 0 to submnu.Count - 1 do    // Iterate
+        if submnu.items[i].Count > 0 then
+        begin
+
+          Result.Add(IndentString + '  <object class ="wxMenuItem" name="menuitem">');
+          Result.Add(IndentString + '    ' + Format('  <ID>%d</ID>',
+            [submnu.Items[i].Wx_IDValue]));
+          Result.Add(IndentString + '    ' + Format('  <IDident>%s</IDident>',
+            [submnu.Items[i].Wx_IDName]));
+          Result.Add(IndentString + '    ' + Format('  <label>%s</label>',
+            [XML_Label(submnu.Items[i].Wx_Caption)]));
+          Result.Add(IndentString + '    ' + Format('  <help>%s</help>',
+            [XML_Label(submnu.Items[i].Wx_HelpText)]));
+
+          tempstring := GetXRCCodeFromSubMenu(IndentString + '        ', submnu.Items[i]);
+          try
+
+            Result.AddStrings(tempstring);
+          finally
+            tempstring.Free;
+          end;
+
+          if (submnu.Items[i].Wx_Checked) then
+            Result.Add(IndentString + '      <checked>1</checked>')
+          else
+            Result.Add(IndentString + '      <checked>0</checked>');
+
+          if (submnu.Items[i].Wx_Enabled) then
+            Result.Add(IndentString + '      <enable>1</enable>')
+          else
+            Result.Add(IndentString + '      <enable>0</enable>');
+
+
+          Result.Add(IndentString + '  </object>');
+
+        end
+        else 
+        begin
+
+          Result.Add(IndentString + '  <object class ="wxMenuItem" name="menuitem">');
+          Result.Add(IndentString + '    ' + Format('  <ID>%d</ID>',
+            [submnu.Items[i].Wx_IDValue]));
+          Result.Add(IndentString + '    ' + Format('  <IDident>%s</IDident>',
+            [submnu.Items[i].Wx_IDName]));
+          Result.Add(IndentString + '    ' + Format('  <label>%s</label>',
+            [XML_Label(submnu.Items[i].Wx_Caption)]));
+          Result.Add(IndentString + '    ' + Format('  <help>%s</help>',
+            [XML_Label(submnu.Items[i].Wx_HelpText)]));
+
+          if (submnu.Items[i].Wx_Checked) then
+            Result.Add(IndentString + '      <checked>1</checked>')
+          else
+            Result.Add(IndentString + '      <checked>0</checked>');
+
+          if (submnu.Items[i].Wx_Enabled) then
+            Result.Add(IndentString + '      <enable>1</enable>')
+          else
+            Result.Add(IndentString + '      <enable>0</enable>');
+
+          Result.Add(IndentString + '  </object>');
+
+        end;
+}
     Result.Add(IndentString + '</object>');
+    
   except
     Result.Free;
     raise;
