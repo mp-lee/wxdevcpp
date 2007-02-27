@@ -303,7 +303,7 @@ begin
     if (XRCGEN) then //NUKLEAR ZELPH
    begin
     AddClassNameGUIItemsCreation(synEdit, strClassName,intBlockStart, intBlockEnd,
-    'wxXmlResource::Get()->InitAllHandlers();' + #13 +'wxXmlResource::Get()->Load("' + strClassName + '.xml");');{+
+    'wxXmlResource::Get()->InitAllHandlers();' + #13 +'wxXmlResource::Get()->Load(' + StringFormat + '("' + strClassName + '.xml"));');{+
     #13 +'wxXmlResource::Get()->AddHandler(new wxRichTextCtrlXmlHandler);');}
    end;
  end;
@@ -1410,7 +1410,7 @@ var
 
 begin
   strLst := TStringList.Create;
-if (XRCGEN) then //NUKLEAR ZELPH
+if (XRCGEN) then  //NUKLEAR ZELPH
   begin
     strLst.add(Format('%swxXmlResource::Get()->InitAllHandlers();%swxXmlResource::Get()->Load("%s.xml");',[#13,#13,self.Wx_Name]));
   end;
