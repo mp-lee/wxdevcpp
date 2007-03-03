@@ -1412,7 +1412,7 @@ begin
   strLst := TStringList.Create;
 if (XRCGEN) then  //NUKLEAR ZELPH
   begin
-    strLst.add(Format('%swxXmlResource::Get()->InitAllHandlers();%swxXmlResource::Get()->Load("%s.xml");',[#13,#13,self.Wx_Name]));
+    strLst.add(Format('%swxXmlResource::Get()->InitAllHandlers();%swxXmlResource::Get()->Load(%s("%s.xml"));',[#13,#13,StringFormat,self.Wx_Name]));
   end;
   if self.Wx_DesignerType = dtWxFrame then
     for I := self.ComponentCount - 1 downto 0 do    // Iterate
@@ -1440,7 +1440,8 @@ if (XRCGEN) then  //NUKLEAR ZELPH
                 MaxToolWidth :=
                   TWxToolButton(TWinControl(Components[i]).Controls[J]).Wx_BITMAP.Bitmap.Width;
             end;
-        end;    // for
+        end; // for
+
        if not (XRCGEN) then //NUKLEAR ZELPH
 	    begin 
         if not ((MaxToolWidth = 16) and (MaxToolHt = 15)) then
@@ -1454,9 +1455,11 @@ if (XRCGEN) then  //NUKLEAR ZELPH
         strLst.add(Format('SetToolBar(%s);', [self.Components[i].Name]));
       end;
      end;
-
-   end;
-
+  
+      if IsControlWxStatusBar(TControl(Components[i])) then
+        strLst.add(Format('SetStatusBar(%s);', [self.Components[i].Name]));
+   end; //for
+    
   isSizerAvailable := False;
   for I := 0 to self.ComponentCount - 1 do // Iterate
     if self.Components[i] is TWxSizerPanel then

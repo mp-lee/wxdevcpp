@@ -10822,6 +10822,7 @@ begin
   finally
     Free;
   end;
+  
   XRCGEN := MainForm.ELDesigner1.GenerateXRC;
 end;
 
