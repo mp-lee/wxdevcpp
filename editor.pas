@@ -54,7 +54,7 @@ type
     procedure AfterPaint(ACanvas: TCanvas; const AClip: TRect;
       FirstLine, LastLine: integer); override;
     procedure LinesInserted(FirstLine, Count: integer); override;
-    procedure LinesDeleted(FirstLine, Count: integer; AddToUndoList: Boolean); override;
+    procedure LinesDeleted(FirstLine, Count: integer); override;
   public
     constructor Create(ed: TEditor);
   end;
@@ -252,7 +252,7 @@ begin
   // if this method is not defined -> Abstract error
 end;
 
-procedure TDebugGutter.LinesDeleted(FirstLine, Count: integer; AddToUndoList: Boolean);
+procedure TDebugGutter.LinesDeleted(FirstLine, Count: integer);
 begin
   // if this method is not defined -> Abstract error
 end;
@@ -300,26 +300,21 @@ begin
   if fEditorType = etForm then
   begin
     //Dont allow anyone to edit the text content
-    fText.ReadOnly:=true;
-    fScrollDesign := TScrollBox.Create(fTabSheet);
-    fScrollDesign.Parent := fTabSheet;
-    fScrollDesign.Align := alClient;
-    fScrollDesign.Visible := True;
-    fScrollDesign.Color := clWhite;
+    fText.Hide;
+    fText.ReadOnly := True;
 
+    //Create the scroll box which we will use to scroll the designer
+    fScrollDesign            := TScrollBox.Create(fTabSheet);
+    fScrollDesign.AutoScroll := True;
+    fScrollDesign.Parent     := fTabSheet;
+    fScrollDesign.Align      := alClient;
+    fScrollDesign.Visible    := True;
+    fScrollDesign.Color      := clWhite;
+
+    //Then create the designer form where the controls will be placed
     fDesigner := TfrmNewForm.Create(fScrollDesign);
     fDesigner.synEdit := fText;
-    fDesigner.Visible := False;
-    SetWindowLong(fDesigner.Handle, GWL_STYLE, WS_CHILD or
-      (GetWindowLong(fDesigner.Handle, GWL_STYLE)));
-    Windows.SetParent(fDesigner.Handle, fScrollDesign.Handle);
-    ShowWindow(fDesigner.Handle, Sw_ShowNormal);
-
-    fScrollDesign.ScrollInView(fDesigner);
-    fScrollDesign.HorzScrollBar.Visible:=true;
-    fScrollDesign.VertScrollBar.Visible:=true;
-    fScrollDesign.AutoScroll:=true;
-    fScrollDesign.VertScrollBar.Position := fScrollDesign.VertScrollBar.Range
+    fDesigner.Parent := fScrollDesign;
   end
   else
   begin
@@ -2566,14 +2561,11 @@ var
   e: TEditor;
 
 begin
-  if isForm then
+  if isForm and MainForm.ELDesigner1.GenerateXRC then
   begin
-
-    if (MainForm.ELDesigner1.GenerateXRC) then
     if FileExists(ChangeFileExt(FileName, XRC_EXT)) then
     begin
       MainForm.OpenFile(ChangeFileExt(FileName, XRC_EXT), true);
-
       e := MainForm.GetEditorFromFileName(ChangeFileExt(FileName, XRC_EXT));
 
       if Assigned(e) then
@@ -2584,32 +2576,10 @@ begin
         except
         end;
         e.Text.EndUpdate;
-        e.Modified:=true;
+        e.Modified := True;
         e.InsertString('', false);
       end;
-
-    {  if Assigned(e) then
-      begin
-        try
-           e.Text.ClearAll;
-
-           e.Text.Lines.Append('<?xml version="1.0" encoding="ISO-8859-1"?>');
-           e.Text.Lines.Append('<resource xmlns="http://www.wxwidgets.org/wxxrc" version="2.3.0.1">');
-
-
-          GenerateCpp(fDesigner, fDesigner.Wx_Name, e.Text,e.FileName);
-          e.Modified:=true;
-
-           e.Text.Lines.Append('</object>');
-           e.Text.Lines.Append('</object>');
-           e.Text.Lines.Append('</resource>');
-
-        except
-        end;
-      end;
-      }
     end;
-
   end;
 end;
 
