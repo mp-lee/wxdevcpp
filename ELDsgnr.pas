@@ -3028,10 +3028,7 @@ procedure TELDesignerSelectedControls.UpdateMode;
     LI: Integer;
   begin
     for LI := 0 to Count - 1 do
-      if TDSelCtrlItem(FItems[LI]).Control <> FRootWinControl then
-        TDSelCtrlItem(FItems[LI]).SetMode(Value)
-      else
-        TDSelCtrlItem(FItems[LI]).SetMode(imNone);
+      TDSelCtrlItem(FItems[LI]).SetMode(Value)
   end;
 
 begin
