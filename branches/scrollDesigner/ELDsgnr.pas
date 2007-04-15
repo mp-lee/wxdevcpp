@@ -407,6 +407,7 @@ type
 procedure Register;
 
 implementation
+uses dbugintf;
 
 procedure Register;
 begin
@@ -759,7 +760,8 @@ begin
     FRoot.Top := 0;
   end;
 
-  TCustomFormAccess(FRoot).Designer := Self;
+  if FRoot is TCustomForm then
+    TCustomFormAccess(FRoot).Designer := Self;
   TWinControlAccess(FForm).SetDesigning(True);
   FForm.UpdateControlState;
   RecursionRefresh(FForm);
@@ -782,12 +784,13 @@ begin
     TCustomFormAccess(FForm).SetDesigning(False, False);
   if not (csDestroying in FRoot.ComponentState) then
     TWinControlAccess(FRoot).SetDesigning(False);
-  FForm.Designer := nil;
-  if not (csDestroying in FRoot.ComponentState) then
+  if FRoot is TCustomForm then
+    TCustomFormAccess(FRoot).Designer := nil;
+  if not (csDestroying in FForm.ComponentState) then
   begin
-    FRoot.UpdateControlState;
-    RecursionRefresh(FRoot);
-    if not (FRoot is TCustomForm) then
+    FForm.UpdateControlState;
+    RecursionRefresh(FForm);
+    if not (FForm is TCustomForm) then
     begin
       FRoot.Parent := FOldRootParent;
       FRoot.Left := FOldRootLeft;
@@ -1162,7 +1165,6 @@ function TDEng.MouseMessage(Sender: TControl; const Message: TMessage): Boolean;
 
 var
   LI: Integer;
-  LDesignMessage: Boolean;
   LContainer: TWinControl;
   LS: string;
   LInsertingControl: Boolean;
@@ -1172,10 +1174,8 @@ var
 begin
   Result := FIsInDrawMode or (Message.Msg = DESIGNER_SIZING);
   if not Result then
-  begin
-    LDesignMessage := _DispatchDesignHitTest(Sender, TWMMouse(Message));
-    Result := Result or not LDesignMessage;
-  end;
+    Result := not _DispatchDesignHitTest(Sender, TWMMouse(Message));
+  
   case Message.Msg of
     DESIGNER_SIZING:
       if not (lmNoResize in GetLockMode(Sender)) then
