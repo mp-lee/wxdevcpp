@@ -519,10 +519,7 @@ begin
 
 {$IFDEF WX_BUILD}
   if Assigned(fDesigner) then
-  begin
-    FreeAndNil(fDesigner);
     FreeAndNil(fScrollDesign);
-  end;
 {$ENDIF}
 
   //this activates the previous tab if the last one was
@@ -582,7 +579,7 @@ end;
 procedure TEditor.SetModified(value: boolean);
 begin
   fModified := value;
-  fText.Modified := Value;
+  fText.Modified := value;
 end;
 
 // RNC 07-21-04 These functions are used to turn off/on a breakpoint
@@ -2315,7 +2312,7 @@ begin
 end;
 
 procedure TEditor.ActivateDesigner;
-begin
+begin                       
   if isForm then
   begin
     if Assigned(fDesigner) then
