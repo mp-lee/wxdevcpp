@@ -1063,13 +1063,19 @@ function TDEng.MouseMessage(Sender: TControl; const Message: TMessage): Boolean;
     LR1 := AClient.ClientRect;
     LR1.TopLeft := AClient.ClientToScreen(LR1.TopLeft);
     LR1.BottomRight := AClient.ClientToScreen(LR1.BottomRight);
-    LR2 := FForm.ClientRect;
-    LR2.TopLeft := FForm.ClientToScreen(LR2.TopLeft);
-    LR2.BottomRight := FForm.ClientToScreen(LR2.BottomRight);
-    ARect.Left := Max(LR1.Left, LR2.Left);
-    ARect.Top := Max(LR1.Top, LR2.Top);
-    ARect.Right := Min(LR1.Right, LR2.Right);
-    ARect.Bottom := Min(LR1.Bottom, LR2.Bottom);
+
+    if AClient <> FForm.Parent then
+    begin
+      LR2 := FForm.ClientRect;
+      LR2.TopLeft := FForm.ClientToScreen(LR2.TopLeft);
+      LR2.BottomRight := FForm.ClientToScreen(LR2.BottomRight);
+      ARect.Left := Max(LR1.Left, LR2.Left);
+      ARect.Top := Max(LR1.Top, LR2.Top);
+      ARect.Right := Min(LR1.Right, LR2.Right);
+      ARect.Bottom := Min(LR1.Bottom, LR2.Bottom);
+    end
+    else
+      ARect := LR1;
     Result := (ARect.Left <= ARect.Right) and (ARect.Top <= ARect.Bottom);
     if not Result then
       ARect := Rect(0, 0, 0, 0);
@@ -1189,7 +1195,7 @@ begin
           False);
       end;
     WM_LBUTTONDOWN, WM_RBUTTONDOWN:
-      if not ((Sender = FForm) and (FRoot <> FForm)) then
+      //if (Sender = FForm) or (Sender = FRoot) then
       begin
         LInsertingControl := False;
         if Message.Msg = WM_LBUTTONDOWN then
@@ -1232,8 +1238,13 @@ begin
           end
           else
           begin
-            if (Sender = FRoot) or ((TWMMouse(Message).Keys and MK_CONTROL) > 0) then
+            if ((Sender = FForm) or ((TWMMouse(Message).Keys and MK_CONTROL) > 0)) and
+               (FForm.ClientRect.Left <= TWMMouse(Message).Pos.x) and
+               (FForm.ClientRect.Right >= TWMMouse(Message).Pos.x) and
+               (FForm.ClientRect.Top <= TWMMouse(Message).Pos.y) and
+               (FForm.ClientRect.Bottom >= TWMMouse(Message).Pos.y) then
             begin
+              //Draw a bounding rectangle and select all controls inside it.
               FSelCtrls.ClearExcept(FForm);
               if Result and (Message.Msg = WM_LBUTTONDOWN) then
               begin
@@ -1300,8 +1311,7 @@ begin
         begin
           if (Sender = FRoot) or (Sender = FForm) or not Result then
             FHint.Hide
-          else
-            if FHintControl <> Sender then
+          else if FHintControl <> Sender then
             begin
               if htControl in FDesigner.ShowingHints then
               begin
