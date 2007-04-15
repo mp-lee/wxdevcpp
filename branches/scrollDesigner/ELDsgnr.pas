@@ -1239,13 +1239,13 @@ begin
           else
           begin
             if ((Sender = FForm) or ((TWMMouse(Message).Keys and MK_CONTROL) > 0)) and
-               (FForm.ClientRect.Left <= TWMMouse(Message).Pos.x) and
-               (FForm.ClientRect.Right >= TWMMouse(Message).Pos.x) and
-               (FForm.ClientRect.Top <= TWMMouse(Message).Pos.y) and
-               (FForm.ClientRect.Bottom >= TWMMouse(Message).Pos.y) then
+               (Sender.ClientRect.Left <= TWMMouse(Message).Pos.x) and
+               (Sender.ClientRect.Right >= TWMMouse(Message).Pos.x) and
+               (Sender.ClientRect.Top <= TWMMouse(Message).Pos.y) and
+               (Sender.ClientRect.Bottom >= TWMMouse(Message).Pos.y) then
             begin
               //Draw a bounding rectangle and select all controls inside it.
-              FSelCtrls.ClearExcept(FForm);
+              FSelCtrls.ClearExcept(Sender);
               if Result and (Message.Msg = WM_LBUTTONDOWN) then
               begin
                 while (Sender <> nil) and
