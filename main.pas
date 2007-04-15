@@ -8855,6 +8855,7 @@ begin
   DesignerMenuCut.Enabled := ELDesigner1.CanCut;
   DesignerMenuCopy.Enabled := ELDesigner1.CanCopy;
   DesignerMenuPaste.Enabled := ELDesigner1.CanPaste;
+  DesignerMenuSelectParent.Enabled := DesignerMenuSelectParent.Count <> 0;
 
   Handled := True;
   DesignerPopup.Popup(MousePos.X,MousePos.Y);
