@@ -3322,7 +3322,9 @@ begin
     end
   end
   else if e.New then
-    Result := SaveFileAs(e);
+    Result := SaveFileAs(e)
+  else
+    Result := True;
 end;
 
 function TMainForm.SaveFile(e: TEditor): Boolean;
