@@ -23,6 +23,8 @@ program devcpp;
 {$R '..\..\LangFrm.res' '..\..\LangFrm.rc'}
 {$R '..\..\DefaultFiles.res' '..\..\DefaultFiles.rc'}
 
+{$R '..\..\STDREG.res'}
+
 {$WARN SYMBOL_PLATFORM OFF}
 
 uses

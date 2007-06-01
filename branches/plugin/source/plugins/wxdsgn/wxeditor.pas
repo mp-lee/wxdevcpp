@@ -61,7 +61,7 @@ uses
 	  //begin
 	    //Dont allow anyone to edit the text content
         FileName := fName;
-	    fText.ReadOnly := true;
+	    //fText.ReadOnly := true;
 	    fScrollDesign := TScrollBox.Create(fTabSheet);
 	    fScrollDesign.Parent := fTabSheet;
 	    fScrollDesign.Align := alClient;
@@ -95,7 +95,7 @@ uses
   end;
 
        //fText.Visible := false;
-
+       
        fDesigner.Visible := True;
 
        fDesigner.Left := 8;
@@ -119,20 +119,20 @@ uses
            fDesigner.Caption := Self.fDesignerTitle;
        end;
 
-         //fText.Highlighter := dmMain.Res;
+         //fText.Highlighter := wx_designer.main.GetDmMainRes;
          fDesigner.PopupMenu := DesignerPopup;
    end;
    
  procedure TWXEditor.Terminate;
  begin
-  wx_designer.SelectedComponent := nil;
+  //wx_designer.SelectedComponent := nil;
   wx_designer.DisableDesignerControls;
-  wx_designer.ELDesigner1.DesignControl := nil;
+  //wx_designer.ELDesigner1.DesignControl := nil;
   {if Assigned(fDesigner) then
   begin    }
-  fDesigner.Release;
-  FreeAndNil(fDesigner);
-  FreeAndNil(fScrollDesign);
+  //fDesigner.Release;
+  //FreeAndNil(fDesigner);
+  //FreeAndNil(fScrollDesign);
   //end;
  end;
  

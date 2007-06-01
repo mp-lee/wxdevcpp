@@ -1736,13 +1736,6 @@ begin
       	     if devEditor.DefaulttoPrj then
                fEditor.InsertDefaultText;
          LoadUnitLayout(fEditor, index);
-{$IFDEF PLUGIN_BUILD}
-      for i := 0 to MainForm.pluginsCount - 1 do
-      begin
-        if MainForm.plugins[i].IsForm(FileName) then
-            MainForm.plugins[i].Init(FileName);
-      end;
-{$ENDIF}         
          result:= fEditor;
       except
         on E: Exception do
