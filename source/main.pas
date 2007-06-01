@@ -35,7 +35,8 @@ uses
 {$IFDEF PLUGIN_BUILD}
   SynEdit, iplugin, iplugin_bpl, iplugin_dll, iplugger, // < -- EAB
   controlbar_win32_events, // <-- EAB for TControlBar Win32 WM_COMMAND events
-  xprocs, //ComponentPalette,  EAB TODO: check
+  xprocs, SynHighlighterRC,
+
 {$IFNDEF COMPILER_7_UP}
   ThemeMgr,
   ThemeSrv,
@@ -1075,7 +1076,8 @@ type
 	function GetRealPathFix(BrokenFileName: String; Directory: String = ''): String;  // <-- EAB
 	function FileAlreadyExistsInProject(s: String): Boolean;  // <-- EAB
 	function IsProjectNotNil: Boolean; // <-- EAB
-	
+  function GetDmMainRes: TSynRCSyn;  // <-- EAB
+
 {$ENDIF}
     function OpenWithAssignedProgram(strFileName:String):boolean;
     property FormProgress: TProgressBar read prgFormProgress write prgFormProgress;
@@ -3055,7 +3057,7 @@ procedure TMainForm.CloseEditorInternal(eX: TEditor);
 {$IFDEF PLUGIN_BUILD}
   var
     i: Integer;
-{$ENDIF}  
+{$ENDIF}
   begin
     if not eX.InProject then
     begin
@@ -3083,16 +3085,7 @@ procedure TMainForm.CloseEditorInternal(eX: TEditor);
         eX.Close
       end
       else if assigned(fProject) then
-      begin
-{$IFDEF PLUGIN_BUILD}
-            for i := 0 to pluginsCount - 1 do
-            begin
-                if plugins[i].IsForm(eX.FileName) then
-                    plugins[i].TerminateEditor(eX.FileName);
-            end;
-{$ENDIF}      
         fProject.CloseUnit(fProject.Units.Indexof(eX));
-      end;
     end;
 end;
 
@@ -3105,6 +3098,7 @@ var
  b: Boolean;
 {$ENDIF}
 begin
+  Saved := false;     // EAB TODO: This variable was not initialized. I'm not sure what is the proper default value; it changes the results...
   Result := False;
   e := GetEditor(index);
   if not assigned(e) then exit;
@@ -8982,7 +8976,7 @@ begin
 
           // EAB TODO: The implementation of ManualTabDock in JvDockControlForm.pas is highly coupled
           //to the caller code.. (for example, the second form is shown inside this proc, while the first form is "manually" shown outside).
-          //This method should to be rewritten.
+          //This method should be rewritten.
 
           lbDockClient2 := TJvDockClient.Create(panel1);
           with lbDockClient2 do
@@ -9260,9 +9254,6 @@ var
     eX:TEditor;
 begin
     Result := False;
-    isEXAssigned := False;
-    isEXModified := False;
-    eXFileName := '';
 	
     eX:=self.GetEditorFromFileName(ChangeFileExt(EditorFilename, extension));
     if assigned(eX) then
@@ -9508,6 +9499,11 @@ begin
 		Result := true
 	else
 		Result := false
+end;
+
+function TMainForm.GetDmMainRes: TSynRCSyn;
+begin
+  Result := dmMain.Res;
 end;
 
 {ENDIF PLUGIN_BUILD}

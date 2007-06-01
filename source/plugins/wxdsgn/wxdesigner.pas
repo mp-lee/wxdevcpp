@@ -298,6 +298,8 @@ public
     function Retrieve_LeftDock_Panels: TList;
     function ConvertLibsToCurrentVersion(strValue: String): String;
     procedure CreateNewXPMs(strFileName:String);
+    function EditorDisplaysText(FileName: String): Boolean;
+	  function GetTextHighlighterType(FileName: String): String;
   end;
 
 var
@@ -1660,11 +1662,11 @@ begin
   main.PrepareFileForEditor(currFile, insertProj, false, true, true);
   
   // EAB TODO: chech if this is correct ***
-  tabSheet := main.GetEditorTabSheet(currFile);
+  {tabSheet := main.GetEditorTabSheet(currFile);
   text := main.GetEditorText(currFile);
   editor := TWXEditor.Create;
   editors[currFile] := editor;
-  editor.Init(tabSheet, text, DesignerPopup, True, currFile);
+  editor.Init(tabSheet, text, DesignerPopup, True, currFile); }
   // text.Highlighter := dmMain.Res;  <-- EAB TODO: enable this here or in wxeditor's Init  
   // End check  ***	
 
@@ -1784,15 +1786,12 @@ begin
     text := main.GetEditorText(editorName);
     editor := TWXEditor.Create;
     editors[editorName] := editor;
-    //DisablePropertyBuilding := true;    // EAB: prevents wxEditor's designer call within its creation.
     editor.Init(tabSheet, text, DesignerPopup, True, editorName);
-    //DisablePropertyBuilding := false;
-    // text.Highlighter := dmMain.Res;  <-- EAB TODO: enable this here or in wxeditor's Init
-	  SetDesignerActiveState(false);
+	  {SetDesignerActiveState(false);          // EAB TODO: Check if disabling this is OK
     AssignDesignerControl(editorName);
     EnableDesignerControls;
     ActivateDesigner(editorName);
-    SetDesignerActiveState(true);
+    SetDesignerActiveState(true); }
 end;
 
 procedure TWXDsgn.StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
@@ -3774,8 +3773,8 @@ var
 begin
    if isForm(FileName) then
    begin
-     main.EditorInsertDefaultText(FileName);
      StartTimeX := GetTickCount;
+     main.EditorInsertDefaultText(FileName);
      temp := 'C++ Source Generation: ' + GetElapsedTimeStr(StartTimeX);
      main.UpdateEditor(ChangeFileExt(FileName, CPP_EXT), temp);
      StartTimeX := GetTickCount;
@@ -4613,7 +4612,7 @@ end;}
 
 procedure TWXDsgn.GenerateXPM(s:String);
 begin
-    Designerfrm.GenerateXPM((editors[s] AS TWXEditor).GetDesigner, s, true);
+    Designerfrm.GenerateXPM((editors[ExtractFileName(s)] AS TWXEditor).GetDesigner, s, true);
 end;
 
 procedure TWXDsgn.SetBoolInspectorDataClear(b: Boolean);
@@ -4667,7 +4666,9 @@ end;
 
 procedure TWXDsgn.TerminateEditor(FileName: String);
 begin
-    (editors[FileName] AS TWXEditor).Terminate;
+    (editors[ExtractFileName(FileName)] AS TWXEditor).Terminate;
+    if(editors.Exists(ExtractFileName(FileName))) then
+      editors.Delete(ExtractFileName(FileName));
 end;
 
 procedure TWXDsgn.Terminate;
@@ -4722,7 +4723,7 @@ begin
 
         if not ELDesigner1.Active then
           EnableDesignerControls;
-        ActivateDesigner(FileName);
+        ActivateDesigner(ExtractFileName(FileName));
         Screen.Cursor := crDefault;
 		Result := true;
       end;
@@ -4886,12 +4887,22 @@ end;
 
 procedure TWXDsgn.CreateNewXPMs(strFileName:String);
 begin
-    (editors[strFileName] AS TWXEditor).GetDesigner.CreateNewXPMs(strFileName);
+    (editors[ExtractFileName(strFileName)] AS TWXEditor).GetDesigner.CreateNewXPMs(strFileName);
 end;
 
 function TWXDsgn.HasDesigner(editorName: String): Boolean;
 begin
-    Result := (editors[editorName] AS TWXEditor).IsDesignerNil;
+    Result := (editors[ExtractFileName(editorName)] AS TWXEditor).IsDesignerNil;
+end;
+
+function TWXDsgn.EditorDisplaysText(FileName: String): Boolean;
+begin
+    Result := False;
+end;
+
+function TWXDsgn.GetTextHighlighterType(FileName: String): String;
+begin
+    Result := 'RES';
 end;
 
 initialization

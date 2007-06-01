@@ -57,6 +57,8 @@ type
     C_Retrieve_Toolbars: function(_hwnd: HWND): HWND; stdcall;
     C_ConvertLibsToCurrentVersion: function(strValue: PChar): PChar; stdcall;
     C_GetXMLExtension: function: PChar; stdcall;
+	C_EditorDisplaysText: function(FileName: PChar): Boolean; stdcall;
+	C_GetTextHighlighterType: function(FileName: PChar): PChar; stdcall;	
   public
     procedure StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
     procedure CutExecute;
@@ -100,6 +102,8 @@ type
     function GetPluginName: String;
     function ConvertLibsToCurrentVersion(strValue: String): String;
     function GetXMLExtension: String;
+	function EditorDisplaysText(FileName: String): Boolean;
+	function GetTextHighlighterType(FileName: String): String;
   end;
 
 implementation
@@ -148,6 +152,8 @@ begin
     @C_Retrieve_Toolbars := GetProcAddress(module, 'Retrieve_Toolbars');
     @C_ConvertLibsToCurrentVersion := GetProcAddress(module, 'ConvertLibsToCurrentVersion');
     @C_GetXMLExtension := GetProcAddress(module, 'GetXMLExtension');
+	@C_EditorDisplaysText := GetProcAddress(module, 'EditorDisplaysText');
+	@C_GetTextHighlighterType := GetProcAddress(module, 'GetTextHighlighterType');
 
     tool := TToolBar.Create(nil);
     tool.Left:= toolbar_x;
@@ -435,6 +441,21 @@ var
     res: String;
 begin
     temp := C_GetXMLExtension;
+    res := temp;
+    Result := res;
+end;
+
+function TPlug_In_DLL.EditorDisplaysText(FileName: String): Boolean;
+begin
+    Result := C_EditorDisplaysText(PChar(FileName));
+end;
+
+function TPlug_In_DLL.GetTextHighlighterType(FileName: String): String;
+var
+    temp: PChar;
+    res: String;
+begin
+    temp := C_GetTextHighlighterType(PChar(FileName));
     res := temp;
     Result := res;
 end;

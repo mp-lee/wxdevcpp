@@ -51,6 +51,8 @@ type
     function GetPluginName: String;
 	function ConvertLibsToCurrentVersion(strValue: String): String;
 	function GetXMLExtension: String;
+	function EditorDisplaysText(FileName: String): Boolean;
+	function GetTextHighlighterType(FileName: String): String;
   end;
 
 

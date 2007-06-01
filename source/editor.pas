@@ -231,6 +231,7 @@ var
 {$IFDEF PLUGIN_BUILD}
   i: Integer;
   pluginCatched: Boolean;
+  pluginTextHighlighterType: String;
 {$ENDIF}
 begin
   fModified := false;
@@ -333,6 +334,30 @@ begin
     fText.Highlighter := dmMain.Res
   else
     fText.Highlighter := dmMain.cpp;
+
+{$IFDEF PLUGIN_BUILD}
+  for i := 0 to MainForm.pluginsCount - 1 do
+  begin
+    if MainForm.plugins[i].isForm(ExtractFileName(File_name)) then
+    begin
+      if not MainForm.plugins[i].EditorDisplaysText(ExtractFileName(File_name)) then
+      begin
+        fText.ReadOnly := true;
+        fText.Visible := false;
+      end;
+
+      pluginTextHighlighterType := MainForm.plugins[i].GetTextHighlighterType(ExtractFileName(File_name));
+      if pluginTextHighlighterType = 'NEW' then
+        fText.Highlighter := dmMain.GetHighlighter(fFileName)
+      else if pluginTextHighlighterType = 'RES' then
+        fText.Highlighter := dmMain.Res
+      else if pluginTextHighlighterType = 'XML' then
+        fText.Highlighter := dmMain.XML
+      else
+        fText.Highlighter := dmMain.cpp;
+    end;
+  end;
+{$ENDIF}
 
   // update the selected text color
   StrtoPoint(pt, devEditor.Syntax.Values[cSel]);
@@ -443,6 +468,10 @@ end;
 procedure TEditor.Activate;
 var
   Allow: Boolean;
+{$IFDEF PLUGIN_BUILD}
+  i: Integer;
+  pluginCatched: Boolean;
+{$ENDIF}  
 begin
   if assigned(fTabSheet) then
   begin
@@ -456,7 +485,15 @@ begin
       fText.SetFocus;
 
     //Call the post-change event handler
-    if MainForm.ClassBrowser1.Enabled then
+{$IFDEF PLUGIN_BUILD}
+  pluginCatched := false;
+  for i := 0 to MainForm.pluginsCount - 1 do
+  begin
+    if MainForm.plugins[i].isForm(ExtractFileName(fFileName)) then
+      pluginCatched := true;
+  end;
+{$ENDIF}
+    if MainForm.ClassBrowser1.Enabled {$IFDEF WX_BUILD} or pluginCatched {$ENDIF} then
       MainForm.PageControl.OnChange(MainForm.PageControl); // this makes sure that the classbrowser is consistent
   end;
 end;
@@ -540,6 +577,10 @@ begin
 end;
         
 procedure TEditor.Close;
+{$IFDEF PLUGIN_BUILD}
+  var
+    i: Integer;
+{$ENDIF}
 begin
   fText.OnStatusChange := nil;
   fText.OnSpecialLineColors := nil;
@@ -550,6 +591,14 @@ begin
   fText.OnMouseDown := nil;
   fText.OnPaintTransient := nil;
   fText.OnKeyPress := nil;
+
+{$IFDEF PLUGIN_BUILD}
+  for i := 0 to MainForm.pluginsCount - 1 do
+  begin
+    if MainForm.plugins[i].IsForm(FileName) then
+      MainForm.plugins[i].TerminateEditor(FileName);
+  end;
+{$ENDIF}
   try
     Free;
   except
