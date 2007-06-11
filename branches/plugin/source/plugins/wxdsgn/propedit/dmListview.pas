@@ -70,14 +70,16 @@ var
   ListviewForm: TListviewForm;
 
 implementation
+
+uses
+  wxdesigner;
+
 {$R *.DFM}
-{uses
-  devCfg;}  // EAB TODO: Check this.
 
 procedure TListviewForm.FormCreate(Sender: TObject);
 begin
   DesktopFont := True;
-  //XPMenu.Active := devData.XPTheme;
+  XPMenu.Active := wx_designer.XPTheme;
   cbAlign.ItemIndex := 0;
   lastIdx := -1;
 end;

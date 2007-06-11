@@ -1797,6 +1797,7 @@ end;
 procedure TWXDsgn.StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
 begin
     plugin_name := name;
+    XPTheme := False;
 end;
 
 function TWXDsgn.CreateFormFile(strFName, strCName, strFTitle: string; dlgSStyle:TWxDlgStyleSet; dsgnType:TWxDesignerType): Boolean;
@@ -4677,11 +4678,13 @@ begin
   editors.Free;
 	DesignerPopup.Free;
 	WxPropertyInspectorPopup.Free;
-  frmPaletteDock.DockManager := nil;
+  ELDesigner1.Free;
+  self.Free;
+  //frmPaletteDock.DockManager := nil;
   frmPaletteDock.Destroy;
-  frmInspectorDock.DockManager := nil;
-  frmInspectorDock.Destroy;
-  //main := nil;    
+  //frmInspectorDock.DockManager := nil;
+  frmInspectorDock.Destroy;   
+  main := nil;    
 end;
 
 procedure TWXDsgn.OnDockableFormClosed(Sender: TObject; var Action: TCloseAction);
