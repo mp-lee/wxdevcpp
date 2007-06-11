@@ -31,7 +31,7 @@ uses
   Project, editor, compiler, ActnList, oysUtils, Toolfrm, AppEvnts, Grids,
   debugger, ClassBrowser, DevThemes, CodeCompletion, CppParser, CppTokenizer,
   devShortcuts, StrUtils, devFileMonitor, devMonitorTypes, DdeMan, XPMenu,
-  CVSFm, ImageTheme, JvComponentBase, JvDockControlForm,
+  CVSFm, ImageTheme, JvComponentBase, JvDockControlForm, JvDockSupportControl,
 {$IFDEF PLUGIN_BUILD}
   SynEdit, iplugin, iplugin_bpl, iplugin_dll, iplugger, // < -- EAB
   controlbar_win32_events, // <-- EAB for TControlBar Win32 WM_COMMAND events
@@ -917,6 +917,8 @@ type
     fIsIconized: Boolean;
     ReloadFilenames: TList;
 
+    NewDockTabs: TJvDockTabHostForm;
+
     function AskBeforeClose(e: TEditor; Rem: boolean;var Saved:Boolean): boolean;
     procedure AddFindOutputItem(line, col, unit_, message: string);
     function ParseParams(s: string): string;
@@ -1025,7 +1027,7 @@ type
     pluginsCount: Integer;
     current_max_toolbar_left: Integer;
     current_max_toolbar_top: Integer;
-    procedure InitPlugins(LeftDockTabs: TJvDockTabHostForm);  // <-- EAB
+    procedure InitPlugins;  // <-- EAB
     function ListDirectory(const Path: String; Attr: Integer): TStringList;  // <-- EAB
     function IsEditorAssigned(editorName: String = ''):Boolean;    // <-- EAB
     function IsProjectAssigned:Boolean;  // <-- EAB
@@ -1211,7 +1213,6 @@ var
   I: Integer;
   NewDock: TForm;
   NewDocks: TList;
-  NewDockTabs: TJvDockTabHostForm;
 {$IFDEF PLUGIN_BUILD}
   ini :TiniFile;
   lbDockClient1: TJvDockClient;
@@ -1387,7 +1388,7 @@ begin
   If tbClasses.Left > current_max_toolbar_left then current_max_toolbar_left := tbClasses.Left;
   If tbClasses.Top > current_max_toolbar_top then current_max_toolbar_top := tbClasses.Top;
 
-  InitPlugins(NewDockTabs);
+  InitPlugins;
   {$ENDIF}
 
   {NewDockTabs := ManualTabDock(DockServer.LeftDockPanel, frmInspectorDock, frmPaletteDock);  // EAB TODO: Implement with plugins
@@ -1846,6 +1847,7 @@ var
     tabs: TTabSheet;
     panel: TForm;
     i,j, idx, temp_left, temp_top: Integer;
+    DockClient1: TJvDockClient;
 {$ENDIF}  
 begin
   if assigned(fProject) then
@@ -1898,9 +1900,22 @@ begin
   devData.ToolbarSearchY := tbSearch.Top;
   devData.ToolbarClassesX := tbClasses.Left;
   devData.ToolbarClassesY := tbClasses.Top;
-  
+
+  //SetDockSite(NewDockTabs, False);
+  //NewDockTabs.PageControl.Destroy;
+
+  //DockServer.LeftDockPanel.DockSite := false;
+
+  //DockServer.LeftDockPanel.Free;
+
+ //DockServer.LeftDockPanel.DockServer := nil;
+  //DockServer.LeftDockPanel.DestroyComponents;
+  //DockServer.DestroyComponents;
+  //DockServer.LeftDockPanel := nil;
+  //DockServer.Destroy;
+
   {$IFDEF PLUGIN_BUILD}
-  for i := 0 to packagesCount - 1 do
+  {for i := 0 to packagesCount - 1 do
   begin
 
       items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_File_New_Menus;
@@ -1913,7 +1928,7 @@ begin
           end;
       end;
 
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_File_Import_Menus;
+      {items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_File_Import_Menus;
       if items <> nil then
       begin
           for j := 0 to items.Count -1 do
@@ -2023,7 +2038,7 @@ begin
           end;
       end;
 
-      {items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Message_Tabs;
+      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Message_Tabs;
       if items <> nil then
       begin
           for j := 0 to items.Count -1 do
@@ -2031,9 +2046,9 @@ begin
             tabs := items[j];
             Self.MessageControl.InsertControl(tabs);
           end;
-      end;  }
+      end;
 
-  end;
+  end;  }
 
 
   for i := 0 to pluginsCount - 1 do
@@ -2045,7 +2060,7 @@ begin
         devPluginToolbarsY.AddToolbarsY(plugins[i].GetPluginName, toolbar.Top);
     end;
 
-    items := plugins[i].Retrieve_Tabbed_LeftDock_Panels;
+    {items := plugins[i].Retrieve_Tabbed_LeftDock_Panels;
     if items <> nil then
     begin
       for j := 0 to items.Count -1 do
@@ -2053,22 +2068,39 @@ begin
         panel := items[j];
         DockServer.LeftDockPanel.RemoveControl(panel);
       end;
-    end;
+      {panel := items[0];
+      DockClient1 := FindDockClient(panel);
+      DockClient1.DestroyComponents;  }
+    //end;
+
+    {DockClient1 := FindDockClient(panel);
+    DockClient1.DestroyComponents;
+    DockClient1.Destroy; }
 
     plugins[i].Terminate;
     plugins[i] := nil;
   end;
 
+  //NewDockTabs..UseDockManager := false; //.DockManager AS TDockManager).RegisterDockSite(LeftDockPanel, False);
+  //JvGlobalDockManager.RegisterDockSite
+
+    //DockServer.LeftDockPanel.Destroy;
+    //NewDockTabs.Destroy;
+
+ //DockServer.LeftDockPanel.DockServer := nil;
   //DockServer.LeftDockPanel.DestroyComponents;
   //DockServer.DestroyComponents;
   //DockServer.LeftDockPanel := nil;
-  //DockServer.Destroy;
+
+  //DockServer.LeftDockPanel.Free;
+  //DockServer.Free;
 
   {$IFNDEF PLUGIN_TESTING}
-  for i := 0 to packagesCount - 1 do
+  for i := 0 to pluginsCount - 1 do
     UnloadPackage(plugin_modules[delphi_plugins[i]]);
   for i := 0 to librariesCount - 1 do
     FreeLibrary(plugin_modules[c_plugins[i]]);
+  //SetLength(plugin_modules, 0);
   {$ENDIF PLUGIN_TESTING}
   {$ENDIF PLUGIN_BUILD}  
   SaveOptions;
@@ -8817,7 +8849,7 @@ begin
    Result := entries;
 end;
 
-procedure TMainForm.InitPlugins(LeftDockTabs: TJvDockTabHostForm);
+procedure TMainForm.InitPlugins;
 var
     items: TList;
     menuItem: TMenuItem;
@@ -8854,10 +8886,8 @@ begin
           begin
             SetLength(delphi_plugins, packagesCount + 1);
             delphi_plugins[packagesCount] := pluginsCount;
-            Inc(pluginsCount);
-            Inc(packagesCount);
-            SetLength(plugin_modules, pluginsCount);
-            plugin_modules[i] := pluginModule;
+            SetLength(plugin_modules, pluginsCount + 1);
+            plugin_modules[pluginsCount] := pluginModule;
             AClass := GetClass('T' + pluginName);
             if AClass <> nil then
             begin
@@ -8865,18 +8895,22 @@ begin
                 {$ENDIF}
                 {$IFDEF PLUGIN_TESTING}
                 plugin := TWXDsgn.Create(Self) AS IPlug_In_BPL;   // <-- Could be used if statically linked; if so, previous PLUGIN lines are not needed
-                packagesCount := 1;
-                pluginsCount := 1;
                 SetLength(delphi_plugins, 1);
                 delphi_plugins[packagesCount] := 0;
+                packagesCount := 1;
+                pluginsCount := 1;
                 i := 0;
                 {$ENDIF}
                 plugin.Initialize(Self, devDirs.Config);
                 plugin.AssignPlugger(IPlug(Self));
-                SetLength(plugins, pluginsCount);
-                plugins[i] := plugin;
+                SetLength(plugins, pluginsCount + 1);
+                plugins[pluginsCount] := plugin;
+                Inc(pluginsCount);
+                Inc(packagesCount);
 
-
+                {plugin.Terminate;
+                plugin := nil;
+                UnloadPackage(plugin_modules[delphi_plugins[i]]); }
               {$IFNDEF PLUGIN_TESTING}
 
                 // Check for saved toolbar coordinates:
@@ -8940,10 +8974,10 @@ begin
 
             c_interface.StartUp(pluginName, pluginModule, Self.Handle, ControlBar1, Self, temp_left, temp_top);
             SetLength(plugins, pluginsCount);
-            plugins[i] := c_interface;
+            plugins[i] := c_interface;  
           end;
       end;
-  end;
+  end;     
   {$ENDIF}
 
   // Inserting plugin controls to the IDE
@@ -8962,7 +8996,7 @@ begin
       end;
 
       // EAB TODO: This section should be more general, not "attached" to a 2 panels logic, as it is now:
-      items := plugins[i].Retrieve_Tabbed_LeftDock_Panels;
+     items := plugins[i].Retrieve_Tabbed_LeftDock_Panels;
       if items <> nil then
       begin
           {for j := 0 to items.Count -1 do   // This is more general, but not working
@@ -8992,10 +9026,10 @@ begin
             DirectDrag := True;
             DockStyle := DockServer.DockStyle;
           end;
-          LeftDockTabs := ManualTabDock(DockServer.LeftDockPanel, panel1, panel2);
+            NewDockTabs := ManualTabDock(DockServer.LeftDockPanel, panel1, panel2);
       end;
 
-      { EAB TODO: Is the next proc correct? needed? }
+       // EAB TODO: Is the next proc correct? needed?
       items := plugins[i].Retrieve_LeftDock_Panels;
       if items <> nil then
       begin
@@ -9231,8 +9265,8 @@ begin
             tabs := items[j];
             Self.MessageControl.InsertControl(tabs);
           end;
-      end;
-  end;
+      end; 
+  end;    
 end;
 
 
