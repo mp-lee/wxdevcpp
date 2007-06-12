@@ -8897,9 +8897,8 @@ begin
                 plugin := TWXDsgn.Create(Self) AS IPlug_In_BPL;   // <-- Could be used if statically linked; if so, previous PLUGIN lines are not needed
                 SetLength(delphi_plugins, 1);
                 delphi_plugins[packagesCount] := 0;
-                packagesCount := 1;
-                pluginsCount := 1;
-                i := 0;
+                packagesCount := 0;
+                pluginsCount := 0;
                 {$ENDIF}
                 plugin.Initialize(Self, devDirs.Config);
                 plugin.AssignPlugger(IPlug(Self));
@@ -8907,11 +8906,7 @@ begin
                 plugins[pluginsCount] := plugin;
                 Inc(pluginsCount);
                 Inc(packagesCount);
-
-                {plugin.Terminate;
-                plugin := nil;
-                UnloadPackage(plugin_modules[delphi_plugins[i]]); }
-              {$IFNDEF PLUGIN_TESTING}
+               {$IFNDEF PLUGIN_TESTING}
 
                 // Check for saved toolbar coordinates:
                 idx := devPluginToolbarsX.AssignedToolbarsX(pluginName);
