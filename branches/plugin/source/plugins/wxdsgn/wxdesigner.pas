@@ -1460,7 +1460,7 @@ end;
 procedure TWXDsgn.AssignDesignerControl(editorName: String);
 begin
     if editors.Exists(editorName) then
-        ELDesigner1.DesignControl := (editors[editorName] AS TWXEditor).GetDesigner;
+        ELDesigner1.DesignControl := (editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner;
 end;
 
 procedure TWXDsgn.SetDesignerActiveState(state: Boolean);
@@ -3316,7 +3316,7 @@ var
     editorName: String;
 begin
     editorName := main.GetActiveEditorName;
-    Result := trim((editors[editorName] AS TWXEditor).GetDesigner().Wx_Name);
+    Result := trim((editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner().Wx_Name);
   {if main.IsEditorAssigned then      
         Result :=trim(e.GetDesigner().Wx_Name)
     else
@@ -3346,16 +3346,16 @@ begin
                 begin
                     editorName := main.GetActiveEditorName;
                     if UpperCase(SelectedComponent.ClassName) = UpperCase('TFrmNewForm') then
-                        GenerateXPMDirectly(TFrmNewForm(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_ICON.Bitmap,(editors[editorName] AS TWXEditor).GetDesigner.Wx_Name,'Self',editorName);
+                        GenerateXPMDirectly(TFrmNewForm(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_ICON.Bitmap,(editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner.Wx_Name,'Self',editorName);
 
                     if UpperCase(SelectedComponent.ClassName) = UpperCase('TWxStaticBitmap') then
-                        GenerateXPMDirectly(TWxStaticBitmap(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Picture.Bitmap,SelectedComponent.Name,(editors[editorName] AS TWXEditor).GetDesigner.Wx_Name,editorName);
+                        GenerateXPMDirectly(TWxStaticBitmap(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Picture.Bitmap,SelectedComponent.Name,(editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner.Wx_Name,editorName);
 
                     if UpperCase(SelectedComponent.ClassName) = UpperCase('TWxBitmapButton') then
-                        GenerateXPMDirectly(TWxBitmapButton(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_Bitmap.Bitmap,SelectedComponent.Name,(editors[editorName] AS TWXEditor).GetDesigner.Wx_Name,editorName);
+                        GenerateXPMDirectly(TWxBitmapButton(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_Bitmap.Bitmap,SelectedComponent.Name,(editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner.Wx_Name,editorName);
 
                     if UpperCase(SelectedComponent.ClassName) = UpperCase('TWxToolButton') then
-                        GenerateXPMDirectly(TWxToolButton(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_Bitmap.Bitmap,SelectedComponent.Name,(editors[editorName] AS TWXEditor).GetDesigner.Wx_Name,editorName);
+                        GenerateXPMDirectly(TWxToolButton(TJvInspectorPropData(JvInspProperties.Selected.Data).Instance).Wx_Bitmap.Bitmap,SelectedComponent.Name,(editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner.Wx_Name,editorName);
 
                 end;
         end;
@@ -3401,7 +3401,7 @@ begin
                         MessageDlg('Contructor Function(in Header) or Sometimes all the Functions(in Source)  might not be renamed. '+#13+#10+''+#13+#10+'Please rename them manually.'+#13+#10+''+#13+#10+'We hope to fix this bug asap.'+#13+#10+'Sorry for the trouble.', mtInformation, [mbOK], 0);
                         strDirName:=IncludeTrailingBackslash(ExtractFileDir(editorName));
                         RenameFile(strDirName+'\'+PreviousStringValue+'_XPM.xpm',strDirName+'\'+TfrmNewForm(comp).Wx_Name+'_XPM.xpm');
-                        Designerfrm.GenerateXPM((editors[editorName] AS TWXEditor).GetDesigner, editorName, true);
+                        Designerfrm.GenerateXPM((editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner, editorName, true);
                     end;
                 finally
                     hppStrLst.Destroy;
@@ -3501,7 +3501,7 @@ begin
     Exit;
 
   if editors.Exists(editorName) then
-    wx := (editors[editorName] AS TWXEditor).GetDesigner()
+    wx := (editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner()
   else
     Exit;
 
@@ -3532,7 +3532,7 @@ begin
 
   editorName := main.GetActiveEditorName;
   if editors.Exists(editorName) then
-    Result := (editors[editorName] AS TWXEditor).GetDesigner();
+    Result := (editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner();
 end;
 
 procedure TWXDsgn.JvInspEventsDataValueChanged(Sender: TObject;
@@ -3564,7 +3564,7 @@ begin
       Exit;
     
     editorName := main.GetActiveEditorName;
-    if not IsForm(editorName) then      
+    //if not IsForm(editorName) then      
 
     //Then get the value as a string
     strNewValue := Data.AsString;
@@ -3618,7 +3618,7 @@ begin
 
         componentInstance:=SelectedComponent;
         propertyName:=Data.Name;
-        wxClassName:=Trim((editors[editorName] AS TWXEditor).getDesigner().Wx_Name);
+        wxClassName:=Trim((editors[ExtractFileName(editorName)] AS TWXEditor).getDesigner().Wx_Name);
         propDisplayName:=JvInspEvents.Selected.DisplayName;
         if CreateFunctionInEditor(wxClassName, SelectedComponent, str, propDisplayName, ErrorString) then
         begin
@@ -3668,7 +3668,7 @@ begin
         strDisplayName:=JvInspEvents.Selected.DisplayName;
         compSelectedOne:=SelectedComponent;
         DisableDesignerControls;
-        LocateFunctionInEditor(Data, Trim((editors[editorName] AS TWXEditor).getDesigner().Wx_Name), compSelectedOne,
+        LocateFunctionInEditor(Data, Trim((editors[ExtractFileName(editorName)] AS TWXEditor).getDesigner().Wx_Name), compSelectedOne,
                                str, strDisplayName);
       end;
     end
@@ -3922,13 +3922,13 @@ var
 begin
   Result := false;
   boolFound := False;
-    editorName := main.GetActiveEditorName;
-    if not editors.Exists(editorName) then
+  editorName := main.GetActiveEditorName;
+  if not main.IsEditorAssigned(editorName) or not editors.Exists(ExtractFileName(editorName)) then
     Exit;
 
   //Give us a class name if none is specified
   if strClassName = '' then
-    strClassName:=trim((editors[editorName] AS TWXEditor).GetDesigner.Wx_Name);
+    strClassName:=trim((editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner.Wx_Name);
 
   StID := main.FindStatementID(strClassName, boolFound);
 
@@ -4051,7 +4051,7 @@ var
     Result := nil;
 
     editorName := main.GetActiveEditorName;
-    frmNewFormX := (editors[editorName] AS TWXEditor).GetDesigner();
+    frmNewFormX := (editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner();
 
     if Assigned(frmNewFormX) = False then
       Exit;
@@ -4393,7 +4393,7 @@ begin
     main.SetEditorModified(editorName, true);
 
     main.SaveFileFromEditor(editorName);
-    (editors[editorName] AS TWXEditor).ReloadForm;
+    (editors[ExtractFileName(editorName)] AS TWXEditor).ReloadForm;
     UpdateDesignerData(editorName);
 
     if main.IsFileOpenedInEditor(hppEditor) then
@@ -4421,8 +4421,8 @@ begin
         main.SaveFileFromEditor(editorName);
     end;
 
-    ELDesigner1.DesignControl := (editors[editorName] AS TWXEditor).GetDesigner;
-    BuildComponentList((editors[editorName] AS TWXEditor).GetDesigner);
+    ELDesigner1.DesignControl := (editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner;
+    BuildComponentList((editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner);
     ELDesigner1.Active := true;
 
 end;
@@ -4540,11 +4540,11 @@ procedure TWXDsgn.ActivateDesigner(s: String);
 begin
    if editors.Exists(s) then
    begin
-     if Assigned((editors[s] AS TWXEditor).GetDesigner()) then
+     if Assigned((editors[ExtractFileName(s)] AS TWXEditor).GetDesigner()) then
      begin
         ELDesigner1.Active := False;
        try
-         ELDesigner1.DesignControl := (editors[s] AS TWXEditor).GetDesigner();
+         ELDesigner1.DesignControl := (editors[ExtractFileName(s)] AS TWXEditor).GetDesigner();
          ELDesigner1.Active := True;
 
        except
@@ -4573,7 +4573,7 @@ begin
          text := main.GetEditorText(resourceName);
          text.BeginUpdate;
          try
-           GenerateXRC((editors[editorName] AS TWXEditor).GetDesigner(), (editors[editorName] AS TWXEditor).GetDesigner().Wx_Name, text, editorName);
+           GenerateXRC((editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner(), (editors[editorName] AS TWXEditor).GetDesigner().Wx_Name, text, editorName);
            main.SetEditorModified(resourceName, true);
          except
          end;
