@@ -41,7 +41,7 @@ type
     C_GetDefaultText: function(FileName: PChar): PChar; stdcall;
     C_GetFilter: function(editorName: PChar): PChar; stdcall;
     C_Get_EXT: function(editorName: PChar): PChar; stdcall;
-    C_GenerateXPM: procedure(s:PChar); stdcall;
+    C_GenerateXPM: procedure(s:PChar; b: Boolean); stdcall;
     C_CreateNewXPMs: procedure(s:PChar); stdcall;
     C_NewProject: procedure(s: PChar); stdcall;
     C_MainPageChanged: function(askIfShouldGetFocus: Boolean; FileName: String): Boolean; stdcall;	
@@ -86,7 +86,7 @@ type
     function GetDefaultText(FileName: String): String;
     function GetFilter(editorName: String): String;
     function Get_EXT(editorName: String): String;
-    procedure GenerateXPM(s:String);
+    procedure GenerateXPM(s:String; b: Boolean);
     procedure CreateNewXPMs(s:String);
     procedure NewProject(s: String);
     function MainPageChanged(askIfShouldGetFocus: Boolean; FileName: String): Boolean;
@@ -264,11 +264,6 @@ begin
     Result := C_SaveFile(PChar(s), b); // EAB TODO: Check for the proper parameter for returning values in "b"
 end;
 
-{procedure TPlug_In_DLL.Activate(FileName: String);
-begin
-    C_Activate(PChar(FileName));
-end;}
-
 function TPlug_In_DLL.IsSource(FileName: String): Boolean;
 begin
     Result := C_IsSource(PChar(FileName));
@@ -305,9 +300,9 @@ begin
     Result := res;
 end;
 
-procedure TPlug_In_DLL.GenerateXPM(s:String);
+procedure TPlug_In_DLL.GenerateXPM(s:String; b: Boolean);
 begin
-    C_GenerateXPM(PChar(s));
+    C_GenerateXPM(PChar(s), b);
 end;
 
 procedure TPlug_In_DLL.CreateNewXPMs(s:String);

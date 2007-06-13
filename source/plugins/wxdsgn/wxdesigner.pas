@@ -250,7 +250,7 @@ public
     function GetFilter(editorName: String): String;
     function Get_EXT(editorName: String): String;
     procedure NewProject(s: String);
-    procedure GenerateXPM(s:String);
+    procedure GenerateXPM(s:String; b: Boolean);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure SetDesignerActiveState(state: Boolean);
     procedure EnableDesignerControls;
@@ -1235,7 +1235,7 @@ begin
     if IsForm(s) then
     begin
       main.OpenFile(GetLongName(ChangeFileExt(s, H_EXT)), True);
-      main.OpenFile(GetLongName(ChangeFileExt(s, CPP_EXT)), true);
+      main.OpenFile(GetLongName(ChangeFileExt(s, CPP_EXT)), True);
 	  if ELDesigner1.GenerateXRC then
           main.OpenFile(ChangeFileExt(s, XRC_EXT), True);      
     end;
@@ -3627,8 +3627,7 @@ begin
           Data.AsString := str;
           JvInspEvents.OnDataValueChanged := JvInspEventsDataValueChanged;
           DisableDesignerControls;
-          if FileExists(ChangeFileExt(editorName, CPP_EXT)) then
-            OpenFile(ChangeFileExt(editorName, CPP_EXT));
+          main.OpenFile(GetLongName(ChangeFileExt(editorName, CPP_EXT)), false);
         end
         else
         begin
@@ -4611,9 +4610,9 @@ begin
    PnlBrowsers.Visible := b;
 end;}
 
-procedure TWXDsgn.GenerateXPM(s:String);
+procedure TWXDsgn.GenerateXPM(s:String; b: Boolean);
 begin
-    Designerfrm.GenerateXPM((editors[ExtractFileName(s)] AS TWXEditor).GetDesigner, s, true);
+    Designerfrm.GenerateXPM((editors[ExtractFileName(s)] AS TWXEditor).GetDesigner, s, b);
 end;
 
 procedure TWXDsgn.SetBoolInspectorDataClear(b: Boolean);
