@@ -327,8 +327,8 @@ begin
       Image2.Picture.Bitmap.LoadFromResourceName(HInstance, 'THEMEGNOME');
     2:
       Image2.Picture.Bitmap.LoadFromResourceName(HInstance, 'THEMEBLUE');
-	3:
-    Image2.Picture.Bitmap.LoadFromResourceName(HInstance, 'THEMECLASSIC');      
+    3:                                                       
+      Image2.Picture.Bitmap.LoadFromResourceName(HInstance, 'THEMECLASSIC');      
   else
     Image2.Picture.Bitmap.LoadFromResourceName(HInstance, 'THEMENEWLOOK');
   end;

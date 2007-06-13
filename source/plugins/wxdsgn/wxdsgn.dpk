@@ -167,6 +167,7 @@ contains
   wxdesigner in 'wxdesigner.pas',
   wxeditor in 'wxeditor.pas',
   wxversion in 'wxversion.pas',
-  WxUtils in 'components\wxUtils.pas';
+  WxUtils in 'components\wxUtils.pas',
+  xProcs in '..\..\xprocs.pas';
 
 end.
