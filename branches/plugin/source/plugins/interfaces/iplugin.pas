@@ -35,7 +35,7 @@ type
     function GetDefaultText(FileName: String): String;	
     function GetFilter(editorName: String): String;
     function Get_EXT(editorName: String): String;
-    procedure GenerateXPM(s:String);
+    procedure GenerateXPM(s:String; b: Boolean);
 	procedure CreateNewXPMs(strFileName:String);
     procedure NewProject(s: String);
     function MainPageChanged(askIfShouldGetFocus: Boolean; FileName: String): Boolean;	

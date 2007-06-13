@@ -2907,7 +2907,7 @@ begin
   for j := 0 to pluginsCount - 1 do
   begin
     if plugins[j].IsForm(e.FileName) then
-        plugins[j].GenerateXPM(e.FileName);
+        plugins[j].GenerateXPM(e.FileName, false);
   end;
 {$ENDIF}
 
