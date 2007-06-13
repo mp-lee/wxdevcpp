@@ -23,8 +23,6 @@ program devcpp;
 {$R '..\..\LangFrm.res' '..\..\LangFrm.rc'}
 {$R '..\..\DefaultFiles.res' '..\..\DefaultFiles.rc'}
 
-{$R '..\..\STDREG.res'}
-
 {$WARN SYMBOL_PLATFORM OFF}
 
 uses
@@ -105,7 +103,6 @@ uses
   dmCreateNewProp in 'dmCreateNewProp.pas' {frmCreateFormProp},
   wxversion in 'wxversion.pas',
   dmCodeGen in 'dmCodeGen.pas',
-  ExceptionFilterUnit in 'ExceptionFilterUnit.pas',
   CompFileIo in 'CompFileIo.pas',
   Hashes in 'Hashes.pas',
   CreateOrderFm in 'CreateOrderFm.pas' {CreationOrderForm},
@@ -119,7 +116,8 @@ uses
   iplugin_bpl in '..\interfaces\iplugin_bpl.pas',
   cfgTypes in '..\..\cfgTypes.pas',
   PackmanExitCodesU in '..\..\..\..\packman\PackmanExitCodesU.pas',
-  xProcs in '..\..\xprocs.pas';
+  xProcs in '..\..\xprocs.pas',
+  ExceptionFilterUnit in '..\..\ExceptionFilterUnit.pas';
 
 {$R *.res}
 
