@@ -23,6 +23,10 @@ program devcpp;
 {$R '..\..\LangFrm.res' '..\..\LangFrm.rc'}
 {$R '..\..\DefaultFiles.res' '..\..\DefaultFiles.rc'}
 
+{$IFDEF PLUGIN_BUILD}
+{$R STDREG.res}
+{$ENDIF}
+
 {$WARN SYMBOL_PLATFORM OFF}
 
 uses

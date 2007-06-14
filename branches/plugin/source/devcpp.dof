@@ -45,7 +45,7 @@ OutputDir=..\
 UnitOutputDir=units
 PackageDLLOutputDir=
 PackageDCPOutputDir=
-SearchPath=packages;packages\parser;plugins\interfaces;packages\codetooltip;..\packman;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(PROGRAMFILES)\GExperts for Delphi 6
+SearchPath=packages;packages\parser;plugins\interfaces;packages\codetooltip;..\..\packman;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(PROGRAMFILES)\GExperts for Delphi 6
 Packages=vcl;rtl
 Conditionals=madExcept;PLUGIN_BUILD;UseRuntimePackages
 DebugSourceDirs=
@@ -94,8 +94,8 @@ Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 [HistoryLists\hlSearchPath]
 Count=18
-Item0=packages;packages\parser;plugins\interfaces;packages\codetooltip;..\packman;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(PROGRAMFILES)\GExperts for Delphi 6
-Item1=packages;packages\parser;plugins\interfaces;packages\codetooltip;..\..\packman;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(PROGRAMFILES)\GExperts for Delphi 6
+Item0=packages;packages\parser;plugins\interfaces;packages\codetooltip;..\..\packman;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(PROGRAMFILES)\GExperts for Delphi 6
+Item1=packages;packages\parser;plugins\interfaces;packages\codetooltip;..\packman;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(PROGRAMFILES)\GExperts for Delphi 6
 Item2=packages;plugins\interfaces;packages\parser;packages\codetooltip;..\..\packman;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(PROGRAMFILES)\GExperts for Delphi 6
 Item3=packages;plugins\interfaces;packages\parser;packages\codetooltip;../packman;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(PROGRAMFILES)\GExperts for Delphi 6
 Item4=packages;plugins\interfaces;packages\parser;packages\codetooltip;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(PROGRAMFILES)\GExperts for Delphi 6;../packman
