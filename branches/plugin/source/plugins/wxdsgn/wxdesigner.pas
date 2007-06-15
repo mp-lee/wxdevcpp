@@ -1282,16 +1282,16 @@ end;
 
 function TWXDsgn.SaveFile(EditorFilename: String; var pluginFileExist: Boolean): Boolean;
 var
-	isEXAssigned: Boolean;
-	isEXModified: Boolean;
-	eXFileName: String;
+  isEXAssigned: Boolean;
+  isEXModified: Boolean;
+  eXFileName: String;
   hFile,cppFile: String;
   bHModified,bCppModified:Boolean;
 begin
     Result := false;
-	  isEXAssigned := false;
-	  isEXModified := false;
-	  eXFileName := '';
+    isEXAssigned := false;
+    isEXModified := false;
+    eXFileName := '';
 //Bug fix for 1123460 : Save the files first and the do a re-parse.
 //If you dont save all the files first then cpp functions and header functions of save class
 //will be added in the class browser and duplicates will be there.
@@ -1300,12 +1300,12 @@ begin
 
     if FileExists(ChangeFileExt(EditorFilename,WXFORM_EXT)) then
     begin
-		pluginFileExist := True;
+        pluginFileExist := True;
         if main.isFileOpenedinEditor(ChangeFileExt(EditorFilename, WXFORM_EXT)) then
         begin
             Result := main.SaveFileIfModified(EditorFilename, WXFORM_EXT, isEXAssigned, isEXModified, eXFileName);
-			if isEXAssigned then
-				(editors[ExtractFileName(ChangeFileExt(EditorFilename, WXFORM_EXT))] AS TWXEditor).GetDesigner.CreateNewXPMs(eXFileName);
+            if isEXAssigned then
+                (editors[ExtractFileName(ChangeFileExt(EditorFilename, WXFORM_EXT))] AS TWXEditor).GetDesigner.CreateNewXPMs(eXFileName);
         end;
 
         // XRC
@@ -1317,15 +1317,15 @@ begin
         if main.isFileOpenedinEditor(ChangeFileExt(EditorFilename, H_EXT)) then
         begin
             Result := main.SaveFileIfModified(EditorFilename, H_EXT, isEXAssigned, isEXModified, eXFileName);
-			bHModified:=isEXModified;
-			hFile := eXFileName;
+            bHModified:=isEXModified;
+            hFile := eXFileName;
         end;
 
         if main.isFileOpenedinEditor(ChangeFileExt(EditorFilename, CPP_EXT)) then
         begin
             Result := main.SaveFileIfModified(EditorFilename, CPP_EXT, isEXAssigned, isEXModified, eXFileName);
-			bCppModified:=isEXModified;
-			cppFile := eXFileName;
+            bCppModified:=isEXModified;
+            cppFile := eXFileName;
         end;
 		
 		// EAB TODO: Check if these next 2 can be done directly inside the SaveFileIfModified call
@@ -3500,7 +3500,7 @@ begin
   if not main.IsEditorAssigned then
     Exit;
 
-  if editors.Exists(editorName) then
+  if isForm(editorName) then
     wx := (editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner()
   else
     Exit;
@@ -3531,7 +3531,7 @@ begin
     Exit;
 
   editorName := main.GetActiveEditorName;
-  if editors.Exists(editorName) then
+  if isForm(editorName) then
     Result := (editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner();
 end;
 
@@ -3560,11 +3560,10 @@ begin
     //Do some sanity checks
     if (JvInspEvents.Selected = nil) or (not JvInspEvents.Selected.Visible) then
       Exit;
-    if not main.IsEditorAssigned then
-      Exit;
-    
+
     editorName := main.GetActiveEditorName;
-    //if not IsForm(editorName) then      
+    if not main.IsEditorAssigned(editorName) or not IsForm(editorName) then
+      Exit;
 
     //Then get the value as a string
     strNewValue := Data.AsString;
@@ -4020,6 +4019,10 @@ var
   editorName: String;
 begin
   editorName := main.GetActiveEditorName;
+
+  if not main.IsEditorAssigned(editorName) then
+    Exit;
+
   if not isForm(editorName) then
     Exit;
 
@@ -4700,7 +4703,7 @@ end;  }
 
 function TWXDsgn.MainPageChanged(askIfShouldGetFocus: Boolean; FileName: String): Boolean;
 begin
-	Result := false;
+    Result := false;
     if askIfShouldGetFocus then
 	begin
       if IsForm(FileName) then
@@ -4713,13 +4716,13 @@ begin
           EnableDesignerControls;
         ActivateDesigner(ExtractFileName(FileName));
         Screen.Cursor := crDefault;
-		Result := true;
+        Result := true;
       end;
 	end
 	else
     begin
         if ELDesigner1.Active then
-			DisableDesignerControls;
+            DisableDesignerControls;
 	end;
 end;
 

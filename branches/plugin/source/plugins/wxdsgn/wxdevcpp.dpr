@@ -30,6 +30,11 @@ program devcpp;
 {$WARN SYMBOL_PLATFORM OFF}
 
 uses
+  madExcept,
+  madLinkDisAsm,
+  madListHardware,
+  madListProcesses,
+  madListModules,
   Windows,
   Forms,
   sysUtils,
@@ -227,7 +232,7 @@ begin
   {*** modified by peter ***}
   // apply the window placement. this method forced
   // the form to show,
-  TMainFormHack(MainForm).DoApplyWindowPlacement;  // <-- EAB TODO: Fix error in XPMenu.pas when loading first run options
+  TMainFormHack(MainForm).DoApplyWindowPlacement;
 
   if not devData.NoSplashScreen then
     SplashForm.Free;
