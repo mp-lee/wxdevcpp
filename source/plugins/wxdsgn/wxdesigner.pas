@@ -3804,7 +3804,7 @@ begin
 
   editorName := main.GetActiveEditorName;
 
-  if not editors.Exists(editorName) then
+  if not isForm(editorName) then
     Exit;
 
   StID := main.FindStatementID(strClassName, boolFound);
@@ -3836,17 +3836,13 @@ begin
     Result:=false;
 
     editorName := main.GetActiveEditorName;
-    if not editors.Exists(editorName) then
-    begin
+    if not main.IsEditorAssigned(editorName) then
         Exit;
-    end;
 
-    {if not e.isForm then        // <-- EAB: Is this useless in this new context?
-    begin
+    if not isForm(editorName) then
         Exit;
-    end;}
 
-    if not editors.Exists(editorName) then        // <-- EAB: This shouldn't be executing...¿?
+    if not main.IsEditorAssigned(editorName) then        // <-- EAB: This shouldn't be executing...¿?
     begin
         MessageDlg('Unable to Get the Designer Info.', mtError, [mbOK], 0);
         Exit;
@@ -3868,7 +3864,6 @@ begin
     else
         Result:=false;
 
-
 end;
 
 function TWXDsgn.saveCurrentFormFiles:Boolean;
@@ -3878,15 +3873,11 @@ begin
     Result:=false;
 
     editorName := main.GetActiveEditorName;
-    if not editors.Exists(editorName) then
-    begin
+    if not main.IsEditorAssigned(editorName) then
         Exit;
-    end;
 
-    {if not e.isForm then       // <-- EAB: Is this useless in this new context?
-    begin
+    if not isForm(editorName) then
         Exit;
-    end;}
     
     Result:=true;
     if main.IsEditorModified(editorName) then
@@ -3922,7 +3913,7 @@ begin
   Result := false;
   boolFound := False;
   editorName := main.GetActiveEditorName;
-  if not main.IsEditorAssigned(editorName) or not editors.Exists(ExtractFileName(editorName)) then
+  if not main.IsEditorAssigned(editorName) or not isForm(editorName) then
     Exit;
 
   //Give us a class name if none is specified
@@ -4029,7 +4020,7 @@ var
   editorName: String;
 begin
   editorName := main.GetActiveEditorName;
-  if not editors.Exists(editorName) then
+  if not isForm(editorName) then
     Exit;
 
   UpdateDesignerData(editorName);
@@ -4342,30 +4333,27 @@ begin
         exit;
 
     editorName := main.GetActiveEditorName;
-    if not editors.Exists(editorName) then
+    if not main.IsEditorAssigned(editorName) then
         Exit;
 
     hppEditor := ChangeFileExt(editorName, H_EXT);
-    cppEditor := ChangeFileExt(editorName, CPP_EXT);
-
     if main.IsFileOpenedInEditor(hppEditor) then
     begin
-        {hppEditor:=e.GetDesignerHPPEditor;
-        if assigned(hppEditor) then
-        begin }
+        if main.IsEditorAssigned(hppEditor) then
+        begin 
             if main.IsEditorModified(hppEditor) then
                 main.SaveFileFromEditor(hppEditor);
-        //end;
+        end;
     end;
 
+    cppEditor := ChangeFileExt(editorName, CPP_EXT);
     if main.IsFileOpenedInEditor(cppEditor) then
     begin
-        {cppEditor:=e.GetDesignerCPPEditor;
-        if assigned(cppEditor) then
-        begin }
+        if main.IsEditorAssigned(cppEditor) then
+        begin
             if  main.IsEditorModified(cppEditor) then
                 main.SaveFileFromEditor(cppEditor);
-        //end;
+        end;
     end;
 
     if main.IsEditorModified(editorName) then
@@ -4397,22 +4385,20 @@ begin
 
     if main.IsFileOpenedInEditor(hppEditor) then
     begin
-        {hppEditor:=e.GetDesignerHPPEditor;
-        if assigned(hppEditor) then
-        begin }
+        if main.IsEditorAssigned(hppEditor) then
+        begin
             if main.IsEditorModified(hppEditor) then
                 main.SaveFileFromEditor(hppEditor);
-        //end;
+        end;
     end;
 
     if main.IsFileOpenedInEditor(cppEditor) then
     begin
-        {cppEditor:=e.GetDesignerCPPEditor;
-        if assigned(cppEditor) then
-        begin }
+        if main.IsEditorAssigned(cppEditor) then
+        begin
             if  main.IsEditorModified(cppEditor) then
                 main.SaveFileFromEditor(cppEditor);
-        //end;
+        end;
     end;
 
     if main.IsEditorModified(editorName) then
@@ -4537,7 +4523,7 @@ end;   }
 
 procedure TWXDsgn.ActivateDesigner(s: String);
 begin
-   if editors.Exists(s) then
+   if isForm(s) then
    begin
      if Assigned((editors[ExtractFileName(s)] AS TWXEditor).GetDesigner()) then
      begin
@@ -4558,7 +4544,7 @@ var
    resourceName: String;
    text: TSynEdit;
 begin
-   if editors.Exists(editorName) then
+   if IsForm(editorName) then
    begin
  
      if (ELDesigner1.GenerateXRC) then
@@ -4572,7 +4558,7 @@ begin
          text := main.GetEditorText(resourceName);
          text.BeginUpdate;
          try
-           GenerateXRC((editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner(), (editors[editorName] AS TWXEditor).GetDesigner().Wx_Name, text, editorName);
+           GenerateXRC((editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner(), (editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner().Wx_Name, text, editorName);
            main.SetEditorModified(resourceName, true);
          except
          end;
@@ -4696,7 +4682,7 @@ end;
 
 function TWXDsgn.IsSource(FileName: String): Boolean;
 begin
-    Result := not editors.Exists(FileName);
+    Result := not isForm(FileName);
 end;
 
 function TWXDsgn.GetDefaultText(FileName: String): String;
