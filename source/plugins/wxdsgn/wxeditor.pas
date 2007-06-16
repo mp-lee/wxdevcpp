@@ -32,7 +32,7 @@ type
     function GetDesignerCPPFileName: string;
     procedure ReloadForm;
     procedure ReloadFormFromFile(strFilename:String);
-    procedure Init(fTabSheet: TTabSheet; fText: TSynEdit; DesignerPopup: TPopUpMenu; DoOpen: boolean; fName: String);
+    procedure Init(fTabSheet: TTabSheet; var fText: TSynEdit; DesignerPopup: TPopUpMenu; DoOpen: boolean; fName: String);
     //procedure Reload;
     procedure Terminate;
     function GetDefaultText: String;
@@ -55,7 +55,7 @@ uses
         fEditorType := etSource;  }
    //end;
 
-   procedure TWXEditor.Init(fTabSheet: TTabSheet; fText: TSynEdit; DesignerPopup: TPopUpMenu; DoOpen: boolean; fName: String);
+   procedure TWXEditor.Init(fTabSheet: TTabSheet; var fText: TSynEdit; DesignerPopup: TPopUpMenu; DoOpen: boolean; fName: String);
    begin
 	  //if fEditorType = etForm then
 	  //begin

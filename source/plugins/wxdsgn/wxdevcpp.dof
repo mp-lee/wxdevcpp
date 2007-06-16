@@ -47,7 +47,7 @@ PackageDLLOutputDir=
 PackageDCPOutputDir=wxdevcpp\bin
 SearchPath=propedit;components;..\..;..\interfaces;..\..\packages;..\..\units;..\..\packages\parser;..\..\packages\codetooltip;..\..\..\..\packman;$(COMPUSEDBY_WX_BUILD)\extlib;$(COMPUSEDBY_WX_BUILD)\fastmm;$(COMPUSEDBY_WX_BUILD)\fastcode;$(COMPUSEDBY_WX_BUILD)\GraphicEx;$(COMPUSEDBY_WX_BUILD)\synedit\Source;$(COMPUSEDBY_WX_BUILD)\theme;$(COMPUSEDBY_WX_BUILD)\synedit\Packages;$(COMPUSEDBY_WX_BUILD)\jvcl\run;$(PROGRAMFILES)\GExperts for Delphi 6
 Packages=vcl;rtl;vclx;VclSmp;vclshlctrls;Jcl;ExtLib_D6;SynEdit_D6_PE;SynEdit_R6_PE;ClassBrowsing;ThemeManager6;DevCpp;JvDockingD6R;JvCoreD6R;madBasic_;madDisAsm_;madExcept_;JclVcl;JvSystemD6R;JvStdCtrlsD6R;JvAppFrmD6R;JvBandsD6R;JvCmpD6R;JvCryptD6R;JvCtrlsD6R;JvCustomD6R;JvDlgsD6R;JvDotNetCtrlsD6R;JvGlobusD6R;JvHMID6R;JvInterpreterD6R;JvJansD6R;JvManagedThreadsD6R;JvMMD6R;JvNetD6R;JvPageCompsD6R;JvPluginD6R;JvPrintPreviewD6R;JvRuntimeDesignD6R;JvTimeFrameworkD6R;JvUIBD6R;JvValidatorsD6R;JvWizardD6R;JvXPCtrlsD6R
-Conditionals=PLUGIN_TESTING;WX_BUILD;PLUGIN_BUILD;madExcept
+Conditionals=PLUGIN_TESTING;WX_BUILD;PLUGIN_BUILD
 DebugSourceDirs=components\
 UsePackages=0
 [Parameters]

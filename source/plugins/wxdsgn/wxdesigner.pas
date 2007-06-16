@@ -4883,7 +4883,7 @@ end;
 
 function TWXDsgn.HasDesigner(editorName: String): Boolean;
 begin
-    Result := (editors[ExtractFileName(editorName)] AS TWXEditor).IsDesignerNil;
+    Result := not (editors[ExtractFileName(editorName)] AS TWXEditor).IsDesignerNil;
 end;
 
 function TWXDsgn.EditorDisplaysText(FileName: String): Boolean;
