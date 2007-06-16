@@ -1220,7 +1220,7 @@ begin
   begin
     hasDesigner := false;
     for i := 0 to MainForm.pluginsCount -1 do
-      hasDesigner := hasDesigner and MainForm.plugins[i].HasDesigner(FileName);
+      hasDesigner := hasDesigner or MainForm.plugins[i].HasDesigner(FileName);
     if hasDesigner then
     begin
       //I dont know how to make the editor to modified stated;
