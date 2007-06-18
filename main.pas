@@ -631,6 +631,8 @@ type
     lblTodoFilter: TLabel;
     chkTodoIncomplete: TCheckBox;
     cmbTodoFilter: TComboBox;
+    ToolButton4: TToolButton;
+    ProjectProfileCmb: TComboBox;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormDestroy(Sender: TObject);
@@ -795,7 +797,7 @@ type
       Item: TListItem; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure lvBacktraceMouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
-    procedure actDebugUpdate(Sender: TObject);
+    procedure actExecParamsUpdate(Sender: TObject);
     procedure actRunUpdate(Sender: TObject);
     procedure actCompileUpdate(Sender: TObject);
     procedure devFileMonitorNotifyChange(Sender: TObject;
@@ -944,6 +946,8 @@ type
     procedure cmbTodoFilterChange(Sender: TObject);
     procedure ApplicationEvents1Deactivate(Sender: TObject);
     procedure ApplicationEvents1Activate(Sender: TObject);
+    procedure ProjectProfileCmbUpdate(Sender: TObject);
+    procedure ProjectProfileCmbChange(Sender: TObject);
 {$ENDIF}
 
   private
@@ -3815,6 +3819,7 @@ begin
   finally
     bProjectLoading := False;
     alMain.State := asNormal;
+    ProjectProfileCmbUpdate(nil);
   end;
   RefreshTodoList;
 end;
@@ -4322,6 +4327,7 @@ begin
         Exit;
       end;
       fCompiler.Project := fProject;
+      ProjectProfileCmbUpdate(nil);
 
 {$IFDEF WX_BUILD}
       if strContains('wxWidgets Frame', GetTemplate.Name) then
@@ -4550,6 +4556,7 @@ begin
     fProject:=nil;
   end;
 
+  ProjectProfileCmbUpdate(nil);
   ProjectView.Items.Clear;
   CompilerOutput.Items.Clear;
   FindOutput.Items.Clear;
@@ -5033,9 +5040,11 @@ procedure TMainForm.actProjectOptionsExecute(Sender: TObject);
 begin
   if assigned(fProject) then
     fProject.ShowOptions;
+
   // set again the window's and application's captions
   // in case they have been changed...
   UpdateAppTitle;
+  ProjectProfileCmbUpdate(nil);
 end;
 
 procedure TMainForm.actProjectSourceExecute(Sender: TObject);
@@ -5529,16 +5538,16 @@ begin
     or (PageControl.PageCount > 0);
 end;
 
-procedure TMainForm.actDebugUpdate(Sender: TObject);
+procedure TMainForm.actExecParamsUpdate(Sender: TObject);
 begin
   if Assigned(fProject) then
     (Sender as TCustomAction).Enabled := not (fProject.CurrentProfile.typ = dptStat) and
-      (not devExecutor.Running) and ((not fDebugger.Executing) or
-      fDebugger.Paused) and (not fCompiler.Compiling) and ((Sender as TAction).Tag = 1)
+      (not devExecutor.Running) and (not fDebugger.Executing) and
+      (not fCompiler.Compiling)
   else
     (Sender as TCustomAction).Enabled := (PageControl.PageCount > 0) and
-      (not devExecutor.Running) and ((not fDebugger.Executing) or fDebugger.Paused)
-      and (not fCompiler.Compiling) and ((Sender as TAction).Tag = 1);
+      (not devExecutor.Running) and (not fDebugger.Executing) and
+      (not fCompiler.Compiling);
 end;
 
 procedure TMainForm.actCompileUpdate(Sender: TObject);
@@ -11470,6 +11479,31 @@ begin
       Width := Rect.Right - Rect.Left - 15;
       Height := Rect.Bottom - Rect.Top;
     end;
+end;
+
+procedure TMainForm.ProjectProfileCmbUpdate(Sender: TObject);
+var
+  I: Integer;
+begin
+  ProjectProfileCmb.Enabled := Assigned(fProject);
+  ProjectProfileCmb.Items.Clear;
+  if Assigned(fProject) then
+  begin
+    for I := 0 to fProject.Profiles.Count - 1 do
+      ProjectProfileCmb.Items.Add(fProject.Profiles[I].ProfileName);
+    ProjectProfileCmb.ItemIndex := fProject.CurrentProfileIndex;
+  end;
+end;
+
+procedure TMainForm.ProjectProfileCmbChange(Sender: TObject);
+begin
+  if Assigned(fProject) then
+  begin
+    fProject.CurrentProfileIndex := ProjectProfileCmb.ItemIndex;
+    devCompiler.CompilerSet := fProject.CurrentProfile.CompilerSet;
+    devCompilerSet.LoadSet(devCompiler.CompilerSet);
+    devCompilerSet.AssignToCompiler;
+  end;
 end;
 
 initialization
