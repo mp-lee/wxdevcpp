@@ -31,20 +31,10 @@ unit WxListBox;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, WxUtils, ExtCtrls, WxSizerPanel;
-
-{
-*************IMPORTANT*************
-If you want to change any of the wxwidgets components,  you have to use comp screate by David Price.
-You can download a copy from
-
-http://torry.net/tools/components/compcreation/cc.zip
-
-***IF YOU FOLLOW THIS YOUR UPDATES WONT BE INCLUDED IN THE DISTRIBUTION****
-}
+  Forms, Graphics, StdCtrls, WxUtils, ExtCtrls, WxSizerPanel, UValidator;
 
 type
-  TWxListBox = class(TListBox, IWxComponentInterface)
+  TWxListBox = class(TListBox, IWxComponentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxListBox }
     FEVT_LISTBOX: string;
@@ -68,6 +58,7 @@ type
     FWx_StretchFactor: integer;
     FWx_ToolTip: string;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_EventList: TStringList;
     FWx_PropertyList: TStringList;
     FWx_Alignment: TWxSizerAlignmentSet;
@@ -123,6 +114,11 @@ type
     function GetBGColor: string;
     procedure SetBGColor(strValue: string);
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     function GetGenericColor(strVariableName:String): string;
     procedure SetGenericColor(strVariableName,strValue: string);
 
@@ -174,6 +170,7 @@ type
       Read FWx_ListboxSubStyle Write FWx_ListboxSubStyle;
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
 
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
     property Wx_BorderAlignment: TWxBorderAlignment Read GetBorderAlignment Write SetBorderAlignment default [wxALL];
@@ -212,6 +209,7 @@ begin
   FWx_IDValue         := -1;
   FWx_StretchFactor   := 0;
   FWx_Comments        := TStringList.Create;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
 
 end; { of AutoInitialize }
 
@@ -221,6 +219,7 @@ begin
   FWx_EventList.Destroy;
   FWx_PropertyList.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
 end; { of AutoDestroy }
 
 { Override OnClick handler from TListBox,IWxComponentInterface }
@@ -389,11 +388,11 @@ begin
   if GetListBoxSpecificStyle(self.Wx_GeneralStyle, Wx_ListboxStyle) <> '' then
     strStyle := strStyle + ' | ' + GetListBoxSpecificStyle(self.Wx_GeneralStyle, Wx_ListboxStyle);
 
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
     if trim(strStyle) <> '' then
-      strStyle := strStyle + ', ' + self.Wx_Validator
+      strStyle := strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', 0, ' + self.Wx_Validator;
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
 
   Result := Format('wxArrayString arrayStringFor_%s;', [self.Name]);
   Result := GetCommentString(self.FWx_Comments.Text) + Result + #13 + Format('%s = new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d), arrayStringFor_%s%s);', [self.Name, self.Wx_Class, parentName, GetWxIDString(self.Wx_IDName, self.Wx_IDValue), self.Left, self.Top, self.Width, self.Height, self.Name, strStyle]);
@@ -664,6 +663,28 @@ begin
     Result := 'wxLB_EXTENDED';
     exit;
   end;
+end;
+
+function TWxListBox.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxListBox.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxListBox.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxListBox.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

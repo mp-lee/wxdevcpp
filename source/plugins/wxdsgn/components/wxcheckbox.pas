@@ -29,21 +29,11 @@ unit WxCheckBox;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, WxUtils, ExtCtrls, WxSizerPanel, WxToolBar;
-
-{
-*************IMPORTANT*************
-If you want to change any of the wxwidgets components,  you have to use comp screate by David Price.
-You can download a copy from
-
-http://torry.net/tools/components/compcreation/cc.zip
-
-***IF YOU FOLLOW THIS YOUR UPDATES WONT BE INCLUDED IN THE DISTRIBUTION****
-}
+  Forms, Graphics, StdCtrls, WxUtils, ExtCtrls, WxSizerPanel, WxToolBar, UValidator;
 
 type
   TWxCheckBox = class(TCheckBox, IWxComponentInterface, IWxToolBarInsertableInterface,
-    IWxToolBarNonInsertableInterface,IWxVariableAssignmentInterface)
+    IWxToolBarNonInsertableInterface,IWxVariableAssignmentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxCheckBox }
     { Storage for property EVT_CHECKBOX }
@@ -87,6 +77,7 @@ type
     FInvisibleBGColorString: string;
     FInvisibleFGColorString: string;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_Comments: TStrings;
     FWx_Alignment: TWxSizerAlignmentSet;
     FWx_BorderAlignment: TWxBorderAlignment;
@@ -141,6 +132,12 @@ type
     procedure SetGenericColor(strVariableName,strValue: string);
     procedure SetProxyFGColorString(Value: string);
     procedure SetProxyBGColorString(Value: string);
+
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     procedure DummyToolBarInsertableInterfaceProcedure;
     function GetLHSVariableAssignment:String;
     function GetRHSVariableAssignment:String;
@@ -183,6 +180,7 @@ type
     property Wx_IDValue: longint Read FWx_IDValue Write FWx_IDValue default -1;
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
 
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
     property Wx_BorderAlignment: TWxBorderAlignment Read GetBorderAlignment Write SetBorderAlignment default [wxALL];
@@ -227,6 +225,7 @@ begin
   FWx_ProxyFGColorString := TWxColorString.Create;
   defaultBGColor         := clBtnFace;
   defaultFGColor         := self.font.color;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
 
 end; { of AutoInitialize }
 
@@ -238,6 +237,7 @@ begin
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
 end; { of AutoDestroy }
 
 { Override OnClick handler from TCheckBox,IWxComponentInterface }
@@ -397,12 +397,12 @@ begin
 
   strStyle := GetCheckboxSpecificStyle(self.Wx_GeneralStyle, Wx_CheckBoxStyle);
 
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := ', ' + strStyle + ', ' + self.Wx_Validator
+      strStyle := ', ' + strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', 0, ' + self.Wx_Validator;
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -655,6 +655,29 @@ begin
     if trim(Wx_RHSValue) = '' then
         exit;
     Result:= Format('%s->SetValue(%s);',[self.Name,Wx_RHSValue]);
+end;
+
+
+function TWxCheckBox.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxCheckBox.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxCheckBox.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxCheckBox.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

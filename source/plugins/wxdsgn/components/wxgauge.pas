@@ -30,10 +30,10 @@ unit WxGauge;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, ComCtrls, WxUtils, ExtCtrls, WxSizerPanel;
+  Forms, Graphics, ComCtrls, WxUtils, ExtCtrls, WxSizerPanel, UValidator;
 
 type
-  TWxGauge = class(TProgressBar, IWxComponentInterface)
+  TWxGauge = class(TProgressBar, IWxComponentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxGauge }
     { Storage for property EVT_UPDATE_UI }
@@ -77,6 +77,7 @@ type
     FInvisibleBGColorString: string;
     FInvisibleFGColorString: string;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_Comments: TStrings;
     FLastOrientation: TWxGagOrientation;
     FWx_Alignment: TWxSizerAlignmentSet;
@@ -126,6 +127,11 @@ type
     function GetBGColor: string;
     procedure SetBGColor(strValue: string);
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     function GetGenericColor(strVariableName:String): string;
     procedure SetGenericColor(strVariableName,strValue: string);
 
@@ -161,6 +167,7 @@ type
     property Wx_IDValue: longint Read FWx_IDValue Write FWx_IDValue default -1;
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
 
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
     property Wx_BorderAlignment: TWxBorderAlignment Read GetBorderAlignment Write SetBorderAlignment default [wxALL];
@@ -204,6 +211,7 @@ begin
   defaultBGColor          := self.color;
   defaultFGColor          := self.font.color;
   FWx_Comments            := TStringList.Create;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
 
 end; { of AutoInitialize }
 
@@ -215,6 +223,7 @@ begin
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
 end; { of AutoDestroy }
 
 constructor TWxGauge.Create(AOwner: TComponent);
@@ -326,21 +335,17 @@ begin
   parentName := GetWxWidgetParent(self);
   strStyle := GetGaugeSpecificStyle(self.Wx_GeneralStyle, Wx_GaugeStyle);
 
-  if (trim(strStyle) <> '') then
-    strStyle := ', ' + GetGaugeOrientation(Wx_GaugeOrientation) + '|' + strStyle
-  else
-    strStyle := ', ' + GetGaugeOrientation(Wx_GaugeOrientation);
-
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
-    if trim(strStyle) <> '' then
-      strStyle := strStyle + ', ' + self.Wx_Validator
-    else
-      strStyle := ', wxGA_HORIZONTAL, ' + self.Wx_Validator;
-    strStyle := strStyle + ', ' + GetCppString(Name);
+     strStyle := ', ' + GetGaugeOrientation(Wx_GaugeOrientation) + ', '
+            + Wx_ProxyValidatorString.strValidatorValue
+            + ', ' + GetCppString(Name);
 
-  end;
-  strStyle := strStyle + ', wxDefaultValidator, ' + GetCppString(Name);
+  end
+  else if trim(strStyle) <> '' then
+    strStyle := ', ' + GetGaugeOrientation(Wx_GaugeOrientation) + ' | ' + strStyle + ', wxDefaultValidator, ' + GetCppString(Name)
+  else
+    strStyle := ', ' + GetGaugeOrientation(Wx_GaugeOrientation) + ', wxDefaultValidator, ' + GetCppString(Name);
 
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, %d, wxPoint(%d,%d), wxSize(%d,%d)%s);',
@@ -618,6 +623,28 @@ begin
     inherited SetBounds(Left, Top, Width, Height);
   end;
 
+end;
+
+function TWxGauge.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxGauge.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxGauge.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxGauge.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

@@ -28,14 +28,16 @@ unit WxButton;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar;
+  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar,
+  UValidator;
 
 type
   TDrawButtonEvent = procedure(Control: TWinControl; Rect: TRect;
     State: TOwnerDrawState) of object;
 
   TWxButton = class(TMultiLineBtn, IWxComponentInterface,
-    IWxToolBarInsertableInterface, IWxToolBarNonInsertableInterface)
+    IWxToolBarInsertableInterface, IWxToolBarNonInsertableInterface,
+    IWxValidatorInterface)
   private
     FCanvas: TCanvas;
     FOnDrawButton: TDrawButtonEvent;
@@ -57,6 +59,7 @@ type
     FWx_Hidden: boolean;
     FWx_IDName: string;
     FWx_IDValue: longint;
+    FWx_Validator: string;
     FWx_ProxyBGColorString: TWxColorString;
     FWx_ProxyFGColorString: TWxColorString;
     FWx_StretchFactor: integer;
@@ -64,12 +67,12 @@ type
     FWx_PropertyList: TStringList;
     FInvisibleBGColorString: string;
     FInvisibleFGColorString: string;
-    FWx_Validator: string;
     FWx_Comments: TStrings;
     FWx_Height : integer;
     FWx_Width : integer;
     FWx_Alignment: TWxSizerAlignmentSet;
     FWx_BorderAlignment: TWxBorderAlignment;
+    FWx_ProxyValidatorString : TWxValidatorString;
 
     procedure AutoInitialize;
     procedure AutoDestroy;
@@ -114,7 +117,12 @@ type
     procedure SetBorderWidth(width: integer);
     function GetStretchFactor: integer;
     procedure SetStretchFactor(intValue: integer);
-    
+
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     function GetFGColor: string;
     procedure SetFGColor(strValue: string);
     function GetBGColor: string;
@@ -156,11 +164,12 @@ type
     property Wx_IDName: string Read FWx_IDName Write FWx_IDName;
     property Wx_IDValue: longint Read FWx_IDValue Write FWx_IDValue default -1;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
     property Wx_Height : integer Read FWx_Height Write FWx_Height;
     property Wx_Width : integer Read FWx_Width Write FWx_Width;
     property Wx_Comments: TStrings Read FWx_Comments Write FWx_Comments;
-    
+
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
     property Wx_BorderAlignment: TWxBorderAlignment Read GetBorderAlignment Write SetBorderAlignment default [wxALL];
     property Wx_Alignment: TWxSizerAlignmentSet Read FWx_Alignment Write FWx_Alignment default [wxALIGN_CENTER];
@@ -200,6 +209,7 @@ begin
   FWx_Comments           := TStringList.Create;
   FWx_ProxyBGColorString := TWxColorString.Create;
   FWx_ProxyFGColorString := TWxColorString.Create;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
   defaultBGColor         := self.color;
   defaultFGColor         := self.font.color;
 
@@ -213,6 +223,7 @@ begin
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
 end; { of AutoDestroy }
 
 { Override OnClick handler from TButton,IWxComponentInterface }
@@ -375,12 +386,12 @@ begin
   strStyle   := GetButtonSpecificStyle(self.Wx_GeneralStyle, Wx_ButtonStyle);
   parentName := GetWxWidgetParent(self);
 
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := ', ' + strStyle + ', ' + self.Wx_Validator
+      strStyle := ', ' + strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', 0, ' + self.Wx_Validator;
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -617,6 +628,28 @@ procedure TWxButton.SetProxyBGColorString(Value: string);
 begin
   FInvisibleBGColorString := Value;
   self.Font.Color := GetColorFromString(Value);
+end;
+
+function TWxButton.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxButton.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxButton.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxButton.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

@@ -31,10 +31,10 @@ unit Wxlistctrl;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, ComCtrls, WxUtils, ExtCtrls, WxSizerPanel;
+  Forms, Graphics, ComCtrls, WxUtils, ExtCtrls, WxSizerPanel, UValidator;
 
 type
-  TWxListCtrl = class(TListView, IWxComponentInterface)
+  TWxListCtrl = class(TListView, IWxComponentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxListCtrl }
     { Storage for property EVT_LIST_BEGIN_DRAG }
@@ -121,6 +121,9 @@ type
     FWx_Alignment: TWxSizerAlignmentSet;
     FWx_BorderAlignment: TWxBorderAlignment;
 
+    FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
+
     { Private methods of TWxListCtrl }
     { Method to set variable and property values and create objects }
     procedure AutoInitialize;
@@ -166,6 +169,11 @@ type
     procedure SetWxClassName(wxClassName: string);
     function GetFGColor: string;
     procedure SetFGColor(strValue: string);
+
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
 
     function GetBGColor: string;
     procedure SetBGColor(strValue: string);
@@ -254,6 +262,9 @@ type
     property Wx_ProxyBGColorString: TWxColorString Read FWx_ProxyBGColorString Write FWx_ProxyBGColorString;
     property Wx_ProxyFGColorString: TWxColorString Read FWx_ProxyFGColorString Write FWx_ProxyFGColorString;
 
+    property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
+
     property Wx_Comments: TStrings Read FWx_Comments Write FWx_Comments;
   end;
 
@@ -289,6 +300,8 @@ begin
   defaultBGColor         := self.color;
   defaultFGColor         := self.font.color;
   FWx_Comments           := TStringList.Create;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
+
 end; { of AutoInitialize }
 
 { Method to free any objects created by AutoInitialize }
@@ -299,6 +312,8 @@ begin
   FWx_Comments.Destroy;
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
+  FWx_ProxyValidatorString.Destroy;
+
 end; { of AutoDestroy }
 
 { Write method for property Wx_ListviewStyle }
@@ -566,6 +581,21 @@ begin
   parentName := GetWxWidgetParent(self);
 
   strStyle := GetListViewSpecificStyle(Wx_GeneralStyle, Wx_ListviewStyle, FWx_ListviewView);
+
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
+  begin
+    if trim(strStyle) <> '' then
+      strStyle := ', ' + strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
+    else
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
+
+    strStyle := strStyle + ', ' + GetCppString(Name);
+
+  end
+  else if trim(strStyle) <> '' then
+    strStyle := ', ' + strStyle + ', wxDefaultValidator, ' + GetCppString(Name)
+  else
+    strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
 
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
@@ -881,6 +911,28 @@ procedure TWxListCtrl.SetProxyBGColorString(Value: string);
 begin
   FInvisibleBGColorString := Value;
   self.Font.Color := GetColorFromString(Value);
+end;
+
+function TWxListCtrl.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxListCtrl.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxListCtrl.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxListCtrl.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

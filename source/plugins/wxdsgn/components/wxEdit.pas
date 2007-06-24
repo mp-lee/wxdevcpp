@@ -81,6 +81,7 @@ type
     { Storage for property Wx_ToolTip }
     FWx_ToolTip: string;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_EventList: TStringList;
     FWx_PropertyList: TStringList;
     FInvisibleBGColorString: string;
@@ -91,7 +92,6 @@ type
     FWx_BorderAlignment: TWxBorderAlignment;
     FWx_LHSValue : String;
     FWx_RHSValue : String;
-    FWx_ProxyValidatorString : TWxValidatorString;
 
     { Private methods of TWxEdit }
     { Method to set variable and property values and create objects }
@@ -152,7 +152,6 @@ type
 
     function GetGenericColor(strVariableName:String): string;
     procedure SetGenericColor(strVariableName,strValue: string);
-
 
     function GetBorderAlignment: TWxBorderAlignment;
     procedure SetBorderAlignment(border: TWxBorderAlignment);
@@ -500,7 +499,6 @@ begin
   else
     strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
 
-
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
     [self.Name, self.wx_Class, parentName, GetWxIDString(self.Wx_IDName,
@@ -720,28 +718,6 @@ begin
   wx_Class := wxClassName;
 end;
 
-function TWxEdit.GetValidatorString:TWxValidatorString;
-begin
-  Result := FWx_ProxyValidatorString;
-  Result.FstrValidatorValue := Wx_Validator;
-end;
-
-procedure TWxEdit.SetValidatorString(Value:TWxValidatorString);
-begin
-  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
-  Wx_Validator := Value.FstrValidatorValue;
-end;
-
-function TWxEdit.GetValidator:String;
-begin
-  Result := Wx_Validator;
-end;
-
-procedure TWxEdit.SetValidator(value:String);
-begin
-  Wx_Validator := value;
-end;
-
 function TWxEdit.GetGenericColor(strVariableName:String): string;
 begin
 
@@ -821,5 +797,26 @@ begin
     Result:= Format('%s->SetValue(%s);',[self.Name,Wx_RHSValue]);
 end;
 
+function TWxEdit.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxEdit.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxEdit.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxEdit.SetValidator(value:String);
+begin
+  Wx_Validator := value;
+end;
 
 end.
