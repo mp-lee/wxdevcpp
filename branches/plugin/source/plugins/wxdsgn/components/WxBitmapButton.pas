@@ -28,11 +28,13 @@ unit WxBitmapButton;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, Buttons;
+  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, Buttons,
+  UValidator;
 
 type
 
-  TWxBitmapButton = class(TBitBtn, IWxComponentInterface,IWxImageContainerInterface)
+  TWxBitmapButton = class(TBitBtn, IWxComponentInterface,IWxImageContainerInterface,
+     IWxValidatorInterface)
   private
     FEVT_BUTTON: string;
     FEVT_UPDATE_UI: string;
@@ -61,6 +63,7 @@ type
     FInvisibleBGColorString: string;
     FInvisibleFGColorString: string;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_Comments: TStrings;
 
     { Private methods of TWxButton }
@@ -112,6 +115,11 @@ type
     function GetGenericColor(strVariableName:String): string;
     procedure SetGenericColor(strVariableName,strValue: string);
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     procedure SetProxyFGColorString(Value: string);
     procedure SetProxyBGColorString(Value: string);
     procedure SetButtonBitmap(Value: TPicture);
@@ -150,6 +158,7 @@ type
     property Wx_IDName: string Read FWx_IDName Write FWx_IDName;
     property Wx_IDValue: longint Read FWx_IDValue Write FWx_IDValue default -1;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
 
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
@@ -193,6 +202,7 @@ begin
   defaultFGColor         := self.font.color;
   Caption                := '';
   FWx_Bitmap             := TPicture.Create;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
   FWx_Comments           := TStringList.Create;
 
 end; { of AutoInitialize }
@@ -206,6 +216,8 @@ begin
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
+
 end; { of AutoDestroy }
 
 
@@ -306,12 +318,12 @@ begin
   Result   := '';
   strStyle := GetButtonSpecificStyle(self.Wx_GeneralStyle, Wx_ButtonStyle);
 
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := ', ' + strStyle + ', ' + self.Wx_Validator
+      strStyle := ', ' + strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', wxBU_AUTODRAW, ' + self.Wx_Validator;
+      strStyle := ', wxBU_AUTODRAW, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -563,6 +575,29 @@ end;
 function TWxBitmapButton.GetPropertyName(Idx:Integer):String;
 begin
   Result:=Name;
+end;
+
+
+function TWxBitmapButton.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxBitmapButton.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxBitmapButton.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxBitmapButton.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

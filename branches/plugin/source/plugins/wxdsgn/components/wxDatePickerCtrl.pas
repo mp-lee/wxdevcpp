@@ -31,11 +31,12 @@ unit wxDatePickerCtrl;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar,DateUtils;
+  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar,DateUtils,
+  UValidator;
 
 type
   TWxDatePickerCtrl = class(TComboBox, IWxComponentInterface, IWxToolBarInsertableInterface,
-    IWxToolBarNonInsertableInterface,IWxVariableAssignmentInterface)
+    IWxToolBarNonInsertableInterface,IWxVariableAssignmentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxDatePickerCtrl }
     { Storage for property EVT_DATE_CHANGED }
@@ -78,6 +79,7 @@ type
     { Storage for property Wx_ToolTip }
     FWx_ToolTip: string;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_EventList: TStringList;
     FWx_PropertyList: TStringList;
     FInvisibleBGColorString: string;
@@ -145,6 +147,11 @@ type
     function GetLHSVariableAssignment:String;
     function GetRHSVariableAssignment:String;
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     function GetBorderAlignment: TWxBorderAlignment;
     procedure SetBorderAlignment(border: TWxBorderAlignment);
     function GetBorderWidth: integer;
@@ -185,6 +192,7 @@ type
     property Wx_IDValue: longint Read FWx_IDValue Write FWx_IDValue default -1;
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
 
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
     property Wx_BorderAlignment: TWxBorderAlignment Read GetBorderAlignment Write SetBorderAlignment default [wxALL];
@@ -237,8 +245,9 @@ begin
   defaultFGColor         := self.font.color;
   FWx_Comments           := TStringList.Create;
   FWx_PickCalStyle       := [wxDP_DROPDOWN];
-  self.Caption           := GetDateToString(now);
-  
+  Caption           := GetDateToString(now);
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
+
 end; { of AutoInitialize }
 
 { Method to free any objects created by AutoInitialize }
@@ -249,6 +258,7 @@ begin
   FWx_Comments.Destroy;
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
+  FWx_ProxyValidatorString.Destroy;
 end; { of AutoDestroy }
 
 { Override OnChange handler from TComboBox,IWxComponentInterface }
@@ -405,12 +415,12 @@ begin
     strStyle := ', ' + strStyle;
 
   //Last comma is removed because it depends on the user selection of the properties.
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := strStyle + ', ' + self.Wx_Validator
+      strStyle := strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', 0, ' + self.Wx_Validator;
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -665,6 +675,29 @@ begin
     if trim(Wx_RHSValue) = '' then
         exit;
     Result:= Format('%s->SetValue(%s);',[self.Name,Wx_RHSValue]);
+end;
+
+
+function TWxDatePickerCtrl.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxDatePickerCtrl.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxDatePickerCtrl.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxDatePickerCtrl.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

@@ -31,11 +31,11 @@ unit WxScrollBar;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, WxUtils, ExtCtrls, WxSizerPanel;
+  Forms, Graphics, StdCtrls, WxUtils, ExtCtrls, WxSizerPanel, UValidator;
 
 type
 //  TWxScrollBar = class(TScrollBar, IWxComponentInterface, IWxStatusBarInterface)
-  TWxScrollBar = class(TScrollBar, IWxComponentInterface)
+  TWxScrollBar = class(TScrollBar, IWxComponentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxScrollBar }
 
@@ -78,6 +78,7 @@ type
     { Storage for property Wx_Hidden }
     FWx_Hidden: boolean;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_Comments: TStrings;
     { Storage for property Wx_IDName }
     FWx_IDName: string;
@@ -152,6 +153,11 @@ type
     procedure SetProxyBGColorString(Value: string);
     function GetSBOrientation(Wx_SBOrientation: TWx_SBOrientation): string;
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     function GetBorderAlignment: TWxBorderAlignment;
     procedure SetBorderAlignment(border: TWxBorderAlignment);
     function GetBorderWidth: integer;
@@ -186,6 +192,8 @@ type
     property EVT_UPDATE_UI: string Read FEVT_UPDATE_UI Write FEVT_UPDATE_UI;
     property Wx_Class: string Read FWx_Class Write FWx_Class;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
+
     property Wx_ControlOrientation: TWxControlOrientation
       Read FWx_ControlOrientation Write FWx_ControlOrientation;
     property Wx_Enabled: boolean Read FWx_Enabled Write FWx_Enabled default True;
@@ -239,6 +247,8 @@ begin
   FWx_ProxyFGColorString := TWxColorString.Create;
   defaultBGColor         := self.color;
   defaultFGColor         := self.font.color;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
+
 end; { of AutoInitialize }
 
 { Method to free any objects created by AutoInitialize }
@@ -249,6 +259,8 @@ begin
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
+
 end; { of AutoDestroy }
 
 { Override OnClick handler from TScrollBar,IWxComponentInterface }
@@ -450,12 +462,12 @@ begin
 
   strStyle := ', ' + GetSBOrientation(self.Wx_SBOrientation) + strStyle;
 
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := strStyle + ', ' + self.Wx_Validator
+      strStyle := strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', wxSB_HORIZONTAL, ' + self.Wx_Validator;
+      strStyle := ', wxSB_HORIZONTAL, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -745,4 +757,25 @@ begin
 
 end;
 
+function TWxScrollBar.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxScrollBar.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxScrollBar.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxScrollBar.SetValidator(value:String);
+begin
+  Wx_Validator := value;
+end;
 end.

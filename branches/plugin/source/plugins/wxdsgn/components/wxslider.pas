@@ -30,11 +30,11 @@ unit WxSlider;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, ComCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar;
+  Forms, Graphics, ComCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar, UValidator;
 
 type
   TWxSlider = class(TTrackBar, IWxComponentInterface, IWxToolBarInsertableInterface,
-    IWxToolBarNonInsertableInterface,IWxVariableAssignmentInterface)
+    IWxToolBarNonInsertableInterface,IWxVariableAssignmentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxSlider }
    { Storage for property EVT_COMMAND_SCROLL }
@@ -80,6 +80,8 @@ type
     { Storage for property Wx_Hidden }
     FWx_Hidden: boolean;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
+    
     { Storage for property Wx_IDName }
     FWx_IDName: string;
     { Storage for property Wx_IDValue }
@@ -159,6 +161,11 @@ type
     procedure SetProxyFGColorString(Value: string);
     procedure SetProxyBGColorString(Value: string);
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     function GetSliderOrientation(Value: TWx_SliderOrientation): string;
     function GetSliderRange(Value: TWx_SliderRange): string;
     function GetLHSVariableAssignment:String;
@@ -191,6 +198,8 @@ type
     property Wx_BGColor: TColor Read FWx_BGColor Write FWx_BGColor;
     property Wx_Class: string Read FWx_Class Write FWx_Class;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
+    
     property Wx_ControlOrientation: TWxControlOrientation
       Read FWx_ControlOrientation Write FWx_ControlOrientation;
     property Wx_Enabled: boolean Read FWx_Enabled Write FWx_Enabled default True;
@@ -251,6 +260,7 @@ begin
   FWx_ProxyFGColorString := TWxColorString.Create;
   defaultBGColor         := self.color;
   defaultFGColor         := self.font.color;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
 
 end; { of AutoInitialize }
 
@@ -262,6 +272,7 @@ begin
   FWx_Comments.Destroy;
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
+  FWx_ProxyValidatorString.Destroy;
 end; { of AutoDestroy }
 
 { Override OnKeyPress handler from TTrackBar,IWxComponentInterface }
@@ -467,12 +478,12 @@ begin
 
   strStyle := strStyle + GetSliderRange(Wx_SliderRange);
 
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := strStyle + ', ' + self.Wx_Validator
+      strStyle := strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', wxSL_HORIZONTAL, ' + self.Wx_Validator;
+      strStyle := ', wxSL_HORIZONTAL, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -799,6 +810,28 @@ end;
 function TWxSlider.GetRHSVariableAssignment:String;
 begin
     Result:='';
+end;
+
+function TWxSlider.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxSlider.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxSlider.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxSlider.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

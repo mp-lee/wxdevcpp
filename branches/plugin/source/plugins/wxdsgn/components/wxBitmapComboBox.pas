@@ -31,11 +31,11 @@ unit wxBitmapComboBox;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar;
+  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar, UValidator;
 
 type
   TWxBitmapComboBox = class(TComboBox, IWxComponentInterface, IWxToolBarInsertableInterface,
-    IWxToolBarNonInsertableInterface,IWxVariableAssignmentInterface)
+    IWxToolBarNonInsertableInterface,IWxVariableAssignmentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxBitmapComboBox }
     { Storage for property EVT_COMBOBOX }
@@ -82,6 +82,7 @@ type
     { Storage for property Wx_ToolTip }
     FWx_ToolTip: string;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_EventList: TStringList;
     FWx_PropertyList: TStringList;
     FInvisibleBGColorString: string;
@@ -139,6 +140,11 @@ type
     function GetBGColor: string;
     procedure SetBGColor(strValue: string);
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     function GetGenericColor(strVariableName:String): string;
     procedure SetGenericColor(strVariableName,strValue: string);
 
@@ -192,6 +198,7 @@ type
     property Wx_IDValue: longint Read FWx_IDValue Write FWx_IDValue default -1;
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
 
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
     property Wx_BorderAlignment: TWxBorderAlignment Read GetBorderAlignment Write SetBorderAlignment default [wxALL];
@@ -237,6 +244,7 @@ begin
   defaultBGColor         := self.color;
   defaultFGColor         := self.font.color;
   FWx_Comments           := TStringList.Create;
+  FWx_ProxyValidatorString := TWxValidatorString.Create(self);
 
 end; { of AutoInitialize }
 
@@ -248,6 +256,7 @@ begin
   FWx_Comments.Destroy;
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
+  FWx_ProxyValidatorString.Destroy;
 
 end; { of AutoDestroy }
 
@@ -448,12 +457,12 @@ begin
       '%s.Add(%s);', ['arrayStringFor_' + self.Name, GetCppString(self.Items[i])]);
 
   //Last comma is removed because it depends on the user selection of the properties.
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := strStyle + ', ' + self.Wx_Validator
+      strStyle := strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', 0, ' + self.Wx_Validator;
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -720,6 +729,28 @@ begin
     else
         Result:= Format('%s->SetValue(%s);',[self.Name,Wx_RHSValue]);
 
+end;
+
+function TWxBitmapComboBox.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxBitmapComboBox.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxBitmapComboBox.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxBitmapComboBox.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

@@ -32,10 +32,11 @@ interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
   Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, Dialogs,
-  xprocs,ComCtrls;
+  xprocs,ComCtrls, UValidator;
 
 type
-  TWxRichTextCtrl = class(TRichEdit, IWxComponentInterface,IWxVariableAssignmentInterface)
+  TWxRichTextCtrl = class(TRichEdit, IWxComponentInterface,IWxVariableAssignmentInterface,
+         IWxValidatorInterface)
   private
     { Private fields of TWxRichTextCtrl }
     FEVT_RICHTEXT_ITEM_SELECTED: string;
@@ -46,7 +47,7 @@ type
     FEVT_RICHTEXT_LEFT_DCLICK: string;
     FEVT_RICHTEXT_RETURN: string;
     FEVT_UPDATE_UI: string;
-    
+
     { Storage for property Wx_BGColor }
     FWx_BGColor: TColor;
     { Storage for property Wx_Border }
@@ -91,6 +92,9 @@ type
     FWx_BorderAlignment: TWxBorderAlignment;
     FWx_LHSValue : String;
     FWx_RHSValue : String;
+
+    FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
 
     { Private methods of TWxRichTextCtrl }
     { Method to set variable and property values and create objects }
@@ -143,6 +147,11 @@ type
 
     function GetGenericColor(strVariableName:String): string;
     procedure SetGenericColor(strVariableName,strValue: string);
+
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
 
     procedure SetProxyFGColorString(Value: string);
     procedure SetProxyBGColorString(Value: string);
@@ -207,6 +216,9 @@ type
     property Wx_LoadFromFile: TWxFileNameString Read FWx_LoadFromFile Write FWx_LoadFromFile;
     property Wx_FiletoLoad: string Read FWx_FiletoLoad Write FWx_FiletoLoad;
 
+    property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
+
     property Wx_ProxyBGColorString: TWxColorString Read FWx_ProxyBGColorString Write FWx_ProxyBGColorString;
     property Wx_ProxyFGColorString: TWxColorString Read FWx_ProxyFGColorString Write FWx_ProxyFGColorString;
     property InvisibleBGColorString: string Read FInvisibleBGColorString Write FInvisibleBGColorString;
@@ -252,6 +264,7 @@ begin
   defaultFGColor         := self.font.color;
   FWx_LoadFromFile       := TWxFileNameString.Create;
   FWx_Comments           := TStringList.Create;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
 
 end; { of AutoInitialize }
 
@@ -264,7 +277,7 @@ begin
   FWx_ProxyFGColorString.Destroy;
   FWx_LoadFromFile.Destroy;
   FWx_Comments.Destroy;
-
+  FWx_ProxyValidatorString.Destroy;
 end; { of AutoDestroy }
 
 { Write method for property Wx_ToolTip }
@@ -482,11 +495,20 @@ begin
 
   strStyle := GetRichTextSpecificStyle(self.Wx_GeneralStyle, self.Wx_RichTextStyle);
 
-  if trim(strStyle) <> '' then
-    strStyle := ', ' + strStyle
-  else
-    strStyle := ', 0 ';
+   if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
+  begin
+    if trim(strStyle) <> '' then
+      strStyle := ', ' + strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
+    else
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
 
+    strStyle := strStyle + ', ' + GetCppString(Name);
+
+  end
+  else if trim(strStyle) <> '' then
+    strStyle := ', ' + strStyle + ', wxDefaultValidator, ' + GetCppString(Name)
+  else
+    strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
 
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
@@ -816,5 +838,26 @@ begin
     Result:= Format('%s->SetValue(%s);',[self.Name,Wx_RHSValue]);
 end;
 
+function TWxRichTextCtrl.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxRichTextCtrl.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxRichTextCtrl.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxRichTextCtrl.SetValidator(value:String);
+begin
+  Wx_Validator := value;
+end;
 
 end.

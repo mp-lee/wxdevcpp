@@ -32,11 +32,12 @@ unit WxRadioButton;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar;
+  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, WxToolBar, UValidator;
 
 type
   TWxRadioButton = class(TRadioButton, IWxComponentInterface,
-    IWxToolBarInsertableInterface, IWxToolBarNonInsertableInterface,IWxVariableAssignmentInterface)
+    IWxToolBarInsertableInterface, IWxToolBarNonInsertableInterface,
+    IWxVariableAssignmentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxRadioButton }
     FEVT_CHECKBOX: string;
@@ -64,6 +65,7 @@ type
     FInvisibleBGColorString: string;
     FInvisibleFGColorString: string;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_Comments: TStrings;
     FWx_Alignment: TWxSizerAlignmentSet;
     FWx_BorderAlignment: TWxBorderAlignment;
@@ -113,6 +115,11 @@ type
     function GetBGColor: string;
     procedure SetBGColor(strValue: string);
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     function GetGenericColor(strVariableName:String): string;
     procedure SetGenericColor(strVariableName,strValue: string);
 
@@ -161,6 +168,7 @@ type
       Read FWx_RadioButtonStyle Write FWx_RadioButtonStyle;
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
 
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
     property Wx_BorderAlignment: TWxBorderAlignment Read GetBorderAlignment Write SetBorderAlignment default [wxALL];
@@ -204,6 +212,7 @@ begin
   FWx_ProxyFGColorString := TWxColorString.Create;
   defaultBGColor         := clBtnFace;
   defaultFGColor         := self.font.color;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
 
 end; { of AutoInitialize }
 
@@ -215,6 +224,8 @@ begin
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
+
 end; { of AutoDestroy }
 
 procedure TWxRadioButton.Click;
@@ -338,12 +349,12 @@ begin
   if (trim(strStyle) <> '') then
     strStyle := ', ' + strStyle;
 
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := strStyle + ', ' + self.Wx_Validator
+      strStyle := strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', 0, ' + self.Wx_Validator;
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -585,5 +596,26 @@ begin
     Result:='';
 end;
 
+function TWxRadioButton.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxRadioButton.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxRadioButton.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxRadioButton.SetValidator(value:String);
+begin
+  Wx_Validator := value;
+end;
 
 end.

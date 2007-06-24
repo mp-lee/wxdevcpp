@@ -31,11 +31,11 @@ unit WxMemo;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, Dialogs,
+  Forms, Graphics, StdCtrls, Wxutils, ExtCtrls, WxSizerPanel, Dialogs, UValidator,
   xprocs;
 
 type
-  TWxMemo = class(TMemo, IWxComponentInterface,IWxVariableAssignmentInterface)
+  TWxMemo = class(TMemo, IWxComponentInterface,IWxVariableAssignmentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxMemo }
     { Storage for property EVT_TEXT }
@@ -62,6 +62,7 @@ type
     FWx_Enabled: boolean;
     { Storage for property Wx_FGColor }
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_FGColor: TColor;
     { Storage for property Wx_GeneralStyle }
     FWx_GeneralStyle: TWxStdStyleSet;
@@ -146,6 +147,11 @@ type
     function GetGenericColor(strVariableName:String): string;
     procedure SetGenericColor(strVariableName,strValue: string);
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     procedure SetProxyFGColorString(Value: string);
     procedure SetProxyBGColorString(Value: string);
     function GetLHSVariableAssignment:String;
@@ -190,6 +196,8 @@ type
     property Wx_IDName: string Read FWx_IDName Write FWx_IDName;
     property Wx_IDValue: longint Read FWx_IDValue Write FWx_IDValue default -1;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
+
     property Wx_ToolTip: string Read FWx_ToolTip Write SetWx_ToolTip;
     property Wx_MaxLength: integer Read FWx_MaxLength Write FWx_MaxLength;
     property Wx_LoadFromFile: TWxFileNameString Read FWx_LoadFromFile Write FWx_LoadFromFile;
@@ -242,6 +250,7 @@ begin
   FWx_LoadFromFile       := TWxFileNameString.Create;
   FWx_Comments           := TStringList.Create;
   AutoSize               := False;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
 
 end; { of AutoInitialize }
 
@@ -254,6 +263,7 @@ begin
   FWx_ProxyFGColorString.Destroy;
   FWx_LoadFromFile.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
 
 end; { of AutoDestroy }
 
@@ -449,12 +459,12 @@ begin
 
   strStyle := GetEditSpecificStyle(self.Wx_GeneralStyle, self.Wx_EditStyle);
 
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := ', ' + strStyle + ', ' + self.Wx_Validator
+      strStyle := ', ' + strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', wxTB_HORIZONTAL | wxNO_BORDER, ' + self.Wx_Validator;
+      strStyle := ', wxTB_HORIZONTAL | wxNO_BORDER, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -807,6 +817,28 @@ begin
     if trim(Wx_RHSValue) = '' then
         exit;
     Result:= Format('%s->SetValue(%s);',[self.Name,Wx_RHSValue]);
+end;
+
+function TWxMemo.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxMemo.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxMemo.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxMemo.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 

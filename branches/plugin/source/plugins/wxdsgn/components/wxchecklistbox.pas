@@ -30,10 +30,10 @@ unit WxCheckListBox;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, StdCtrls, WxUtils, CheckLst, ExtCtrls, WxSizerPanel;
+  Forms, Graphics, StdCtrls, WxUtils, CheckLst, ExtCtrls, WxSizerPanel, UValidator;
 
 type
-  TWxCheckListBox = class(TCheckListBox, IWxComponentInterface)
+  TWxCheckListBox = class(TCheckListBox, IWxComponentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxListBox }
     FEVT_CHECKLISTBOX: string;
@@ -58,6 +58,7 @@ type
     FWx_StretchFactor: integer;
     FWx_ToolTip: string;
     FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
     FWx_EventList: TStringList;
     FWx_PropertyList: TStringList;
 
@@ -117,6 +118,11 @@ type
     procedure SetProxyBGColorString(Value: string);
     function GetCheckListBoxSelectorStyle(Value: TWxLBxStyleSubItem): string;
 
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
+
     function GetBorderAlignment: TWxBorderAlignment;
     procedure SetBorderAlignment(border: TWxBorderAlignment);
     function GetBorderWidth: integer;
@@ -159,6 +165,8 @@ type
     property Wx_ListboxSubStyle: TWxLBxStyleSubItem
       Read FWx_ListboxSubStyle Write FWx_ListboxSubStyle;
     property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
+
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
 
     property Wx_ProxyBGColorString: TWxColorString Read FWx_ProxyBGColorString Write FWx_ProxyBGColorString;
@@ -198,6 +206,7 @@ begin
   FWx_IDValue         := -1;
   FWx_StretchFactor   := 0;
   FWx_Comments        := TStringList.Create;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
 
 end; { of AutoInitialize }
 
@@ -207,6 +216,8 @@ begin
   FWx_EventList.Destroy;
   FWx_PropertyList.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
+
 end; { of AutoDestroy }
 
 { Override OnClick handler from TListBox,IWxComponentInterface }
@@ -383,12 +394,12 @@ begin
   else
     strStyle := GetCheckListBoxSelectorStyle(Wx_ListboxSubStyle);
 
-  if trim(self.FWx_Validator) <> '' then
+  if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
   begin
     if trim(strStyle) <> '' then
-      strStyle := strStyle + ', ' + self.Wx_Validator
+      strStyle := strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
     else
-      strStyle := ', 0, ' + self.Wx_Validator;
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
 
     strStyle := strStyle + ', ' + GetCppString(Name);
 
@@ -654,6 +665,28 @@ begin
     Result := ', wxLB_EXTENDED';
     exit;
   end;
+end;
+
+function TWxCheckListBox.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxCheckListBox.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxCheckListBox.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxCheckListBox.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

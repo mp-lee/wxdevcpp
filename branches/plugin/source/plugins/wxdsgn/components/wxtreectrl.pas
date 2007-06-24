@@ -31,10 +31,10 @@ unit WxTreeCtrl;
 interface
 
 uses WinTypes, WinProcs, Messages, SysUtils, Classes, Controls,
-  Forms, Graphics, ComCtrls, WxUtils, ExtCtrls, WxSizerPanel;
+  Forms, Graphics, ComCtrls, WxUtils, ExtCtrls, WxSizerPanel, UValidator;
 
 type
-  TWxTreeCtrl = class(TTreeView, IWxComponentInterface)
+  TWxTreeCtrl = class(TTreeView, IWxComponentInterface, IWxValidatorInterface)
   private
     { Private fields of TWxTreeCtrl }
     FEVT_TREE_BEGIN_DRAG: string;
@@ -82,6 +82,8 @@ type
     FWx_Comments: TStrings;
     FWx_Alignment: TWxSizerAlignmentSet;
     FWx_BorderAlignment: TWxBorderAlignment;
+    FWx_Validator: string;
+    FWx_ProxyValidatorString : TWxValidatorString;
 
     { Private methods of TWxTreeCtrl }
     procedure AutoInitialize;
@@ -133,6 +135,11 @@ type
     
     procedure SetProxyFGColorString(Value: string);
     procedure SetProxyBGColorString(Value: string);
+
+    function GetValidator:String;
+    procedure SetValidator(value:String);
+    function GetValidatorString:TWxValidatorString;
+    procedure SetValidatorString(Value:TWxValidatorString);
 
     function GetBorderAlignment: TWxBorderAlignment;
     procedure SetBorderAlignment(border: TWxBorderAlignment);
@@ -193,6 +200,9 @@ type
     property Wx_ToolTip: string Read FWx_ToolTip Write FWx_ToolTip;
     property Wx_TreeviewStyle: TWxTVStyleSet Read FWx_TreeviewStyle Write FWx_TreeviewStyle;
 
+    property Wx_Validator: string Read FWx_Validator Write FWx_Validator;
+    property Wx_ProxyValidatorString : TWxValidatorString Read GetValidatorString Write SetValidatorString;
+    
     property Wx_Border: integer Read GetBorderWidth Write SetBorderWidth default 5;
     property Wx_BorderAlignment: TWxBorderAlignment Read GetBorderAlignment Write SetBorderAlignment default [wxALL];
     property Wx_Alignment: TWxSizerAlignmentSet Read FWx_Alignment Write FWx_Alignment default [wxALIGN_CENTER];
@@ -235,6 +245,8 @@ begin
   defaultFGColor         := self.font.color;
   FWx_TreeviewStyle      := [wxTR_HAS_BUTTONS];
   FWx_Comments           := TStringList.Create;
+  FWx_ProxyValidatorString := TwxValidatorString.Create(self);
+
 end; { of AutoInitialize }
 
 { Method to free any objects created by AutoInitialize }
@@ -245,6 +257,7 @@ begin
   FWx_ProxyBGColorString.Destroy;
   FWx_ProxyFGColorString.Destroy;
   FWx_Comments.Destroy;
+  FWx_ProxyValidatorString.Destroy;
 end; { of AutoDestroy }
 
 { Override OnClick handler from TTreeView,IWxComponentInterface }
@@ -503,8 +516,21 @@ begin
 
   strStyle := GetTreeViewSpecificStyle(self.Wx_GeneralStyle, Wx_TreeviewStyle);
 
-  if (trim(strStyle) <> '') then
-    strStyle := ', ' + strStyle;
+   if trim(Wx_ProxyValidatorString.strValidatorValue) <> '' then
+  begin
+    if trim(strStyle) <> '' then
+      strStyle := ', ' + strStyle + ', ' + Wx_ProxyValidatorString.strValidatorValue
+    else
+      strStyle := ', 0, ' + Wx_ProxyValidatorString.strValidatorValue;
+
+    strStyle := strStyle + ', ' + GetCppString(Name);
+
+  end
+  else if trim(strStyle) <> '' then
+    strStyle := ', ' + strStyle + ', wxDefaultValidator, ' + GetCppString(Name)
+  else
+    strStyle := ', 0, wxDefaultValidator, ' + GetCppString(Name);
+
 
   Result := GetCommentString(self.FWx_Comments.Text) +
     Format('%s = new %s(%s, %s, wxPoint(%d,%d), wxSize(%d,%d)%s);',
@@ -817,6 +843,28 @@ procedure TWxTreeCtrl.SetProxyBGColorString(Value: string);
 begin
   FInvisibleBGColorString := Value;
   self.Font.Color := GetColorFromString(Value);
+end;
+
+function TWxTreeCtrl.GetValidatorString:TWxValidatorString;
+begin
+  Result := FWx_ProxyValidatorString;
+  Result.FstrValidatorValue := Wx_Validator;
+end;
+
+procedure TWxTreeCtrl.SetValidatorString(Value:TWxValidatorString);
+begin
+  FWx_ProxyValidatorString.FstrValidatorValue := Value.FstrValidatorValue;
+  Wx_Validator := Value.FstrValidatorValue;
+end;
+
+function TWxTreeCtrl.GetValidator:String;
+begin
+  Result := Wx_Validator;
+end;
+
+procedure TWxTreeCtrl.SetValidator(value:String);
+begin
+  Wx_Validator := value;
 end;
 
 end.

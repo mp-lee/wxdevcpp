@@ -3215,7 +3215,7 @@ begin
   PropertyList.Add('Wx_IDValue:ID Value');
   PropertyList.Add('Wx_ToolTip:Tooltip');
   PropertyList.Add('Wx_Comments:Comments');
-  PropertyList.Add('Wx_Validator:Validator Code');
+  PropertyList.Add('Wx_ProxyValidatorString:Validator Code');
   PropertyList.Add('Wx_ProxyBGColorString:Background Color');
   PropertyList.Add('Wx_ProxyFGColorString:Foreground Color');
 
