@@ -27,9 +27,11 @@ uses
   FastMM4,
   FastCode,
   LanguagesDEPFix,
+{$IFNDEF OLD_MADSHI}  
   madListHardware,
   madListProcesses,
   madListModules,
+{$ENDIF}
   madExcept,
   madLinkDisAsm,
   inifiles,

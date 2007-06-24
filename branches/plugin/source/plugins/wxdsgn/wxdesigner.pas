@@ -21,45 +21,27 @@ uses
   
 type  
   TWXDsgn = class(TComponent, IPlug_In_BPL)
-      actNewwxDialog: TAction;
-      NewWxDialogItem: TMenuItem;
-      actDesignerCopy: TAction;
-      actDesignerCut: TAction;
-      actDesignerPaste: TAction;
-      actDesignerDelete: TAction;
-      actShowPropertyInspItem: TAction;
-      //pnlControlHolder: TPanel;
-      //SplitterRight: TSplitter;
-      ProgramResetBtn: TToolButton;
-      SurroundWithPopItem: TMenuItem;
-      actDelete: TAction;
-      {trycatchPopItem: TMenuItem;    EAB TODO: HUH?
-      tryfinallyPopItem: TMenuItem;
-      trycatchfinallyPopItem: TMenuItem;
-      N68: TMenuItem;
-      CStyleCommentPopItem: TMenuItem;
-      CppStyleCommentPopItem: TMenuItem;
-      N69: TMenuItem;
-      forloopPopItem: TMenuItem;
-      whileLoopPopItem: TMenuItem;
-      dowhileLoopPopItem: TMenuItem;
-      bracesPopItem: TMenuItem;
-      ifLoopPopItem: TMenuItem;
-      ifelseloopPopItem: TMenuItem;
-      forintloopPopItem: TMenuItem;
-      switchLoopPopItem: TMenuItem; }
-      N71: TMenuItem;
-      N72: TMenuItem;
-      N70: TMenuItem;
-      //pnlBrowsers: TPanel;
-      NewWxFrameItem: TMenuItem;
-      actNewWxFrame: TAction;
-      ToolsMenuDesignerOptions: TMenuItem;      
-      DebugStopBtn: TToolButton;
-      actWxPropertyInspectorCut: TAction;
-      actWxPropertyInspectorCopy: TAction;
-      actWxPropertyInspectorPaste: TAction;
-      editors: TObjectHash;
+    actNewwxDialog: TAction;
+    NewWxDialogItem: TMenuItem;
+    actDesignerCopy: TAction;
+    actDesignerCut: TAction;
+    actDesignerPaste: TAction;
+    actDesignerDelete: TAction;
+    actShowPropertyInspItem: TAction;
+    ProgramResetBtn: TToolButton;
+    SurroundWithPopItem: TMenuItem;
+    actDelete: TAction;
+    N71: TMenuItem;
+    N72: TMenuItem;
+    N70: TMenuItem;
+    NewWxFrameItem: TMenuItem;
+    actNewWxFrame: TAction;
+    ToolsMenuDesignerOptions: TMenuItem;
+    DebugStopBtn: TToolButton;
+    actWxPropertyInspectorCut: TAction;
+    actWxPropertyInspectorCopy: TAction;
+    actWxPropertyInspectorPaste: TAction;
+    editors: TObjectHash;
 
     procedure actDesignerCopyExecute(Sender: TObject);
     procedure actDesignerCutExecute(Sender: TObject);
@@ -69,8 +51,6 @@ type
     procedure actWxPropertyInspectorDeleteExecute(Sender: TObject);
     procedure actDesignerPasteExecute(Sender: TObject);
     procedure actDesignerDeleteExecute(Sender: TObject);
-    //procedure SurroundWithClick(Sender: TObject);
-
     procedure WxPropertyInspectorContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
     procedure ELDesigner1ContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
     procedure ELDesigner1ChangeSelection(Sender: TObject);
@@ -112,13 +92,8 @@ private
     plugin_name: String;
     ownerForm: TForm;
 public
-    //Functions for wx-devcpp
-    //procedure SurroundString(e: TEditor;strStart,strEnd:String);
-    //procedure CppCommentString(e: TEditor);
     function GetCurrentFileName:String;
     function GetCurrentClassName:string;
-protected
-    // procedure CreateParams(var Params: TCreateParams); override;  <-- EAB Is this commenting correct?
 public
 
   // Wx Property Inspector Popup Menu
@@ -160,7 +135,7 @@ public
   //Property Inspector controls
   cbxControlsx: TComboBox;
   pgCtrlObjectInspector: TPageControl;
-  TabProperty: TTabSheet;  
+  TabProperty: TTabSheet;
   TabEvent: TTabSheet;
   pnlMainInsp:TPanel;
   JvInspProperties: TJvInspector;
@@ -177,8 +152,6 @@ public
 
   XPTheme: boolean; // Use XP theme
 
-	//function SaveFileInternal(e: TEditor ; bParseFile:Boolean = true): Boolean;
-
   private
 
     procedure CreateNewDialogOrFrameCode(dsgnType:TWxDesignerType; frm:TfrmCreateFormProp; insertProj:integer);
@@ -191,35 +164,29 @@ public
     procedure GetIntialFormData(frm: TfrmCreateFormProp; var strFName, strCName, strFTitle: string; var dlgStyle: TWxDlgStyleSet; dsgnType:TWxDesignerType);
     function CreateSourceCodes(strCppFile,strHppFile:String;FCreateFormProp: TfrmCreateFormProp; var cppCode, hppCode: string; dsgnType:TWxDesignerType): Boolean;
     function CreateAppSourceCodes(strCppFile,strHppFile,strAppCppFile,strAppHppFile:String;FCreateFormProp: TfrmCreateFormProp; var cppCode, hppCode, appcppCode, apphppCode: string; dsgnType:TWxDesignerType): Boolean;
-    //procedure ReadClass;
-    {procedure CreatePalettePage(PaletteLst:TStringList;PalettePage: string);
-    procedure LoadDefaultPalette;
-    procedure LoadComponents;
-    procedure resetPallete;  }
     procedure LoadText;
 
   public
     CacheCreated: boolean;
-    main: IPlug;  // <--- EAB    
+    main: IPlug;
     {Guru's Code}
 
     strGlobalCurrentFunction:String;
     DisablePropertyBuilding:Boolean;
     boolInspectorDataClear:Boolean;
     intControlCount: Integer;
-    //SelectedComponentName: string;
     SelectedComponent: TComponent;
     PreviousComponent: TComponent;
     PreviousStringValue: string;
     PreviousComponentName:string;
     FirstComponentBeingDeleted:String;    
-    procedure GenerateSource(sourceFileName: String; text: TSynEdit);   // <-- EAB
+    procedure GenerateSource(sourceFileName: String; text: TSynEdit);
     procedure BuildProperties(Comp: TControl;boolForce:Boolean = false);
     procedure BuildComponentList(Designer: TfrmNewForm);
     function isCurrentFormFilesNeedToBeSaved:Boolean;
     function saveCurrentFormFiles:Boolean;	
-	function CreateFunctionInEditor(var strFunctionName: string; strReturnType, strParameter: string; var ErrorString: string; strClassName: string = ''): Boolean; overload;		
-	function CreateFunctionInEditor(strClassName: string; SelComponent: TComponent; var strFunctionName: string; strEventFullName: string; var ErrorString: string): Boolean; overload;    
+  	function CreateFunctionInEditor(var strFunctionName: string; strReturnType, strParameter: string; var ErrorString: string; strClassName: string = ''): Boolean; overload;
+	  function CreateFunctionInEditor(strClassName: string; SelComponent: TComponent; var strFunctionName: string; strEventFullName: string; var ErrorString: string): Boolean; overload;
     function LocateFunctionInEditor(eventProperty:TJvCustomInspectorData;strClassName: string; SelComponent:TComponent; var strFunctionName: string; strEventFullName: string):Boolean;
     procedure OnEventPopup(Item: TJvCustomInspectorItem; Value: TStrings);
     procedure OnStdWxIDListPopup(Item: TJvCustomInspectorItem; Value: TStrings);
@@ -236,7 +203,6 @@ public
     procedure CutExecute;
     procedure CopyExecute;
     procedure PasteExecute;
-    //procedure SetPnlBrowsersVisible(b: Boolean);
     procedure Initialize(owner: TForm; Config: String);
     procedure Init(strFileName: String);
     procedure StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
@@ -268,7 +234,6 @@ public
     procedure TerminateEditor(FileName: String);
     procedure Terminate;
 	  procedure OnDockableFormClosed(Sender: TObject; var Action: TCloseAction);
-    //procedure Activate(FileName: String);
     function IsSource(FileName: String): Boolean;
     function GetDefaultText(FileName: String): String;
     function MainPageChanged(askIfShouldGetFocus: Boolean; FileName: String): Boolean;
@@ -314,26 +279,6 @@ uses
   WxSplitterWindow, WxNotebook, WxNoteBookPage, WxToolbar, WxToolButton,
   WxSeparator, WxStatusBar, WxNonVisibleBaseComponent, WxMenuBar, WxPopupMenu,
   WxStaticBitmap, WxBitmapButton, WxStdDialogButtonSizer, wxversion, wxeditor
-  
-  {WxBoxSizer, WxStaticBoxSizer,WxGridSizer,
-  WxButton, WxBitmapButton,WXCheckBox, WxChoice, WxComboBox, WxEdit, WxGauge, WxListBox, Wxlistctrl,
-  WxMemo, WXRadioButton, WxScrollBar,wxGrid,
-  WxSlider, WxSpinButton, WxStaticBitmap, WxStaticBox, WxStaticLine,
-  WxStaticText, WxTreeCtrl, WxControlPanel,{CompFileIo,} // <-- EAB
- { WXFlexGridSizer,
-  wxPanel,wxlistbook,wxnotebook,wxstatusbar,wxtoolbar,
-  wxNoteBookPage,wxchecklistbox,wxspinctrl,WxScrolledWindow,
-  WxHtmlWindow,WxToolButton,WxSeparator,WxPopupMenu,WxMenuBar,
-  WxOpenFileDialog,WxSaveFileDialog,WxFontDialog,
-  wxMessageDialog,WxProgressDialog,WxPrintDialog,WxFindReplaceDialog,WxDirDialog,
-  WxColourDialog ,WxPageSetupDialog, wxTimer,WxNonVisibleBaseComponent,
-  WxSplitterWindow,WxDatePickerCtrl,
-  CreateOrderFm,
-  ViewIDForm,
-  WxToggleButton, wxRadioBox, IniFiles, wxversion,
-  //MultiLangSupport,
-  wxeditor,
-  Graphics }
   ;
   
 const
@@ -357,8 +302,6 @@ procedure TWXDsgn.Initialize(owner: TForm; Config: String);
 var
   I: Integer;
   ini :TiniFile;
-	{lbDockClient2: TJvDockClient;
-	lbDockClient3: TJvDockClient;}
 begin
    ownerForm := owner;
    wx_designer := Self;
@@ -405,70 +348,16 @@ begin
   end;
 
   //Add the property inspector view menu item
-  //actShowPropertyInspItem := TAction.Create(Self);
+  actShowPropertyInspItem := TAction.Create(Self);   // EAB TODO: this line was commented. Why was it working?
   ShowPropertyInspItem := TMenuItem.Create(Self);
   ShowPropertyInspItem.Checked := True;  // EAB TODO: check if this "check" is retained when the menu control is inserted on the IDE
   ShowPropertyInspItem.Action := actShowPropertyInspItem;
   ShowPropertyInspItem.OnClick := actShowPropertyInspItemExecute;
   ShowPropertyInspItem.Caption := 'Show Property Inspector';
-  
+
   boolInspectorDataClear:=True;
   DisablePropertyBuilding:=False;
   
-  // EAB TODO: Return controls above to the IDE
-	
-// ************** EAB TODO: DOUBLE CHECK FOLLOWING SECTION: ******
-    //PopuP menu
-   { frmInspectorDock:=TForm.Create(Self);
-    frmLeftPageDock:=TForm.Create(Self);
-
-    LeftPageControl.Self := frmClassBrwsDock;}
-
-  { EAB Initialization of past code from TMainForm }
-  {SplitterRight := TSplitter.Create(Self);
-  with SplitterRight do
-  begin
-    Name := 'SplitterRight';
-    Left := 460;
-    Top := 102;
-    Width := 3;
-    Height := 143;
-    Cursor := crHSplit;
-    Align := alRight;
-    AutoSnap := False;
-    MinSize := 45;
-    ResizeStyle := rsUpdate;
-  end;
-  pnlControlHolder := TPanel.Create(Self);
-  with pnlControlHolder do
-  begin
-    Name := 'pnlControlHolder';
-    Left := 463;
-    Top := 102;
-    Width := 167;
-    Height := 143;
-    Align := alRight;
-    TabOrder := 6;
-    Visible := False;
-  end;
-  pnlControlHolder.ParentWindow := owner.Handle;
-
-  pnlBrowsers := TPanel.Create(owner);
-  with pnlBrowsers do
-  begin
-    Name := '';
-    Left := 0;
-    Top := 102;
-    Width := 209;
-    Height := 843;
-    Align := alLeft;
-    DockSite := True;
-    TabOrder := 7;
-  end;
-  pnlBrowsers.ParentWindow := owner.Handle;  
-  
-  LeftPageControl.Parent := frmLeftPageDock;    }
-
         NewWxDialogItem := TMenuItem.Create(Self);
         with NewWxDialogItem do
         begin
@@ -487,150 +376,6 @@ begin
           OnClick := actNewWxFrameExecute;
         end;
 
-
-    {SurroundWithPopItem := TMenuItem.Create(Self);
-    with SurroundWithPopItem do
-    begin
-      Caption := 'Surround With';
-    end;
-
-      trycatchPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with trycatchPopItem do
-      begin
-        Caption := 'try...catch';
-      end;
-      tryfinallyPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with tryfinallyPopItem do
-      begin
-        Caption := 'try...finally';
-      end;
-      trycatchfinallyPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with trycatchfinallyPopItem do
-      begin
-        Caption := 'try...catch...finally';
-      end;
-      N68 := TMenuItem.Create(SurroundWithPopItem);
-      with N68 do
-      begin
-        Caption := '-';
-      end;
-      forloopPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with forloopPopItem do
-      begin
-        Caption := 'for';
-      end;
-      forintloopPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with forintloopPopItem do
-      begin
-        Caption := 'for(int i...';
-      end;
-      whileLoopPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with whileLoopPopItem do
-      begin
-        Caption := 'while';
-      end;
-      dowhileLoopPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with dowhileLoopPopItem do
-      begin
-        Caption := 'do..while';
-      end;
-      N71 := TMenuItem.Create(SurroundWithPopItem);
-      with N71 do
-      begin
-        Caption := '-';
-      end;
-      ifLoopPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with ifLoopPopItem do
-      begin
-        Caption := 'if';
-      end;
-      ifelseloopPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with ifelseloopPopItem do
-      begin
-        Caption := 'if...else';
-      end;
-      switchLoopPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with switchLoopPopItem do
-      begin
-        Caption := 'switch';
-      end;
-      N72 := TMenuItem.Create(SurroundWithPopItem);
-      with N72 do
-      begin
-        Caption := '-';
-      end;
-      bracesPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with bracesPopItem do
-      begin    }      
-        //Caption := '{..}';
-      {end;
-      N69 := TMenuItem.Create(SurroundWithPopItem);
-      with N69 do
-      begin
-        Caption := '-';
-      end;
-      CStyleCommentPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with CStyleCommentPopItem do
-      begin
-        Caption := 'C Style Comment';
-      end;
-      CppStyleCommentPopItem := TMenuItem.Create(SurroundWithPopItem);
-      with CppStyleCommentPopItem do
-      begin
-        Caption := 'C++ Style Comment';
-      end;
-
-    N70 := TMenuItem.Create(Self);
-    with N70 do
-      begin
-      Caption := '-';
-    end;
-
-      trycatchPopItem.Tag:=INT_TRY_CATCH;
-      trycatchPopItem.OnClick:=SurroundWithClick;
-  
-      tryfinallyPopItem.Tag:=INT_TRY_FINALLY;
-      tryfinallyPopItem.OnClick:=SurroundWithClick;
-  
-      trycatchfinallyPopItem.Tag:=INT_TRY_CATCH_FINALLY;
-      trycatchfinallyPopItem.OnClick:=SurroundWithClick;
-  
-      forloopPopItem.Tag:=INT_FOR;
-      forloopPopItem.OnClick:=SurroundWithClick;
-  
-      forintloopPopItem.Tag:=INT_FOR_I;
-      forintloopPopItem.OnClick:=SurroundWithClick;
-  
-      whileLoopPopItem.Tag:=INT_WHILE;
-      whileLoopPopItem.OnClick:=SurroundWithClick;
-  
-      dowhileLoopPopItem.Tag:=INT_DO_WHILE;
-      dowhileLoopPopItem.OnClick:=SurroundWithClick;
-  
-      ifLoopPopItem.Tag:=INT_IF;
-      ifLoopPopItem.OnClick:=SurroundWithClick;
-  
-      ifelseloopPopItem.Tag:=INT_IF_ELSE;
-      ifelseloopPopItem.OnClick:=SurroundWithClick;
-  
-      switchLoopPopItem.Tag:=INT_SWITCH;
-      switchLoopPopItem.OnClick:=SurroundWithClick;
-  
-      bracesPopItem.Tag:=INT_BRACES;
-      bracesPopItem.OnClick:=SurroundWithClick;
-  
-      CStyleCommentPopItem.Tag:=INT_C_COMMENT;
-      CStyleCommentPopItem.OnClick:=SurroundWithClick;
-  
-      CPPStyleCommentPopItem.Tag:=INT_CPP_COMMENT;
-      CPPStyleCommentPopItem.OnClick:=SurroundWithClick;   
-
-    actNewwxDialog := TAction.Create(Self);
-    with actNewwxDialog do
-    begin
-      Category := 'File';
-      OnExecute := actNewwxDialogExecute;
-    end;     }
     actDesignerCopy := TAction.Create(Self);
     with actDesignerCopy do
     begin
@@ -696,10 +441,9 @@ begin
       OnExecute := actWxPropertyInspectorPasteExecute;
     end;
 
-  { END Initialization of past code from TMainForm }
+    { END Initialization of past code from TMainForm }
   
-  // ******** END DOUBLE CHECK SECTION ******
-  strStdwxIDList:=GetPredefinedwxIds;
+    strStdwxIDList:=GetPredefinedwxIds;
 
     WxPropertyInspectorPopup := TPopupMenu.Create(Self);
     WxPropertyInspectorMenuEdit := TMenuItem.Create(Self);
@@ -717,8 +461,8 @@ begin
     DesignerMenuSep1 := TMenuItem.Create(Self);
     DesignerMenuCopyWidgetName := TMenuItem.Create(Self);
     DesignerMenuChangeCreationOrder := TMenuItem.Create(Self);
-	DesignerMenuSelectParent := TMenuItem.Create(Self);
-	DesignerMenuLocked := TMenuItem.Create(Self);	
+	  DesignerMenuSelectParent := TMenuItem.Create(Self);
+	  DesignerMenuLocked := TMenuItem.Create(Self);
     DesignerMenuViewIDs:= TMenuItem.Create(Self);
     DesignerMenuSep2:= TMenuItem.Create(Self);
     DesignerMenuAlign := TMenuItem.Create(Self);
@@ -932,22 +676,22 @@ begin
     DesignerPopup.Items.Add(DesignerMenuChangeCreationOrder);
     DesignerPopup.Items.Add(DesignerMenuViewIDs);
     DesignerPopup.Items.Add(DesignerMenuSep2);
-	DesignerPopup.Items.Add(DesignerMenuSelectParent);	
+	  DesignerPopup.Items.Add(DesignerMenuSelectParent);
     DesignerPopup.Items.Add(DesignerMenuAlign);
-	DesignerPopup.Items.Add(DesignerMenuLocked);	
+	  DesignerPopup.Items.Add(DesignerMenuLocked);
     DesignerPopup.Items.Add(DesignerMenuSep3);
     DesignerPopup.Items.Add(DesignerMenuDesignerOptions);
 	
-	DesignerMenuAlign.Add(DesignerMenuAlignToGrid);
-	DesignerMenuAlign.Add(DesignerMenuAlignHorizontal);
-	DesignerMenuAlignHorizontal.Add(DesignerMenuAlignToLeft);
-	DesignerMenuAlignHorizontal.Add(DesignerMenuAlignToMiddleHorizontal);
-	DesignerMenuAlignHorizontal.Add(DesignerMenuAlignToRight);
+	  DesignerMenuAlign.Add(DesignerMenuAlignToGrid);
+	  DesignerMenuAlign.Add(DesignerMenuAlignHorizontal);
+	  DesignerMenuAlignHorizontal.Add(DesignerMenuAlignToLeft);
+	  DesignerMenuAlignHorizontal.Add(DesignerMenuAlignToMiddleHorizontal);
+	  DesignerMenuAlignHorizontal.Add(DesignerMenuAlignToRight);
 
-	DesignerMenuAlign.Add(DesignerMenuAlignVertical);
-	DesignerMenuAlignVertical.Add(DesignerMenuAlignToTop);
-	DesignerMenuAlignVertical.Add(DesignerMenuAlignToMiddleVertical);
-	DesignerMenuAlignVertical.Add(DesignerMenuAlignToBottom);	
+	  DesignerMenuAlign.Add(DesignerMenuAlignVertical);
+	  DesignerMenuAlignVertical.Add(DesignerMenuAlignToTop);
+	  DesignerMenuAlignVertical.Add(DesignerMenuAlignToMiddleVertical);
+	  DesignerMenuAlignVertical.Add(DesignerMenuAlignToBottom);
   
     //Object inspector Styles
     JvInspectorDotNETPainter1 := TJvInspectorBorlandPainter.Create(frmInspectorDock);
@@ -978,7 +722,7 @@ begin
       OnControlInserted := ELDesigner1ControlInserted;
       OnControlInserting := ELDesigner1ControlInserting;
       OnModified := ELDesigner1Modified;
-	  OnDblClick:=ELDesigner1ControlDoubleClick;	  
+	    OnDblClick:=ELDesigner1ControlDoubleClick;
       OnKeyDown := ELDesigner1KeyDown;
     end;
   
@@ -1090,15 +834,15 @@ begin
       BandWidth := 150;
       BevelInner := bvNone;
       RelativeDivider := False;
-	  Divider := 100;
+	    Divider := 100;
       ItemHeight := 16;
       Painter := JvInspectorDotNETPainter1;
       ReadOnly := False;
-	  UseBands := False;
+	    UseBands := False;
       WantTabs := False;
   
       // Add popup menu for Wx property inspector
-	  OnEditorContextPopup := WxPropertyInspectorContextPopup;	  
+	    OnEditorContextPopup := WxPropertyInspectorContextPopup;	  
       AfterItemCreate := JvInspPropertiesAfterItemCreate;
       BeforeSelection := JvInspPropertiesBeforeSelection;
       OnDataValueChanged := JvInspPropertiesDataValueChanged;
@@ -1138,90 +882,8 @@ begin
       OnItemSelected:= OnPropertyItemSelected;
     end;
 
-
-// ***** EAB TODO: CHECK NEXT SECTION: ****
-    {intControlCount := 1000;
-    //frmInspectorDock.Width:=100;
-    //frmInspectorDock.Top := 400;
-    frmLeftPageDock.Height := 600;
-    frmInspectorDock.Top := 400;
-    //frmInspectorDock.Left := 100;
-    //frmInspectorDock.Width := 200;
-    //frmLeftPageDock.Left := 0;
-    //frmLeftPageDock.Top := 0;
-    //frmLeftPageDock.Width := 100;
-    //frmLeftPageDock.Height:=200;
-    //frmInspectorDock.Visible:=true;
-    LeftPageControl.Height:=400;
-    LeftPageControl.Align := alClient; 
-
-    frmLeftPageDock.ManualDock(pnlBrowsers,pnlBrowsers,alTop);
-    frmLeftPageDock.Visible := true;
-    frmInspectorDock.ManualDock(pnlBrowsers,pnlBrowsers,alBottom);
-    frmInspectorDock.Visible := true;
-    frmInspectorDock.ManualDock(pnlBrowsers,pnlBrowsers,alBottom);   // Re-dock because the panels were otherwise vertically docked
-    frmInspectorDock.Visible := false;   }
-
-  //  for I := 0 to pnlBrowsers.DockClientCount - 1 do    // Iterate
-  //  begin
-  //        pnlBrowsers.DockClients[];
-  //  end;    // for
-  
-  
-    //Design Control specifics
-    {lbxControls := TListBox.Create(Self);
-    PalleteListPanel := TPanel.Create(Self);
-    Palettes := TComboBox.Create(Self);
-    with lbxControls do
-    begin
-      Name := 'lbxControls';
-      Parent := pnlControlHolder;
-      Left := 0;
-      Top := 25;
-      Width := 166;
-      Height := 211;
-      Style := lbOwnerDrawVariable;
-      Align := alClient;
-      Color := clBtnFace;
-      Enabled := False;
-      ItemHeight := 26;
-      TabOrder := 0;
-      OnClick := lbxControlsClick;
-      OnDrawItem := lbxControlsDrawItem;
-    end;
-    with PalleteListPanel do
-    begin
-      Name := 'PalleteListPanel';
-      Parent := pnlControlHolder;
-      Left := 0;
-      Top := 0;
-      Width := 166;
-      Height := 25;
-      Align := alTop;
-      BevelOuter := bvNone;
-      TabOrder := 1;
-      OnResize := PalleteListPanelResize;
-    end;
-    with Palettes do
-    begin
-      Name := 'Palettes';
-      Parent := PalleteListPanel;
-      Left := 0;
-      Top := 0;
-      Width := 135;
-      Height := 19;
-      Style := csOwnerDrawFixed;
-      Anchors := [akLeft, akTop, akRight];
-      Enabled := False;
-      ItemHeight := 13;
-      TabOrder := 0;
-      OnChange := PalettesChange;
-    end;           }
-// ***** END CHECK ****
     //Setting data for the newly created GUI
     intControlCount := 1000;
-
-    //ELPropertyInspector1.Designer:=self.ELDesigner1;
 
 end;   // end Initialize
 
@@ -1256,7 +918,6 @@ end;
 
 function TWXDsgn.IsForm(s: String): Boolean;
 begin
-    // if editors.Exists(s) then
     if (CompareStr(ExtractFileExt(s), WXFORM_EXT) = 0) then
         Result := True
     else
@@ -2241,276 +1902,6 @@ begin
 
 end;
 
-
-{procedure TWXDsgn.ReadClass;
-begin
-  RegisterClasses([TWxBoxSizer, TWxStaticBoxSizer,TWxGridSizer,TWxFlexGridSizer,TWxStaticText, TWxEdit, TWxButton, TWxBitmapButton, TWxToggleButton,TWxCheckBox,TWxRadioButton, TWxChoice, TWxComboBox, TWxGauge, TWxGrid,TWxListBox, TWXListCtrl, TWxMemo, TWxScrollBar, TWxSpinButton, TWxTreeCtrl, TWxRadioBox]);
-  RegisterClasses([TWXStaticBitmap, TWxstaticbox, TWxslider, TWxStaticLine,TWxDatePickerCtrl]);
-  RegisterClasses([TWxPanel,TWXListBook, TWxNoteBook, TWxStatusBar, TWxToolBar]);
-  RegisterClasses([TWxNoteBookPage,TWxchecklistbox,TWxSplitterWindow]);
-  RegisterClasses([TWxSpinCtrl,TWxScrolledWindow,TWxHtmlWindow,TWxToolButton,TWxSeparator]);
-  RegisterClasses([TWxPopupMenu,TWxMenuBar]);
-  RegisterClasses([TWxOpenFileDialog,TWxSaveFileDialog,TWxFontDialog, TwxMessageDialog,TWxProgressDialog,TWxPrintDialog,TWxFindReplaceDialog,TWxDirDialog,TWxColourDialog]);
-  RegisterClasses([TWxPageSetupDialog]);
-  RegisterClasses([TwxTimer]);
-
-  RegisterClasses([TMainMenu]);
-
-end;
-
-procedure TWXDsgn.Panel2Resize(Sender: TObject);
-begin
-  cbxControlsx.Width := Panel2.Width;
-end;
-
-procedure TWXDsgn.PalleteListPanelResize(Sender: TObject);
-begin
-  Palettes.Width := PalleteListPanel.Width;
-end;
-
-procedure TWXDsgn.LoadDefaultPalette;
-// Load default palette when palette not exists
-var
-  IniFile: TIniFile;
-  strTemp:String;
-begin
-
-  IniFile := TIniFile.Create(IncludeTrailingBackSlash(ExtractFileDir(Application.ExeName))+'devcpp.pallete');
-  with IniFile do
-  begin
-    //Dont forget to add semicolon at the end of the string
-    WriteString('Palette', 'Sizers','TWxBoxSizer;TWxStaticBoxSizer;TWxGridSizer;TWxFlexGridSizer;');
-    strTemp:='TWxStaticText;TWxButton;TWxBitmapButton;TWxToggleButton;TWxEdit;TWxMemo;TWxCheckBox;TWxChoice;TWxRadioButton;TWxComboBox;TWxListBox;TWXListCtrl;TWxTreeCtrl;TWxGauge;TWxScrollBar;TWxSpinButton;TWxstaticbox;TWxRadioBox;TWxDatePickerCtrl;';
-    strTemp:=strTemp+'TWxSlider;TWxStaticLine;TWxStaticBitmap;TWxStatusBar;TWxChecklistbox;TWxSpinCtrl;';
-    WriteString('Palette', 'Controls',strTemp);
-    WriteString('Palette', 'Window','TWxPanel;TWxNoteBook;TWxNoteBookPage;TWxGrid;TWxScrolledWindow;TWxHtmlWindow;TWxSplitterWindow;');
-    WriteString('Palette', 'Toolbar','TWxToolBar;TWxToolButton;TWxSeparator;TWxEdit;TWxCheckBox;TWxRadioButton;TWxComboBox;TWxSpinCtrl;');
-    WriteString('Palette', 'Menu','TWxMenuBar;TWxPopupMenu;');
-    WriteString('Palette', 'Dialogs','TWxOpenFileDialog;TWxSaveFileDialog;TWxProgressDialog;TWxColourDialog;TWxDirDialog;TWxFindReplaceDialog;TWxFontDialog;TWxPageSetupDialog;TWxPrintDialog;TWxMessageDialog;');
-    WriteString('Palette', 'System','TWxTimer;');
-    //Deffered: TWxSingleChoiceDialog;TWxTextEntryDialog;
-    WriteInteger('Version','IniVersion',IniVersion);
-  end;
-  IniFile.Destroy;
-end;
-
-procedure TWXDsgn.LoadComponents;
-// Dynamic loading components
-var
-  PaletteList: TStringList;
-  intPos, I: Integer;
-  PalettePage: string;
-  strPalette: string;
-  IniFile: TIniFile;
-  intIniVersion:Integer;
-begin
-  IniFile := TIniFile.Create(IncludeTrailingBackSlash(ExtractFileDir(Application.ExeName))+'devcpp.pallete');
-  PaletteList := TStringList.Create;
-  try
-    intIniVersion:=IniFile.ReadInteger('Version','IniVersion',0);
-
-    if intIniVersion <> IniVersion then
-        IniFile.EraseSection('Palette');
-
-    ReadClass;
-    IniFile.ReadSectionValues('Palette', PaletteList);
-
-    if PaletteList.Count <= 0 then
-    begin
-      LoadDefaultPalette;
-      IniFile.ReadSectionValues('Palette', PaletteList);
-    end;
-
-    for I := 0 to PaletteList.Count - 1 do
-    begin
-      strPalette := PaletteList[i];
-      intPos := Pos('=', strPalette);
-      if intPos <> 0 then
-      begin
-        strPalette := Copy(strPalette, 0, intPos - 1);
-      end;
-      Palettes.Items.Add(strPalette);
-    end;
-    //Show all controls
-    Palettes.Items.Add('All');
-
-    for I := 0 to PaletteList.Count - 1 do
-    begin
-      PalettePage := PaletteList.Names[I];
-      if PalettePage <> '' then
-      begin
-        CreatePalettePage(PaletteList,PalettePage);
-        Break;
-      end;
-    end;
-
-    if Palettes.Items.Count > 0 then
-    begin
-      Palettes.ItemIndex := Palettes.Items.Count-1;
-      self.PalettesChange(Palettes);
-    end;
-
-    lbxControls.ItemIndex := 0;
-
-  finally
-    PaletteList.destroy;
-    IniFile.Destroy;
-  end;
-end;
-
-procedure TWXDsgn.CreatePalettePage(PaletteLst:TStringList;PalettePage: string);
-// Create component of palette page (page name is PalettePage)
-var
-  ComponentNames, ComponentName: string;
-  Temp, Pos1,J: Integer;
-  IniFile: TIniFile;
-  function NPos(const C: string; S: string; StartPos, Length: Integer): Integer;
-  var
-    I: Integer;
-    S1: string;
-  begin
-    Result := 0;
-    if (S = '') then
-      Exit;
-    S1 := Copy(S, StartPos, Length);
-    I := Pos(UpperCase(C), UpperCase(S1));
-    if I > 0 then
-      Result := I + StartPos;
-  end;
-  procedure RawCreatePalletePage(strPallete:String);
-  begin
-  IniFile := TIniFile.Create(IncludeTrailingBackSlash(ExtractFileDir(Application.ExeName))+'devcpp.pallete');
-  ComponentNames := IniFile.ReadString('Palette', strPallete, '');
-  if ComponentNames = '' then
-  begin
-    IniFile.Destroy;
-    Exit;
-  end;
-  Temp := 1;
-
-  while True do
-  begin
-    Pos1 := NPos(';', ComponentNames, Temp, Length(ComponentNames));
-    if Pos1 = 0 then
-      Break;
-    ComponentName := Copy(ComponentNames, Temp, Pos1 - Temp - 1);
-    Temp := Pos1;
-
-    //CreateButton(ComponentName);
-    if trim(ComponentName) = '' then
-        continue;
-
-    if lbxControls.Items.IndexOf(ComponentName) = -1 then
-        lbxControls.Items.Add(ComponentName);
-
-  end;
-
-  IniFile.Destroy;
-  end;
-begin
-  lbxControls.Items.BeginUpdate;
-  lbxControls.Items.Clear;
-  lbxControls.Items.Add('CURSOR');
-
-  if AnsiSameText(PalettePage,'All')  then
-  begin
-        for J := 0 to PaletteLst.Count - 1 do    // Iterate
-            RawCreatePalletePage(PaletteLst[J]);
-  end
-  else
-    RawCreatePalletePage(PalettePage);
-
-  lbxControls.Items.EndUpdate;
-  if lbxControls.Items.Count > 0 then
-    lbxControls.ItemIndex := 0;
-end;
-
-procedure TWXDsgn.lbxControlsDrawItem(Control: TWinControl;
-  Index: Integer; Rect: TRect; State: TOwnerDrawState);
-var
-  ComponentName, DisplayName: string;
-  ResName: array[0..64] of Char;
-  Bitmap: TBitmap;
-begin
-
-  with TListBox(Control), Canvas do
-  begin
-    ComponentName := lbxControls.Items[Index];
-    DisplayName := Copy(ComponentName, 4, Length(ComponentName));
-
-    //InnoControl := CoreServices.ControlManager.Controls[Index];
-
-    if not (odSelected in State) then
-      if Index = 0 then
-        Brush.Color := clWhite
-      else
-        Brush.Color := clBtnFace;
-
-    FillRect(Rect);
-    Dec(Rect.Right, 3);
-
-
-    Bitmap := TBitmap.Create;
-    try
-      StrPLCopy(ResName, ComponentName, SizeOf(ResName));
-      AnsiUpper(ResName);
-
-      Bitmap.Handle := LoadBitmap(hInstance, ResName);
-
-      Bitmap.Transparent := True;
-      Draw(Rect.Left + 1, Rect.Top + 1, Bitmap);
-      Inc(Rect.Left, Bitmap.Width + 5);
-    finally // wrap up
-      Bitmap.Free;
-    end; // try/finally
-
-
-    SetBkMode(Handle, Transparent);
-    if Index <> 0 then
-      DrawText(Handle, PChar(DisplayName), -1, Rect,
-        DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS)
-    else
-      DrawText(Handle, 'Selector', -1, Rect,
-        DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS);
-
-
-    Pen.Color := clSilver;
-    MoveTo(0, Rect.Bottom - 1);
-    LineTo(ClientWidth, Rect.Bottom - 1);
-  end;
-end;
-
-procedure TWXDsgn.PalettesChange(Sender: TObject);
-var
-    allPalletes:TStringList;
-begin
-  if Palettes.ItemIndex = -1 then
-    Exit;
-  allPalletes:=TStringList.Create;
-  allPalletes.Assign(Palettes.Items);
-  try
-    CreatePalettePage(allPalletes,Palettes.Items[Palettes.ItemIndex]);
-  finally
-    allPalletes.Destroy;
-  end;
-
-  try
-
-  if ((lbxControls.enabled = true ) and (lbxControls.visible)) then
-    lbxControls.SetFocus;
-  except
-  end;
-
-end;
-
-procedure TWXDsgn.lbxControlsClick(Sender: TObject);
-begin
-  if lbxControls.ItemIndex <> -1 then
-  begin
-    SelectedComponentName := lbxControls.Items[lbxControls.ItemIndex];
-  end;
-end;         }
-
 procedure TWXDsgn.ELDesigner1ContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
 var
   CurrentControl: TControl;
@@ -2803,7 +2194,7 @@ begin
     JvInspProperties.Clear;
     if Assigned(JvInspProperties.Root) then
       JvInspProperties.Root.Clear;
-
+     // EAB TODO: The following 3 lines were causing a weird error. IMPORTANT!
     JvInspEvents.Clear;
     if Assigned(JvInspEvents.Root) then
       JvInspEvents.Root.Clear;
@@ -3626,7 +3017,7 @@ begin
           Data.AsString := str;
           JvInspEvents.OnDataValueChanged := JvInspEventsDataValueChanged;
           DisableDesignerControls;
-          main.OpenFile(GetLongName(ChangeFileExt(editorName, CPP_EXT)), false);
+          main.OpenFile(ChangeFileExt(editorName, CPP_EXT), false);
         end
         else
         begin
@@ -4506,23 +3897,7 @@ begin
         GenerateCpp((editors[editorName] AS TWXEditor).GetDesigner, (editors[editorName] AS TWXEditor).GetDesigner().Wx_Name, text)
     else if ext = H_EXT then
         GenerateHpp((editors[editorName] AS TWXEditor).GetDesigner, (editors[editorName] AS TWXEditor).GetDesigner().Wx_Name, text);
-end;  
-
-{procedure TWXDsgn.Activate(FileName: String);
-begin
-     if editors.Exists(FileName) then
-     begin
-       try
-         ELDesigner1.Active := false;
-         ELDesigner1.DesignControl := (editors[FileName] AS TWXEditor).GetDesigner;
-       except
-       end;
-       EnableDesignerControls;
-       (editors[FileName] AS TWXEditor).AssignDesignerOnResizeEvent;
-     end
-     else
-       DisableDesignerControls;
-end;   }
+end; 
 
 procedure TWXDsgn.ActivateDesigner(s: String);
 begin
@@ -4696,16 +4071,11 @@ begin
     Result := (editors[s] AS TWXEditor).GetDefaultText;;
 end;
 
-{procedure TWXDsgn.SurroundWithClick(Sender: TObject);
-begin
-    main.SurroundWithClick(Sender);
-end;  }
-
 function TWXDsgn.MainPageChanged(askIfShouldGetFocus: Boolean; FileName: String): Boolean;
 begin
     Result := false;
     if askIfShouldGetFocus then
-	begin
+	  begin
       if IsForm(FileName) then
       begin
         //Show a busy cursor
@@ -4718,12 +4088,12 @@ begin
         Screen.Cursor := crDefault;
         Result := true;
       end;
-	end
-	else
+	  end
+	  else
     begin
         if ELDesigner1.Active then
             DisableDesignerControls;
-	end;
+	  end;
 end;
 
 procedure TWXDsgn.OnToolbarEvent(WM_COMMAND: Word);

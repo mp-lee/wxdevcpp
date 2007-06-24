@@ -22,14 +22,23 @@ program devcpp;
 {$R '..\..\icons.res' '..\..\icons.rc'}
 {$R '..\..\LangFrm.res' '..\..\LangFrm.rc'}
 {$R '..\..\DefaultFiles.res' '..\..\DefaultFiles.rc'}
-
 {$IFDEF PLUGIN_BUILD}
-{$R STDREG.res}
+{$R '..\..\STDREG.res'}
 {$ENDIF}
 
 {$WARN SYMBOL_PLATFORM OFF}
 
 uses
+  FastMM4,
+  FastCode,
+  LanguagesDEPFix,
+{$IFNDEF OLD_MADSHI}  
+  madListHardware,
+  madListProcesses,
+  madListModules,
+{$ENDIF}
+  madExcept,
+  madLinkDisAsm,
   Windows,
   Forms,
   sysUtils,
