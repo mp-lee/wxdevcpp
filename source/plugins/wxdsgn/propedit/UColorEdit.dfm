@@ -273,10 +273,10 @@ object ColorEdit: TColorEdit
     Height = 113
     BevelInner = bvSpace
     BevelOuter = bvLowered
-    ParentBackground = False
     TabOrder = 12
   end
   object colorDlg: TColorDialog
+    Ctl3D = True
     Color = clFuchsia
     CustomColors.Strings = (
       'ColorA=FF00FF'
