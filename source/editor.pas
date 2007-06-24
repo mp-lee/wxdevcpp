@@ -482,7 +482,7 @@ begin
     fTabSheet.PageControl.Show;
     fTabSheet.PageControl.ActivePage := fTabSheet;
     if fText.Visible then
-      fText.SetFocus;
+      fText.SetFocus;  
 
     //Call the post-change event handler
 {$IFDEF PLUGIN_BUILD}
@@ -494,6 +494,7 @@ begin
   end;
 {$ENDIF}
     if MainForm.ClassBrowser1.Enabled {$IFDEF WX_BUILD} or pluginCatched {$ENDIF} then
+    pluginCatched := false;
       MainForm.PageControl.OnChange(MainForm.PageControl); // this makes sure that the classbrowser is consistent
   end;
 end;

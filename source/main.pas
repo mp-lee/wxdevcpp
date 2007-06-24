@@ -1019,66 +1019,66 @@ type
   
 {$IFDEF PLUGIN_BUILD}
     plugins: Array of IPlug_In;
-    plugin_modules: Array of Integer;            // <-- EAB
-    delphi_plugins: Array of Integer;            // <-- EAB
-    c_plugins: Array of Integer;            // <-- EAB
+    plugin_modules: Array of Integer;
+    delphi_plugins: Array of Integer;
+    c_plugins: Array of Integer;
     packagesCount: Integer;
     librariesCount: Integer;
     pluginsCount: Integer;
     current_max_toolbar_left: Integer;
     current_max_toolbar_top: Integer;
-    procedure InitPlugins;  // <-- EAB
-    function ListDirectory(const Path: String; Attr: Integer): TStringList;  // <-- EAB
-    function IsEditorAssigned(editorName: String = ''):Boolean;    // <-- EAB
-    function IsProjectAssigned:Boolean;  // <-- EAB
-    function IsClassBrowserEnabled:Boolean;  // <-- EAB
-    procedure ReParseFile(FileName: String);   // <-- EAB
-    function GetDMNum:Integer;    // <-- EAB
-    function GetProjectFileName: String;    // <-- EAB
+    procedure InitPlugins;
+    function ListDirectory(const Path: String; Attr: Integer): TStringList;
+    function IsEditorAssigned(editorName: String = ''):Boolean;
+    function IsProjectAssigned:Boolean;
+    function IsClassBrowserEnabled:Boolean;
+    procedure ReParseFile(FileName: String);
+    function GetDMNum:Integer;
+    function GetProjectFileName: String;
     procedure CloseEditorInternal(eX: TEditor);  // <-- EAB Function extracted from CloseEditor
     function  SaveFileIfModified(EditorFilename: String; extension: String; var isEXAssigned: Boolean; var isEXModified: Boolean; var eXFileName: String): Boolean;   // <-- EAB
-    procedure SaveFileAndCloseEditor(EditorFilename: String; extension: String; Saved:Boolean);  // <-- EAB
-    procedure SaveFileFromEditor(FileName: String);   // <-- EAB
-    procedure ActivateEditor(EditorFilename: String);   // <-- EAB
-    function RetrieveUserName(var buffer: array of char; size: dword): Boolean;  // <-- EAB
-    procedure CreateEditor(strFileN: String; extension: String; InProject: Boolean);  // <-- EAB
+    procedure SaveFileAndCloseEditor(EditorFilename: String; extension: String; Saved:Boolean);
+    procedure SaveFileFromEditor(FileName: String);
+    procedure ActivateEditor(EditorFilename: String);
+    function RetrieveUserName(var buffer: array of char; size: dword): Boolean;
+    procedure CreateEditor(strFileN: String; extension: String; InProject: Boolean);
     procedure PrepareFileForEditor(currFile: String; insertProj: Integer; creatingProject: Boolean; assertMessage: Boolean; alsoReasignEditor: Boolean);  // <-- EAB
-    procedure UnSetActiveControl;  // <-- EAB
-    function GetActiveEditorName: String;   // <-- EAB
-    procedure UpdateEditor(filename: String; messageToDysplay: String); // <-- EAB
-    function GetEditorText(FileName: String): TSynEdit;   // <-- EAB
-    function GetEditorTabSheet(FileName: String): TTabSheet;  // <-- EAB
-    function IsEditorModified(FileName: String): Boolean;   // <-- EAB
+    procedure UnSetActiveControl;
+    function GetActiveEditorName: String;
+    procedure UpdateEditor(filename: String; messageToDysplay: String);
+    function GetEditorText(FileName: String): TSynEdit;
+    function GetEditorTabSheet(FileName: String): TTabSheet;
+    function IsEditorModified(FileName: String): Boolean;
     function isFunctionAvailableInEditor(intClassID: Integer; strFunctionName: String; var intLineNum: Integer; var strFname: String): boolean;
     function isFunctionAvailable(intClassID:Integer;strFunctionName:String):boolean;
-    function FindStatementID(strClassName: string; var boolFound: Boolean): Integer;    // <-- EAB
-    procedure TouchEditor(editorName: String);   // <-- EAB
+    function FindStatementID(strClassName: string; var boolFound: Boolean): Integer;
+    procedure TouchEditor(editorName: String);
     function GetSuggestedInsertionLine(StID: Integer; AddScopeStr: Boolean): Integer;
     function GetFunctionsFromSource(classname: string; var strLstFuncs: TStringList): Boolean;
-    procedure EditorInsertDefaultText(editorName: String);    // <-- EAB
-    function GetPageControlActivePageIndex: Integer;  // <-- EAB
-    procedure SetEditorModified(editorName: String; modified: Boolean);  // <-- EAB
+    procedure EditorInsertDefaultText(editorName: String);
+    function GetPageControlActivePageIndex: Integer;
+    procedure SetEditorModified(editorName: String; modified: Boolean);
     procedure GetClassNameLocationsInEditorFiles(var HppStrLst,CppStrLst:TStringList;FileName, FromClassName, ToClassName:string);  // <-- EAB TODO: Check this one.
-    function DoesFileAlreadyExists(FileName: String): Boolean;       // <-- EAB
-    procedure AddProjectUnit(FileName: String; b: Boolean);  // <-- EAB
+    function DoesFileAlreadyExists(FileName: String): Boolean;
+    procedure AddProjectUnit(FileName: String; b: Boolean);
     procedure CloseUnit(FileName: String);
-    function GetActiveTabSheet: TTabSheet;    // <-- EAB
-    function GetLangString(index: Integer):String;   // <-- EAB
-    function IsUsingXPTheme: Boolean;      // <-- EAB
-    function GetConfig: String;      // <-- EAB
-    function GetExec: String;      // <-- EAB    
+    function GetActiveTabSheet: TTabSheet;
+    function GetLangString(index: Integer):String;
+    function IsUsingXPTheme: Boolean;
+    function GetConfig: String;
+    function GetExec: String;
     function OpenUnitInProject(s: String): Boolean;
-    procedure ChangeProjectProfile(Index: Integer);    // <-- EAB
-	function GetUntitledFileName: String; // <-- EAB
-	function GetDevDirsConfig: String;  // <-- EAB
-	function GetDevDirsDefault: String;  // <-- EAB
-	function GetDevDirsTemplates: String;	// <-- EAB
-	function GetDevDirsExec: String;   // <-- EAB
-	function GetCompilerProfileNames(var defaultProfileIndex: Integer): TStrings;  // <--  EAB
-	function GetRealPathFix(BrokenFileName: String; Directory: String = ''): String;  // <-- EAB
-	function FileAlreadyExistsInProject(s: String): Boolean;  // <-- EAB
-	function IsProjectNotNil: Boolean; // <-- EAB
-  function GetDmMainRes: TSynRCSyn;  // <-- EAB
+    procedure ChangeProjectProfile(Index: Integer);
+	  function GetUntitledFileName: String;
+	  function GetDevDirsConfig: String;
+	  function GetDevDirsDefault: String;
+	  function GetDevDirsTemplates: String;
+	  function GetDevDirsExec: String;
+	  function GetCompilerProfileNames(var defaultProfileIndex: Integer): TStrings;
+	  function GetRealPathFix(BrokenFileName: String; Directory: String = ''): String;
+	  function FileAlreadyExistsInProject(s: String): Boolean;
+	  function IsProjectNotNil: Boolean;
+    function GetDmMainRes: TSynRCSyn;
 
 {$ENDIF}
     function OpenWithAssignedProgram(strFileName:String):boolean;
@@ -8851,18 +8851,18 @@ end;
 
 procedure TMainForm.InitPlugins;
 var
-    items: TList;
-    menuItem: TMenuItem;
-    toolbar: TToolBar;
-    tabs: TTabSheet; 
-    i,j, idx, temp_left, temp_top: Integer;
-    AClass: TPersistentClass;
-    loadablePlugins: TStringList;
-    plugin: IPlug_In_BPL;
-    pluginModule: HModule;
-    tempName: String;
-    c_interface: TPlug_In_DLL;
-    pluginName: String;
+  items: TList;
+  menuItem: TMenuItem;
+  toolbar: TToolBar;
+  tabs: TTabSheet;
+  i,j, idx, temp_left, temp_top: Integer;
+  AClass: TPersistentClass;
+  loadablePlugins: TStringList;
+  plugin: IPlug_In_BPL;
+  pluginModule: HModule;
+  tempName: String;
+  c_interface: TPlug_In_DLL;
+  pluginName: String;
   panel1: TForm;
   panel2: TForm;
   lbDockClient2: TJvDockClient;
@@ -9002,6 +9002,8 @@ begin
           end;   }
           panel1 := items[0];
           panel2 := items[1];
+          panel1.Parent := self;
+          panel2.Parent := self;
 
           // EAB TODO: The implementation of ManualTabDock in JvDockControlForm.pas is highly coupled
           //to the caller code.. (for example, the second form is shown inside this proc, while the first form is "manually" shown outside).
