@@ -293,15 +293,16 @@ begin
   else
   try
 {$IFDEF PLUGIN_BUILD}
-    boolForm := false;
-    for i := 0 to MainForm.pluginsCount - 1 do
+    if Assigned(fEditor) then
+    begin
+      boolForm := false;
+      for i := 0 to MainForm.pluginsCount - 1 do
         boolForm := boolForm or MainForm.plugins[i].IsForm(fEditor.FileName);
-{$ENDIF}
-    //Update the XPMs if we dont have them on the disk
-    if Assigned(fEditor) and boolForm then
-{$IFDEF PLUGIN_BUILD}
-    for i := 0 to MainForm.pluginsCount - 1 do
-        MainForm.plugins[i].CreateNewXPMs(fEditor.FileName);   // EAB TODO: Think better for multiple plugins here
+      if boolForm then
+       //Update the XPMs if we dont have them on the disk
+        for i := 0 to MainForm.pluginsCount - 1 do
+          MainForm.plugins[i].CreateNewXPMs(fEditor.FileName);   // EAB TODO: Think better for multiple plugins here
+    end;
 {$ENDIF}
 
     //If no editor is created open one; save file and close creates a blank file.

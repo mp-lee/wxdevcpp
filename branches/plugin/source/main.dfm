@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 497
-  Top = 392
+  Left = 229
+  Top = 191
   Width = 636
   Height = 442
   Color = clBtnFace

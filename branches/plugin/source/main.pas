@@ -1291,59 +1291,7 @@ begin
   LeftPageControl.Align := alClient;
   LeftPageControl.Parent := frmProjMgrDock;
 
- { //Property Inspector
-  frmInspectorDock := TForm.Create(self);
-  frmInspectorDock.ParentFont := True;
-  frmInspectorDock.Font.Assign(Font);
-  with frmInspectorDock do
-  begin
-    Name := 'frmInspectorDock';
-    Caption := 'Property Inspector';
-    BorderStyle := bsSizeToolWin;
-    Color := clBtnFace;
-    Width:=300;
-
-    DockSite := True;
-    DragKind := dkDock;
-    DragMode := dmAutomatic;
-    FormStyle := fsStayOnTop;
-    OnClose := OnDockableFormClosed;
-
-    lbDockClient2 := TJvDockClient.Create(frmInspectorDock);
-    with lbDockClient2 do
-    begin
-      Name := 'lbDockClient2';
-      DirectDrag := True;
-      DockStyle := DockServer.DockStyle;
-    end;
-  end;
-
-  frmPaletteDock := TForm.Create(Self);
-  frmPaletteDock.ParentFont := True;
-  frmPaletteDock.Font.Assign(Font);
-  ComponentPalette := TComponentPalette.Create(frmPaletteDock);
-  with frmPaletteDock do
-  begin
-    Name := 'frmPaletteDock';
-    Caption := 'Components';
-    BorderStyle := bsSizeToolWin;
-    Color := clBtnFace;
-    Width:= 170;
-
-    DockSite := True;
-    DragKind := dkDock;
-    DragMode := dmAutomatic;
-    FormStyle := fsStayOnTop;
-    OnClose := OnDockableFormClosed;
-
-    lbDockClient3 := TJvDockClient.Create(frmPaletteDock);
-    with lbDockClient3 do
-    begin
-      Name := 'lbDockClient3';
-      DirectDrag := True;
-      DockStyle := DockServer.DockStyle;
-    end;
-  end;}
+  ShowProjectInspItem.Checked := True;
 
   tbMain.Left := devData.ToolbarMainX;
   tbMain.Top := devData.ToolbarMainY;
@@ -1391,9 +1339,6 @@ begin
   InitPlugins;
   {$ENDIF}
 
-  {NewDockTabs := ManualTabDock(DockServer.LeftDockPanel, frmInspectorDock, frmPaletteDock);  // EAB TODO: Implement with plugins
-  ShowDockForm(frmInspectorDock);     }
-
   frmProjMgrDock.ManualDock(DockServer.LeftDockPanel, nil, alTop);
   ShowDockForm(frmProjMgrDock);
 
@@ -1403,12 +1348,6 @@ begin
     for I := 2 to NewDocks.Count - 1 do
       ManualTabDockAddPage(NewDockTabs, NewDocks[I]);
   end;
-
-  //ViewMenu.Insert(5, ShowPropertyInspItem); // EAB TODO: Implement with plugins
-
-  //Check both "view" items
-  //ShowPropertyInspItem.Checked := True;
-  ShowProjectInspItem.Checked := True;
 
   //"Surround With" menu
   trycatchPopItem.Tag            := INT_TRY_CATCH;
@@ -1435,7 +1374,6 @@ begin
   CPPStyleCommentPopItem.OnClick := SurroundWithClick;
 
   //Setting data for the newly created GUI
-  //intControlCount := 1000;
 
   //Variable for clearing up inspector data. Added because there is a AV when
   //adding a function from the event list
@@ -1490,7 +1428,7 @@ begin
 
   devData.Version := DEVCPP_VERSION;
   SetSplashStatus('Loading 3rd-party tools');
-  with fTools do
+  with fTools do    // EAB TODO: this is removing plugin inserted menus.
   begin
     Menu := ToolsMenu;
     Offset := ToolsMenu.Indexof(PackageManagerItem);
@@ -1901,156 +1839,7 @@ begin
   devData.ToolbarClassesX := tbClasses.Left;
   devData.ToolbarClassesY := tbClasses.Top;
 
-  //SetDockSite(NewDockTabs, False);
-  //NewDockTabs.PageControl.Destroy;
-
-  //DockServer.LeftDockPanel.DockSite := false;
-
-  //DockServer.LeftDockPanel.Free;
-
- //DockServer.LeftDockPanel.DockServer := nil;
-  //DockServer.LeftDockPanel.DestroyComponents;
-  //DockServer.DestroyComponents;
-  //DockServer.LeftDockPanel := nil;
-  //DockServer.Destroy;
-
   {$IFDEF PLUGIN_BUILD}
-  {for i := 0 to packagesCount - 1 do
-  begin
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_File_New_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.mnuNew.Remove(menuItem);
-          end;
-      end;
-
-      {items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_File_Import_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.ImportItem.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_File_Export_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.ExportItem.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Edit_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.EditMenu.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Search_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.SearchMenu.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_View_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.ViewMenu.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_View_Toolbars_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.ToolbarsItem.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Project_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.ProjectMenu.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Execute_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.ExecuteMenu.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Debug_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.DebugMenu.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Tools_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            //Self.ToolsMenu.Remove(menuItem);    // EAB TODO: This isn't working because the menu inserted gets lost during fToolList loading, in LoadTools method at ToolFrm.pas
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Help_Menus;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            menuItem := items[j];
-            Self.HelpMenu.Remove(menuItem);
-          end;
-      end;
-
-      items := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_Message_Tabs;
-      if items <> nil then
-      begin
-          for j := 0 to items.Count -1 do
-          begin
-            tabs := items[j];
-            Self.MessageControl.InsertControl(tabs);
-          end;
-      end;
-
-  end;  }
-
-
   for i := 0 to pluginsCount - 1 do
   begin
     toolbar := plugins[i].Retrieve_Toolbars;
@@ -2060,47 +1849,15 @@ begin
         devPluginToolbarsY.AddToolbarsY(plugins[i].GetPluginName, toolbar.Top);
     end;
 
-    {items := plugins[i].Retrieve_Tabbed_LeftDock_Panels;
-    if items <> nil then
-    begin
-      for j := 0 to items.Count -1 do
-      begin
-        panel := items[j];
-        DockServer.LeftDockPanel.RemoveControl(panel);
-      end;
-      {panel := items[0];
-      DockClient1 := FindDockClient(panel);
-      DockClient1.DestroyComponents;  }
-    //end;
-
-    {DockClient1 := FindDockClient(panel);
-    DockClient1.DestroyComponents;
-    DockClient1.Destroy; }
-
     plugins[i].Terminate;
     plugins[i] := nil;
   end;
-
-  //NewDockTabs..UseDockManager := false; //.DockManager AS TDockManager).RegisterDockSite(LeftDockPanel, False);
-  //JvGlobalDockManager.RegisterDockSite
-
-    //DockServer.LeftDockPanel.Destroy;
-    //NewDockTabs.Destroy;
-
- //DockServer.LeftDockPanel.DockServer := nil;
-  //DockServer.LeftDockPanel.DestroyComponents;
-  //DockServer.DestroyComponents;
-  //DockServer.LeftDockPanel := nil;
-
-  //DockServer.LeftDockPanel.Free;
-  //DockServer.Free;
 
   {$IFNDEF PLUGIN_TESTING}
   for i := 0 to pluginsCount - 1 do
     UnloadPackage(plugin_modules[delphi_plugins[i]]);
   for i := 0 to librariesCount - 1 do
     FreeLibrary(plugin_modules[c_plugins[i]]);
-  //SetLength(plugin_modules, 0);
   {$ENDIF PLUGIN_TESTING}
   {$ENDIF PLUGIN_BUILD}  
   SaveOptions;
@@ -7519,6 +7276,7 @@ begin
   end;
 end;
 
+// TODO: Looks like setting the sender to nil (as done in some places in the code) generates an error.
 procedure TMainForm.ShowProjectInspItemClick(Sender: TObject);
 begin
   TMenuItem(Sender).Checked := not TMenuItem(Sender).Checked;
@@ -8869,16 +8627,17 @@ var
   lbDockClient3: TJvDockClient;
   p: Integer;
 begin
-  {$IFNDEF PLUGIN_TESTING}
+
   packagesCount := 0;
   librariesCount := 0;
   pluginsCount := 0;
   loadablePlugins := ListDirectory('plugins\*.*', faDirectory);
+  {$IFNDEF PLUGIN_TESTING}
   for i := 0 to loadablePlugins.Count - 1 do
   begin
-      SetSplashStatus('Loading ' + pluginName + ' plugin');
-      pluginModule := 0;
       pluginName := loadablePlugins[i];
+      SetSplashStatus('Loading plugin "' + pluginName + '"');
+      pluginModule := 0;
       if FileExists('plugins\' + pluginName + '\' + pluginName + '.bpl') then
       begin
           pluginModule := LoadPackage('plugins\' + pluginName + '\' + pluginName + '.bpl');
@@ -8894,11 +8653,14 @@ begin
                 plugin := TComponentClass(AClass).Create(Application) as IPlug_In_BPL;
                 {$ENDIF}
                 {$IFDEF PLUGIN_TESTING}
-                plugin := TWXDsgn.Create(Self) AS IPlug_In_BPL;   // <-- Could be used if statically linked; if so, previous PLUGIN lines are not needed
+                pluginName := loadablePlugins[0];
+                if pluginName = '' then
+                  Exit;
+                SetSplashStatus('Loading static plugin "' + pluginName + '"');
+                AClass := GetClass('T' + pluginName);
+                plugin := TComponentClass(AClass).Create(Application) AS IPlug_In_BPL;   // Used for static plugin linkage for easier debugging
                 SetLength(delphi_plugins, 1);
                 delphi_plugins[packagesCount] := 0;
-                packagesCount := 0;
-                pluginsCount := 0;
                 {$ENDIF}
                 plugin.Initialize(Self, devDirs.Config);
                 plugin.AssignPlugger(IPlug(Self));
@@ -9002,8 +8764,8 @@ begin
           end;   }
           panel1 := items[0];
           panel2 := items[1];
-          panel1.Parent := self;
-          panel2.Parent := self;
+          //panel1.Parent := self;
+          //panel2.Parent := self;
 
           // EAB TODO: The implementation of ManualTabDock in JvDockControlForm.pas is highly coupled
           //to the caller code.. (for example, the second form is shown inside this proc, while the first form is "manually" shown outside).
@@ -9154,7 +8916,7 @@ begin
           for j := 0 to items.Count -1 do
           begin
             menuItem := items[j];
-            Self.ViewMenu.Add(menuItem);
+             Self.ViewMenu.Add(menuItem);
           end;
       end;
 

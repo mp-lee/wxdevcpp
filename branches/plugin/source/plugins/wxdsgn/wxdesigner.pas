@@ -90,6 +90,7 @@ type
 
 private
     plugin_name: String;
+public
     ownerForm: TForm;
 public
     function GetCurrentFileName:String;
@@ -4043,10 +4044,8 @@ begin
 	WxPropertyInspectorPopup.Free;
   ELDesigner1.Free;
   self.Free;
-  //frmPaletteDock.DockManager := nil;
   frmPaletteDock.Destroy;
-  //frmInspectorDock.DockManager := nil;
-  frmInspectorDock.Destroy;   
+  frmInspectorDock.Destroy;
   main := nil;    
 end;
 
@@ -4258,7 +4257,7 @@ end;
 
 function TWXDsgn.EditorDisplaysText(FileName: String): Boolean;
 begin
-    Result := False;
+    Result := false;
 end;
 
 function TWXDsgn.GetTextHighlighterType(FileName: String): String;
@@ -4276,13 +4275,9 @@ initialization
     TJvInspectorFileNameEditItem.RegisterAsDefaultItem;
     TJvInspectorStatusBarItem.RegisterAsDefaultItem;
     TJvInspectorValidatorItem.RegisterAsDefaultItem;
-  {$IFNDEF PLUGIN_TESTING}
-   Classes.RegisterClass(TWXDsgn);    // <-- EAB Needed as plugin
-  {$ENDIF}
+    Classes.RegisterClass(TWXDsgn);
 finalization
-  {$IFNDEF PLUGIN_TESTING}
-   Classes.UnRegisterClass(TWXDsgn);  // <-- EAB Needed as plugin
-  {$ENDIF}
+    Classes.UnRegisterClass(TWXDsgn);
 
 end.
 

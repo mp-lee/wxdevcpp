@@ -1,5 +1,5 @@
 { ****************************************************************** }
-{ $Id: wxUtils.pas 936 2007-05-15 03:47:39Z gururamnath $                                                               }
+{ $Id: wxUtils.pas 936 2007-05-15 03:47:39Z gururamnath $            }
 {                                                                    }
 {   Copyright © 2003-2007 by Guru Kathiresan                         }
 {                                                                    }
