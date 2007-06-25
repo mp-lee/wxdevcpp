@@ -126,6 +126,8 @@ begin
     PopupMenu.Images := dmMain.MenuImages_Gnome
   else if ThemeBox.ItemIndex = 2 then
     PopupMenu.Images := dmMain.MenuImages_Blue
+  else if ThemeBox.ItemIndex = 3 then
+    PopupMenu.Images := dmMain.MenuImages_Classic
   else
     PopupMenu.Images := dmMain.MenuImages_NewLook;
   aPoint := Point(0, 0);
