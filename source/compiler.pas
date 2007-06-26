@@ -2202,6 +2202,7 @@ begin
       lblStatus.Caption := sMsg;
       lblStatus.Font.Style := [fsBold];
       lblFile.Caption := '';
+      timeTimer.Enabled := False; // Disable the timer
     end;
     Application.ProcessMessages;
     if devData.AutoCloseProgress or (fErrCount > 0) or (fWarnCount > 0) then
