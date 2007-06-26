@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 229
-  Top = 191
+  Left = 412
+  Top = 344
   Width = 636
   Height = 442
   Color = clBtnFace
@@ -1406,13 +1406,6 @@ object MainForm: TMainForm
           OnClick = ToolbarClick
         end
       end
-      object N63: TMenuItem
-        Caption = '-'
-      end
-      object ShowProjectInspItem: TMenuItem
-        Caption = 'Show &Project Inspector'
-        OnClick = ShowProjectInspItemClick
-      end
       object N57: TMenuItem
         Caption = '-'
       end
@@ -1425,6 +1418,13 @@ object MainForm: TMainForm
         Caption = 'Go to Class &Browser'
         ShortCut = 16498
         OnClick = GoToClassBrowserItemClick
+      end
+      object N63: TMenuItem
+        Caption = '-'
+      end
+      object ShowProjectInspItem: TMenuItem
+        Caption = 'Show &Project Inspector'
+        OnClick = ShowProjectInspItemClick
       end
     end
     object ProjectMenu: TMenuItem
