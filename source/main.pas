@@ -48,9 +48,6 @@ uses
   SynEditHighlighter, SynHighlighterMulti,
   JvDockTree, JvDockVIDStyle, JvDockVSNetStyle  
 {$ENDIF}
-{$IFDEF PLUGIN_TESTING}
-  , wxdesigner  // <-- EAB used for debugging
-{$ENDIF}
   ;
 {$ENDIF}
 {$IFDEF LINUX}
@@ -1027,6 +1024,7 @@ type
     pluginsCount: Integer;
     current_max_toolbar_left: Integer;
     current_max_toolbar_top: Integer;
+    ToolsMenuOffset: Integer;
     procedure InitPlugins;
     function ListDirectory(const Path: String; Attr: Integer): TStringList;
     function IsEditorAssigned(editorName: String = ''):Boolean;
@@ -1428,10 +1426,10 @@ begin
 
   devData.Version := DEVCPP_VERSION;
   SetSplashStatus('Loading 3rd-party tools');
-  with fTools do    // EAB TODO: this is removing plugin inserted menus.
+  with fTools do  
   begin
     Menu := ToolsMenu;
-    Offset := ToolsMenu.Indexof(PackageManagerItem);
+    Offset := ToolsMenu.Indexof(PackageManagerItem) + ToolsMenuOffset;
     ToolClick := ToolItemClick;
     BuildMenu;
   end;
@@ -8631,6 +8629,7 @@ begin
   packagesCount := 0;
   librariesCount := 0;
   pluginsCount := 0;
+  ToolsMenuOffset := 0;
   loadablePlugins := ListDirectory('plugins\*.*', faDirectory);
   {$IFNDEF PLUGIN_TESTING}
   for i := 0 to loadablePlugins.Count - 1 do
@@ -8989,14 +8988,16 @@ begin
       begin
           if items.Count > 0 then
           begin
-             menuItem := TMenuItem.Create(Self);
-             menuItem.Caption := '-';
-             Self.ToolsMenu.Add(menuItem);
+            menuItem := TMenuItem.Create(Self);
+            menuItem.Caption := '-';
+            Self.ToolsMenu.Add(menuItem);
+            Inc(ToolsMenuOffset);
           end;
           for j := 0 to items.Count -1 do
           begin
             menuItem := items[j];
             Self.ToolsMenu.Add(menuItem);
+            Inc(ToolsMenuOffset);
           end;
       end;
 

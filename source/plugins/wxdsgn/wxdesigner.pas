@@ -23,6 +23,7 @@ type
   TWXDsgn = class(TComponent, IPlug_In_BPL)
     actNewwxDialog: TAction;
     NewWxDialogItem: TMenuItem;
+    ShowPropertyInspItem: TMenuItem;
     actDesignerCopy: TAction;
     actDesignerCut: TAction;
     actDesignerPaste: TAction;
@@ -86,7 +87,7 @@ type
     procedure actNewWxFrameExecute(Sender: TObject);
     procedure actNewwxDialogExecute(Sender: TObject);
     procedure UpdateXRC(editorName: String);
-  	procedure actShowPropertyInspItemExecute(Sender: TObject); 
+  	procedure actShowPropertyInspItemExecute(Sender: TObject);
 
 private
     plugin_name: String;
@@ -104,8 +105,6 @@ public
   WxPropertyInspectorMenuCut : TMenuItem;
   WxPropertyInspectorMenuPaste : TMenuItem;
   WxPropertyInspectorMenuDelete : TMenuItem;
-
-  ShowPropertyInspItem: TMenuItem;
   //PopUpMenu
   DesignerPopup:TPopupMenu;
   DesignerMenuEdit : TMenuItem;
@@ -349,33 +348,35 @@ begin
   end;
 
   //Add the property inspector view menu item
-  actShowPropertyInspItem := TAction.Create(Self);   // EAB TODO: this line was commented. Why was it working?
   ShowPropertyInspItem := TMenuItem.Create(Self);
-  ShowPropertyInspItem.Checked := True;  // EAB TODO: check if this "check" is retained when the menu control is inserted on the IDE
-  ShowPropertyInspItem.Action := actShowPropertyInspItem;
-  ShowPropertyInspItem.OnClick := actShowPropertyInspItemExecute;
-  ShowPropertyInspItem.Caption := 'Show Property Inspector';
+  with ShowPropertyInspItem do
+  begin
+    Caption := 'Show Property Inspector';
+    Action := actShowPropertyInspItem;
+    OnClick := actShowPropertyInspItemExecute;
+    Checked := true;
+  end;
 
   boolInspectorDataClear:=True;
   DisablePropertyBuilding:=False;
   
-        NewWxDialogItem := TMenuItem.Create(Self);
-        with NewWxDialogItem do
-        begin
-          Caption := 'New wxDialog';
-          ImageIndex := 1;
-          Action := actNewwxDialog;
-          OnClick := actNewWxDialogExecute;
-        end;
+  NewWxDialogItem := TMenuItem.Create(Self);
+  with NewWxDialogItem do
+  begin
+    Caption := 'New wxDialog';
+    ImageIndex := 1;
+    Action := actNewwxDialog;
+    OnClick := actNewWxDialogExecute;
+  end;
 
-        NewWxFrameItem := TMenuItem.Create(Self);
-        with NewWxFrameItem do
-        begin
-          Caption := 'New wxFrame';
-          ImageIndex := 1;
-          Action := actNewWxFrame;
-          OnClick := actNewWxFrameExecute;
-        end;
+  NewWxFrameItem := TMenuItem.Create(Self);
+  with NewWxFrameItem do
+  begin
+    Caption := 'New wxFrame';
+    ImageIndex := 1;
+    Action := actNewWxFrame;
+    OnClick := actNewWxFrameExecute;
+  end;
 
     actDesignerCopy := TAction.Create(Self);
     with actDesignerCopy do

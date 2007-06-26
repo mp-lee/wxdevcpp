@@ -288,7 +288,6 @@ begin
   inherited;
 end;
 
-// EAB TODO: this method removes plugin added menu entries in Tools
 { ** enable/disable if not executable }
 procedure TToolController.BuildMenu;
 var
@@ -352,7 +351,7 @@ begin
       else
        Item.ImageIndex:=fToolList.Items[idx].IcoNumNewLook;
       fMenu.Add(Item);
-    end;
+    end;    
   fMenu.Visible:= fMenu.Count> 0;
 end;
 
