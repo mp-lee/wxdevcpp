@@ -24,7 +24,6 @@ type
     C_Terminate: procedure; stdcall;
     C_DisableDesignerControls: procedure; stdcall;
     C_OnToolbarEvent: procedure(WM_COMMAND: Word); stdcall;
-    //C_SetPnlBrowsersVisible: procedure(b: Boolean); stdcall;
     C_SetBoolInspectorDataClear: procedure(b: Boolean); stdcall;
     C_SetDisablePropertyBuilding: procedure(b: Boolean); stdcall;
     C_IsCurrentPageDesigner: function: Boolean; stdcall;
@@ -36,7 +35,6 @@ type
     C_OpenUnit: procedure(s: PChar); stdcall;
     C_IsForm: function(s: PChar): Boolean; stdcall;
     C_SaveFile: function(s: PChar; var b: Boolean): Boolean; stdcall;
-    //C_Activate: procedure(FileName: PChar); stdcall;
     C_IsSource: function(FileName: PChar): Boolean; stdcall;
     C_GetDefaultText: function(FileName: PChar): PChar; stdcall;
     C_GetFilter: function(editorName: PChar): PChar; stdcall;
@@ -44,8 +42,8 @@ type
     C_GenerateXPM: procedure(s:PChar; b: Boolean); stdcall;
     C_CreateNewXPMs: procedure(s:PChar); stdcall;
     C_NewProject: procedure(s: PChar); stdcall;
-    C_MainPageChanged: function(askIfShouldGetFocus: Boolean; FileName: String): Boolean; stdcall;	
-    C_IsCurrentEditorInPlugin: function(FileName: String; curFilename: String): Boolean; stdcall;
+    C_MainPageChanged: function(askIfShouldGetFocus: Boolean; FileName: PChar): Boolean; stdcall;	
+    C_IsCurrentEditorInPlugin: function(FileName: PChar; curFilename: PChar): Boolean; stdcall;
 
     C_Reload: procedure(FileName: PChar); stdcall;
     C_ReloadForm: function(FileName: PChar): Boolean; stdcall;
