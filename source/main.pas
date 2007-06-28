@@ -1852,7 +1852,7 @@ begin
   end;
 
   {$IFNDEF PLUGIN_TESTING}
-  for i := 0 to pluginsCount - 1 do
+  for i := 0 to packagesCount - 1 do
     UnloadPackage(plugin_modules[delphi_plugins[i]]);
   for i := 0 to librariesCount - 1 do
     FreeLibrary(plugin_modules[c_plugins[i]]);
@@ -8706,11 +8706,13 @@ begin
           begin
             SetLength(c_plugins, librariesCount + 1);
             c_plugins[librariesCount] := pluginsCount;
+            SetLength(plugin_modules, pluginsCount + 1);
+            plugin_modules[pluginsCount] := pluginModule;
+            c_interface := TPlug_In_DLL.Create(Self);
+            SetLength(plugins, pluginsCount + 1);
+            plugins[pluginsCount] := c_interface;
             Inc(pluginsCount);
             Inc(librariesCount);
-            SetLength(plugin_modules, pluginsCount);
-            plugin_modules[i] := pluginModule;
-            c_interface := TPlug_In_DLL.Create(Self);
 
             // Check for saved toolbar coordinates:
             idx := devPluginToolbarsX.AssignedToolbarsX(pluginName);
@@ -8729,8 +8731,6 @@ begin
             end;
 
             c_interface.StartUp(pluginName, pluginModule, Self.Handle, ControlBar1, Self, temp_left, temp_top);
-            SetLength(plugins, pluginsCount);
-            plugins[i] := c_interface;  
           end;
       end;
   end;     

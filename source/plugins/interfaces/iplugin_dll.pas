@@ -65,7 +65,6 @@ type
     procedure Terminate;
     procedure DisableDesignerControls;
     procedure OnToolbarEvent(WM_COMMAND: Word);
-    //procedure SetPnlBrowsersVisible(b: Boolean);
     procedure SetBoolInspectorDataClear(b: Boolean);
     procedure SetDisablePropertyBuilding(b: Boolean);	
     function IsCurrentPageDesigner: Boolean;
@@ -79,7 +78,6 @@ type
     procedure OpenUnit(s: String);
     function IsForm(s: String): Boolean;
     function SaveFile(s: String; var b: Boolean): Boolean;
-    //procedure Activate(FileName: String);
     function IsSource(FileName: String): Boolean;
     function GetDefaultText(FileName: String): String;
     function GetFilter(editorName: String): String;
@@ -118,7 +116,6 @@ begin
     @C_Terminate := GetProcAddress(module, 'Terminate');
     @C_DisableDesignerControls := GetProcAddress(module, 'DisableDesignerControls');
     @C_OnToolbarEvent := GetProcAddress(module, 'OnToolbarEvent');
-    //@C_SetPnlBrowsersVisible := GetProcAddress(module, 'SetPnlBrowsersVisible');
     @C_SetBoolInspectorDataClear := GetProcAddress(module, 'SetBoolInspectorDataClear');
     @C_SetDisablePropertyBuilding := GetProcAddress(module, 'SetDisablePropertyBuilding');
     @C_IsCurrentPageDesigner := GetProcAddress(module, 'IsCurrentPageDesigner');
@@ -130,7 +127,6 @@ begin
     @C_OpenUnit := GetProcAddress(module, 'OpenUnit');
     @C_IsForm := GetProcAddress(module, 'IsForm');
     @C_SaveFile := GetProcAddress(module, 'SaveFile');
-    //@C_Activate := GetProcAddress(module, 'Activate');
     @C_IsSource := GetProcAddress(module, 'IsSource');
     @C_GetDefaultText := GetProcAddress(module, 'GetDefaultText');
     @C_GetFilter := GetProcAddress(module, 'GetFilter');
@@ -201,11 +197,6 @@ procedure TPlug_In_DLL.OnToolbarEvent(WM_COMMAND: Word);
 begin
     C_OnToolbarEvent(WM_COMMAND);
 end;
-
-{procedure TPlug_In_DLL.SetPnlBrowsersVisible(b: Boolean);
-begin
-    C_SetPnlBrowsersVisible(b);
-end;}
 
 procedure TPlug_In_DLL.SetBoolInspectorDataClear(b: Boolean);
 begin
@@ -350,17 +341,21 @@ var
     control: TWinControl;
 begin
     temp := nil;
-    temp := C_Retrieve_Form_Items;
-    res := TList.Create;
-    while temp <> nil do
+    temp := C_Retrieve_Tabbed_LeftDock_Panels;
+    if temp <> nil then
     begin
-        //control := TWinControl.Create(Self);
+      res := TList.Create;
+      while temp <> nil do
+      begin
         control := FindControl(temp^);
         if control <> nil then
-            res.Add(control);
+          res.Add(control);
         Inc(temp);
-    end;
-    Result := res;
+      end;
+      Result := res;
+    end
+    else
+      Result := nil;
 end;
 
 function TPlug_In_DLL.Retrieve_Tabbed_LeftDock_Panels: TList;
@@ -371,16 +366,20 @@ var
 begin
     temp := nil;
     temp := C_Retrieve_Tabbed_LeftDock_Panels;
-    res := TList.Create;
-    while temp <> nil do
+    if temp <> nil then
     begin
-        //control := TWinControl.Create(Self);
+      res := TList.Create;
+      while temp <> nil do
+      begin
         control := FindControl(temp^);
         if control <> nil then
-            res.Add(control);
+          res.Add(control);
         Inc(temp);
-    end;
-    Result := res;
+      end;
+      Result := res;
+    end
+    else
+      Result := nil;
 end;
 
 function TPlug_In_DLL.Retrieve_LeftDock_Panels: TList;
@@ -390,17 +389,21 @@ var
     control: TWinControl;
 begin
     temp := nil;
-    temp := C_Retrieve_LeftDock_Panels;
-    res := TList.Create;
-    while temp <> nil do
+    temp := C_Retrieve_Tabbed_LeftDock_Panels;
+    if temp <> nil then
     begin
-        //control := TWinControl.Create(Self);
+      res := TList.Create;
+      while temp <> nil do
+      begin
         control := FindControl(temp^);
         if control <> nil then
-            res.Add(control);
+          res.Add(control);
         Inc(temp);
-    end;
-    Result := res;
+      end;
+      Result := res;
+    end
+    else
+      Result := nil;
 end;
 
 function TPlug_In_DLL.Retrieve_Toolbars: TToolBar;
