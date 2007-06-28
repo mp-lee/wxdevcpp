@@ -1067,16 +1067,17 @@ type
     function GetExec: String;
     function OpenUnitInProject(s: String): Boolean;
     procedure ChangeProjectProfile(Index: Integer);
-	  function GetUntitledFileName: String;
-	  function GetDevDirsConfig: String;
-	  function GetDevDirsDefault: String;
-	  function GetDevDirsTemplates: String;
-	  function GetDevDirsExec: String;
-	  function GetCompilerProfileNames(var defaultProfileIndex: Integer): TStrings;
-	  function GetRealPathFix(BrokenFileName: String; Directory: String = ''): String;
-	  function FileAlreadyExistsInProject(s: String): Boolean;
-	  function IsProjectNotNil: Boolean;
+    function GetUntitledFileName: String;
+    function GetDevDirsConfig: String;
+    function GetDevDirsDefault: String;
+    function GetDevDirsTemplates: String;
+    function GetDevDirsExec: String;
+    function GetCompilerProfileNames(var defaultProfileIndex: Integer): TStrings;
+    function GetRealPathFix(BrokenFileName: String; Directory: String = ''): String;
+    function FileAlreadyExistsInProject(s: String): Boolean;
+    function IsProjectNotNil: Boolean;
     function GetDmMainRes: TSynRCSyn;
+    procedure SetPageControlActivePageEditor(editorName: String);
 
 {$ENDIF}
     function OpenWithAssignedProgram(strFileName:String):boolean;
@@ -8523,6 +8524,14 @@ end;
 function TMainForm.GetPageControlActivePageIndex: Integer;
 begin
     Result := PageControl.ActivePageIndex;
+end;
+
+procedure TMainForm.SetPageControlActivePageEditor(editorName: String);
+var
+   e: TEditor;
+begin
+    e := GetEditorFromFileName(editorName);
+    PageControl.ActivePageIndex := e.TabSheet.TabIndex;
 end;
 
 procedure TMainForm.SetEditorModified(editorName: String; modified: Boolean);

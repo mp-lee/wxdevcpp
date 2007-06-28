@@ -3027,6 +3027,7 @@ begin
           JvInspEvents.Root.DoneEdit(true);
           JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
           JvInspEventsDataValueChanged(nil,Data);
+          main.SetPageControlActivePageEditor(ChangeFileExt(editorName, CPP_EXT));
           // END Goto Function trigger
 
         end

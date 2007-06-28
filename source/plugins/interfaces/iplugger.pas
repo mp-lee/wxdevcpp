@@ -60,6 +60,7 @@ type
 	function GetDevDirsExec: String;
 	function GetCompilerProfileNames(var defaultProfileIndex: Integer): TStrings;
 	function GetRealPathFix(BrokenFileName: String; Directory: String = ''): String;
+	procedure SetPageControlActivePageEditor(editorName: String);
 	
   end;
 
