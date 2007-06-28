@@ -3018,8 +3018,17 @@ begin
           JvInspEvents.OnDataValueChanged := nil;
           Data.AsString := str;
           JvInspEvents.OnDataValueChanged := JvInspEventsDataValueChanged;
-          DisableDesignerControls;
-          main.OpenFile(ChangeFileExt(editorName, CPP_EXT), false);
+
+          // Now trigger a Goto function to display the new C++ code
+          // BEGIN Goto Function trigger
+          strGlobalCurrentFunction:=str;    // Pass the name of the new function
+          JvInspEvents.OnDataValueChanged:=nil;
+          Data.AsString:='<Goto Function>';
+          JvInspEvents.Root.DoneEdit(true);
+          JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
+          JvInspEventsDataValueChanged(nil,Data);
+          // END Goto Function trigger
+
         end
         else
         begin
@@ -3058,7 +3067,6 @@ begin
         str := trim(Data.AsString);
         strDisplayName:=JvInspEvents.Selected.DisplayName;
         compSelectedOne:=SelectedComponent;
-        DisableDesignerControls;
         LocateFunctionInEditor(Data, Trim((editors[ExtractFileName(editorName)] AS TWXEditor).getDesigner().Wx_Name), compSelectedOne,
                                str, strDisplayName);
       end;
@@ -3072,6 +3080,7 @@ begin
     on E: Exception do
       MessageBox(ownerForm.Handle, PChar(E.Message), PChar(Application.Title), MB_ICONERROR or MB_OK or MB_TASKMODAL);
   end;
+
 end;
 
 procedure TWXDsgn.JvInspEventsItemValueChanged(Sender: TObject;
@@ -3190,7 +3199,7 @@ begin
   Result := False;
   boolFound := False;
   intLineNum := 0;
-  
+
   if not main.IsEditorAssigned then
     Exit;
 
@@ -3207,7 +3216,6 @@ begin
   if main.isFunctionAvailableInEditor(StID, strOldFunctionName, intLineNum, strFname) then
   begin
     boolInspectorDataClear := False;
-    DisableDesignerControls;
     editorName := strFname;
     main.OpenFile(editorName);
     if main.IsEditorAssigned(editorName) then
