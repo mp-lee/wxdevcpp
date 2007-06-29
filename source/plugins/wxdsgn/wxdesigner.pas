@@ -3027,7 +3027,6 @@ begin
           JvInspEvents.Root.DoneEdit(true);
           JvInspEvents.OnDataValueChanged:=JvInspEventsDataValueChanged;
           JvInspEventsDataValueChanged(nil,Data);
-          main.SetPageControlActivePageEditor(ChangeFileExt(editorName, CPP_EXT));
           // END Goto Function trigger
 
         end
@@ -3070,6 +3069,7 @@ begin
         compSelectedOne:=SelectedComponent;
         LocateFunctionInEditor(Data, Trim((editors[ExtractFileName(editorName)] AS TWXEditor).getDesigner().Wx_Name), compSelectedOne,
                                str, strDisplayName);
+        main.SetPageControlActivePageEditor(ChangeFileExt(editorName, CPP_EXT));
       end;
     end
     else if strNewValue = '<Remove Function>' then
