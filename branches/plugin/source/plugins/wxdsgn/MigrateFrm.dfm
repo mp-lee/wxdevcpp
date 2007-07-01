@@ -1,6 +1,6 @@
 object MigrateFrm: TMigrateFrm
-  Left = 517
-  Top = 405
+  Left = 358
+  Top = 354
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'wxForm Migration Tool'
@@ -16,6 +16,7 @@ object MigrateFrm: TMigrateFrm
   Position = poOwnerFormCenter
   OnClose = FormClose
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object Page3: TPanel

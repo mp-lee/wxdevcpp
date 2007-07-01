@@ -4048,14 +4048,14 @@ end;
 
 procedure TWXDsgn.Terminate;
 begin  
-  strStdwxIDList.Free;
+  //strStdwxIDList.Free;
   editors.Free;
-	DesignerPopup.Free;
-	WxPropertyInspectorPopup.Free;
-  ELDesigner1.Free;
-  self.Free;
-  frmPaletteDock.Destroy;
-  frmInspectorDock.Destroy;
+	//DesignerPopup.Free;
+	//WxPropertyInspectorPopup.Free;
+  //ELDesigner1.Free;
+  //self.Free;
+  //frmPaletteDock.Destroy;
+  //frmInspectorDock.Destroy;
   main := nil;    
 end;
 

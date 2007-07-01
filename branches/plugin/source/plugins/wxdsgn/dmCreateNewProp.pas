@@ -71,6 +71,7 @@ type
     procedure btCreateClick(Sender: TObject);
     procedure btCancelClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
   public
@@ -178,4 +179,9 @@ begin
   DesktopFont := True;
   XPMenu.Active := wx_designer.XPTheme;
 end;
+procedure TfrmCreateFormProp.FormDestroy(Sender: TObject);
+begin
+  XPMenu.Active := false;
+end;
+
 end.

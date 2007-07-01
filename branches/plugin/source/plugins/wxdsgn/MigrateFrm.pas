@@ -54,6 +54,7 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure btnNextClick(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     procedure CleanUp;
   end;
@@ -311,6 +312,11 @@ begin
   btnNext.Tag := 0;
   DesktopFont := True;
   XPMenu.Active := wx_designer.XPTheme;
+end;
+
+procedure TMigrateFrm.FormDestroy(Sender: TObject);
+begin
+  XPMenu.Active := false;
 end;
 
 end.
