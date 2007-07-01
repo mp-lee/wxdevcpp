@@ -44,6 +44,7 @@ type
       Item: TListItem; State: TCustomDrawState; Stage: TCustomDrawStage;
       var DefaultDraw: Boolean);
     procedure cbHideZeroValueIDClick(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
     FMainControl:TWinControl;
@@ -158,6 +159,11 @@ end;
 procedure TViewControlIDsForm.cbHideZeroValueIDClick(Sender: TObject);
 begin
   PopulateControlList;
+end;
+
+procedure TViewControlIDsForm.FormDestroy(Sender: TObject);
+begin
+  XPMenu.Active := false;
 end;
 
 end.

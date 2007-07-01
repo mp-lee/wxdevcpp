@@ -1312,7 +1312,6 @@ begin
   tbClasses.Top := devData.ToolbarClassesY;
 
   {$IFDEF PLUGIN_BUILD}
-  //ControlBar1.On_WM_COMMAND := WMCommand;
   current_max_toolbar_left := 0;
   current_max_toolbar_top := 0;
 
@@ -1720,6 +1719,10 @@ begin
   //               trace into the code to see if this function is called more than once?
   if fFirstShow then
   begin
+    //Initialize the To-do list settings   ** EAB TODO: Next 2 lines moved here from under lines. Check if everithing OK with this change.
+    cmbTodoFilter.ItemIndex := 5;
+    cmbTodoFilter.OnChange(cmbTodoFilter);
+
     LoadTheme;
     BuildHelpMenu;
     FormProgress.Parent := StatusBar;
@@ -1744,10 +1747,7 @@ begin
       DockServer.DockStyle.TabServerOption.TabPosition := tpBottom;
 
     SetupProjectView;
-
-    //Initialize the To-do list settings
-    cmbTodoFilter.ItemIndex := 5;
-    cmbTodoFilter.OnChange(cmbTodoFilter);
+    // **EAB TODO: lines above moved from here
     fFirstShow := False;
   end;
 end;
@@ -1852,17 +1852,12 @@ begin
     plugins[i] := nil;
   end;
 
-  {$IFNDEF PLUGIN_TESTING}
-  for i := 0 to packagesCount - 1 do
-    UnloadPackage(plugin_modules[delphi_plugins[i]]);
-  for i := 0 to librariesCount - 1 do
-    FreeLibrary(plugin_modules[c_plugins[i]]);
-  {$ENDIF PLUGIN_TESTING}
-  {$ENDIF PLUGIN_BUILD}  
   SaveOptions;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
+var
+  i: Integer;
 begin
   if fDebugger.Executing then
     fDebugger.CloseDebugger(Sender);
@@ -1880,6 +1875,13 @@ begin
       fToDoList.Delete(0);
     end;
   fToDoList.Free;
+  {$IFNDEF PLUGIN_TESTING}
+  for i := 0 to packagesCount - 1 do
+    UnloadPackage(plugin_modules[delphi_plugins[i]]);
+  for i := 0 to librariesCount - 1 do
+    FreeLibrary(plugin_modules[c_plugins[i]]);
+  {$ENDIF PLUGIN_TESTING}
+  {$ENDIF PLUGIN_BUILD}
 end;
 
 procedure TMainForm.ParseCmdLine;

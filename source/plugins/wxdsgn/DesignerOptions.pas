@@ -67,6 +67,7 @@ type
     procedure lbGridYStepUpDownClick(Sender: TObject; Button: TUDBtnType);
     procedure FormShow(Sender: TObject);
     procedure cbStringFormatChange(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
   public
@@ -203,6 +204,11 @@ begin
 
  StringFormat := cbStringFormat.Text;
  
+end;
+
+procedure TDesignerForm.FormDestroy(Sender: TObject);
+begin
+  XPMenu.Active := false;
 end;
 
 end.

@@ -14,6 +14,7 @@ object DesignerForm: TDesignerForm
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   DesignSize = (
     418
     316)

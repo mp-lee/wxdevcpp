@@ -46,6 +46,7 @@ type
     procedure btCloseClick(Sender: TObject);
     procedure btRefreshClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
     FMainControl:TWinControl;
@@ -145,6 +146,11 @@ begin
     XPMenu.Active := true
   else
     XPMenu.Active := false;
+end;
+
+procedure TCreationOrderForm.FormDestroy(Sender: TObject);
+begin
+  XPMenu.Active := false;
 end;
 
 end.
