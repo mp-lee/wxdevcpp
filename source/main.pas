@@ -588,10 +588,7 @@ type
     ifLoopPopItem: TMenuItem;
     ifelseloopPopItem: TMenuItem;
     forintloopPopItem: TMenuItem;
-    switchLoopPopItem: TMenuItem;    
-
-    // EAB TODO: Check if the next block stays on main.pas***
-
+    switchLoopPopItem: TMenuItem;
     DockServer: TJvDockServer;
     LeftPageControl: TPageControl;
     ProjectSheet: TTabSheet;
@@ -624,8 +621,7 @@ type
     lblTodoFilter: TLabel;
     chkTodoIncomplete: TCheckBox;
     cmbTodoFilter: TComboBox;
-	// EAB TODO: End block***
-	
+
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormDestroy(Sender: TObject);
@@ -873,7 +869,6 @@ type
     function isFileOpenedinEditor(strFile: string): Boolean;
     procedure OnCompileTerminated(Sender: TObject);
     procedure doDebugAfterCompile(Sender: TObject);
-    // EAB TODO: Add compiler conditionals here>
     procedure ControlBar1WM_COMMAND(Sender: TObject;
       var TheMessage: TWMCommand); 
     procedure ProjectViewKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -1056,7 +1051,7 @@ type
     procedure EditorInsertDefaultText(editorName: String);
     function GetPageControlActivePageIndex: Integer;
     procedure SetEditorModified(editorName: String; modified: Boolean);
-    procedure GetClassNameLocationsInEditorFiles(var HppStrLst,CppStrLst:TStringList;FileName, FromClassName, ToClassName:string);  // <-- EAB TODO: Check this one.
+    procedure GetClassNameLocationsInEditorFiles(var HppStrLst,CppStrLst:TStringList;FileName, FromClassName, ToClassName:string);  
     function DoesFileAlreadyExists(FileName: String): Boolean;
     procedure AddProjectUnit(FileName: String; b: Boolean);
     procedure CloseUnit(FileName: String);
@@ -1078,6 +1073,7 @@ type
     function IsProjectNotNil: Boolean;
     function GetDmMainRes: TSynRCSyn;
     procedure SetPageControlActivePageEditor(editorName: String);
+    procedure ToggleDockForm(form: TForm; b: Boolean);
 
 {$ENDIF}
     function OpenWithAssignedProgram(strFileName:String):boolean;
@@ -9309,6 +9305,14 @@ end;
 function TMainForm.GetDmMainRes: TSynRCSyn;
 begin
   Result := dmMain.Res;
+end;
+
+procedure TMainForm.ToggleDockForm(form: TForm; b: Boolean);
+begin
+  if b = true then
+    ShowDockForm(form)
+  else
+    HideDockForm(form);
 end;
 
 {ENDIF PLUGIN_BUILD}
