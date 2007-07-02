@@ -892,6 +892,7 @@ end;   // end Initialize
 procedure TWXDsgn.AssignPlugger(plug: IPlug);
 begin
     main := plug AS IPlug;
+    XPTheme := main.IsUsingXPTheme;
 end;
 
 procedure TWXDsgn.OpenFile(s: String);
@@ -4239,10 +4240,7 @@ end;
 procedure TWXDsgn.actShowPropertyInspItemExecute(Sender: TObject); 
 begin
   TMenuItem(Sender).Checked := not TMenuItem(Sender).Checked;
-  if TMenuItem(Sender).Checked then
-    ShowDockForm(frmInspectorDock)
-  else
-    HideDockForm(frmInspectorDock);
+  main.ToggleDockForm(frmInspectorDock, TMenuItem(Sender).Checked)
 end;
 
 function TWXDsgn.GetXMLExtension: String;
