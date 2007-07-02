@@ -1330,7 +1330,9 @@ begin
   If tbClasses.Left > current_max_toolbar_left then current_max_toolbar_left := tbClasses.Left;
   If tbClasses.Top > current_max_toolbar_top then current_max_toolbar_top := tbClasses.Top;
 
+  XPMenu.Active := false;     // EAB TODO: Prevent XPMenu to screw plugin Controls *Hackish*
   InitPlugins;
+  XPMenu.Active := devData.XPTheme;     // EAB TODO: Reload XPMenu stuff
   {$ENDIF}
 
   frmProjMgrDock.ManualDock(DockServer.LeftDockPanel, nil, alTop);
@@ -1834,6 +1836,7 @@ begin
   devData.ToolbarClassesX := tbClasses.Left;
   devData.ToolbarClassesY := tbClasses.Top;
 
+  //XPMenu.Active := false;   // EAB TODO: remove this
   {$IFDEF PLUGIN_BUILD}
   for i := 0 to pluginsCount - 1 do
   begin
@@ -1847,6 +1850,7 @@ begin
     plugins[i].Terminate;
     plugins[i] := nil;
   end;
+  //XPMenu.Active := devData.XPTheme;
 
   SaveOptions;
 end;
@@ -8770,8 +8774,9 @@ begin
           end;   }
           panel1 := items[0];
           panel2 := items[1];
-          //panel1.Parent := self;
-          //panel2.Parent := self;
+
+          Self.InsertControl(items[0]);
+          Self.InsertControl(items[1]);
 
           // EAB TODO: The implementation of ManualTabDock in JvDockControlForm.pas is highly coupled
           //to the caller code.. (for example, the second form is shown inside this proc, while the first form is "manually" shown outside).
