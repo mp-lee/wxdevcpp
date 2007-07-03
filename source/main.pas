@@ -910,7 +910,6 @@ type
     ReloadFilenames: TList;
 
     NewDockTabs: TJvDockTabHostForm;
-    themeMngr: TThemeManager;
 
     function AskBeforeClose(e: TEditor; Rem: boolean;var Saved:Boolean): boolean;
     procedure AddFindOutputItem(line, col, unit_, message: string);
@@ -1331,9 +1330,6 @@ begin
   If tbClasses.Left > current_max_toolbar_left then current_max_toolbar_left := tbClasses.Left;
   If tbClasses.Top > current_max_toolbar_top then current_max_toolbar_top := tbClasses.Top;
 
-  {$IFNDEF ORI_JVCL}
-    //TdevDockStyle(DockServer.DockStyle).NativeDocks := true;
-{$ENDIF}
   XPMenu.Active := true;     // EAB TODO: Prevent XPMenu to screw plugin Controls *Hackish*
   InitPlugins;
   XPMenu.Active := devData.XPTheme;     // EAB TODO: Reload XPMenu stuff
@@ -1348,7 +1344,6 @@ begin
     for I := 2 to NewDocks.Count - 1 do
       ManualTabDockAddPage(NewDockTabs, NewDocks[I]);
   end;
-  //XPMenu.Active := devData.XPTheme;     // EAB TODO: Reload XPMenu stuff
   //"Surround With" menu
   trycatchPopItem.Tag            := INT_TRY_CATCH;
   trycatchPopItem.OnClick        := SurroundWithClick;
@@ -1663,8 +1658,7 @@ begin
 
 {$IFNDEF COMPILER_7_UP}
     //Initialize theme support
-    themeMngr := TThemeManager.Create(Self);  // **EAB TODO: Check!!
-    with themeMngr do
+    with TThemeManager.Create(Self) do
       Options := [toAllowNonClientArea, toAllowControls, toAllowWebContent, toSubclassAnimate, toSubclassButtons, toSubclassCheckListbox, toSubclassDBLookup, toSubclassFrame, toSubclassGroupBox, toSubclassListView, toSubclassPanel, toSubclassTabSheet, toSubclassSpeedButtons, toSubclassStatusBar, toSubclassTrackBar, toSubclassWinControl, toResetMouseCapture, toSetTransparency, toAlternateTabSheetDraw];
 {$ENDIF}
 {$IFNDEF PRIVATE_BUILD}
@@ -1787,8 +1781,10 @@ var
     tabs: TTabSheet;
     panel: TForm;
     i,j, idx, temp_left, temp_top: Integer;
-    DockClient1: TJvDockClient;
-{$ENDIF}  
+
+    panel1: TForm;
+    panel2: TForm;
+{$ENDIF}
 begin
   if assigned(fProject) then
     actCloseProject.Execute;
@@ -1844,6 +1840,22 @@ begin
   {$IFDEF PLUGIN_BUILD}
   for i := 0 to pluginsCount - 1 do
   begin
+
+      // EAB TODO: This block is a hack that forces the panel to its original position, so ThemeManager doesn't freak out when closing
+      items := plugins[i].Retrieve_Tabbed_LeftDock_Panels;
+      if items <> nil then
+      begin
+          {for j := 0 to items.Count -1 do   // This is more general, but not working
+          begin
+            panel := items[j];
+            ManualTabDockAddPage(LeftDockTabs, panel);
+            ShowDockForm(panel);
+          end;   }
+          panel1 := items[0];
+          panel2 := items[1];
+          ManualTabDock(DockServer.LeftDockPanel, panel1, panel2);
+      end;
+
     toolbar := plugins[i].Retrieve_Toolbars;
     if toolbar <> nil then
     begin
@@ -1854,9 +1866,9 @@ begin
     plugins[i].Terminate;
     plugins[i] := nil;
   end;
-  //XPMenu.Active := devData.XPTheme;
 
   SaveOptions;
+
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -1879,7 +1891,6 @@ begin
       fToDoList.Delete(0);
     end;
   fToDoList.Free;
-    XPMenu.Active := false;
 
   {$IFNDEF PLUGIN_TESTING}
   for i := 0 to packagesCount - 1 do
@@ -1888,10 +1899,6 @@ begin
     FreeLibrary(plugin_modules[c_plugins[i]]);
   {$ENDIF PLUGIN_TESTING}
   {$ENDIF PLUGIN_BUILD}
-   //with themeMngr do
-    //  Options := [];
-    //themeMngr.ClearLists;
-    //themeMngr.Destroy;
 end;
 
 procedure TMainForm.ParseCmdLine;
