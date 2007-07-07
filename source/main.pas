@@ -6539,7 +6539,7 @@ var
     end;
   end;
 begin
-  if ReloadFilenames.Count = 1 then
+  {if ReloadFilenames.Count = 1 then
   begin
     with PReloadFile(ReloadFilenames[0])^ do
       case ChangeType of
@@ -6571,7 +6571,7 @@ begin
       FilesReloadForm.Free;
       FilesReloadForm := nil;
     end;
-  end;
+  end;     }
 end;
 
 procedure TMainForm.actFilePropertiesExecute(Sender: TObject);
@@ -8658,16 +8658,16 @@ begin
   librariesCount := 0;
   pluginsCount := 0;
   ToolsMenuOffset := 0;
-  loadablePlugins := ListDirectory('plugins\*.*', faDirectory);
+  loadablePlugins := ListDirectory(devDirs.Exec + '\plugins\*.*', faDirectory);
   {$IFNDEF PLUGIN_TESTING}
   for i := 0 to loadablePlugins.Count - 1 do
   begin
       pluginName := loadablePlugins[i];
       SetSplashStatus('Loading plugin "' + pluginName + '"');
       pluginModule := 0;
-      if FileExists('plugins\' + pluginName + '\' + pluginName + '.bpl') then
+      if FileExists(devDirs.Exec + '\plugins\' + pluginName + '\' + pluginName + '.bpl') then
       begin
-          pluginModule := LoadPackage('plugins\' + pluginName + '\' + pluginName + '.bpl');
+          pluginModule := LoadPackage(devDirs.Exec + '\plugins\' + pluginName + '\' + pluginName + '.bpl');
           if pluginModule <> 0 then
           begin
             SetLength(delphi_plugins, packagesCount + 1);
@@ -8719,14 +8719,14 @@ begin
       end
       else
       begin
-          if FileExists('plugins\' + pluginName + '\' + pluginName + '.dll') then
+          if FileExists(devDirs.Exec + '\plugins\' + pluginName + '\' + pluginName + '.dll') then
           begin
-                tempName := 'plugins\' + pluginName + '\' + pluginName + '.dll';
+                tempName := devDirs.Exec + '\plugins\' + pluginName + '\' + pluginName + '.dll';
                 pluginModule := LoadLibrary(PChar(tempName));
           end
-          else if FileExists('plugins\' + pluginName + '\' + pluginName + '.ocx') then
+          else if FileExists(devDirs.Exec + '\plugins\' + pluginName + '\' + pluginName + '.ocx') then
           begin
-                tempName := 'plugins\' + pluginName + '\' + pluginName + '.ocx';
+                tempName := devDirs.Exec + '\plugins\' + pluginName + '\' + pluginName + '.ocx';
                 pluginModule := LoadLibrary(PChar(tempName));
           end;
 
