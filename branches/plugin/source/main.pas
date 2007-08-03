@@ -1487,7 +1487,9 @@ begin
       DragKind := dkDock;
       DragMode := dmAutomatic;
       FormStyle := fsStayOnTop;
-      
+
+      BorderIcons := BorderIcons - [biSystemMenu];    // Removing close button
+
       //Transfer all the controls from the message control to the new dock
       while MessageControl.Pages[I].ControlCount > 0 do
         MessageControl.Pages[I].Controls[0].Parent := NewDock;
