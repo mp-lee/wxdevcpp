@@ -10,20 +10,15 @@ uses
 type
 
   TWXEditor = class
-  private
     fDesigner: TfrmNewForm;
     fScrollDesign: TScrollBox;
-    // fEditorType: TEditorType;        <-- EAB: not needed.. ?
-
-    procedure Close; // New fnc for wx
-
-    //procedure SetString(const Value: string); // new fnc for wx
 
     //Guru's Code
   private
     fDesignerClassName, fDesignerTitle: string;
     fDesignerStyle: TWxDlgStyleSet;
     fDesignerDefaultData: Boolean;
+    procedure Close; // New fnc for wx
   public
     FileName: String;
     function GetDesigner: TfrmNewForm;

@@ -19,7 +19,7 @@ uses
 
 {$I ..\..\LangIDs.inc}    
   
-type  
+type          
   TWXDsgn = class(TComponent, IPlug_In_BPL)
     actNewwxDialog: TAction;
     NewWxDialogItem: TMenuItem;
@@ -956,6 +956,8 @@ begin
     isEXAssigned := false;
     isEXModified := false;
     eXFileName := '';
+    bCppModified := false;
+    bHModified := false;
 //Bug fix for 1123460 : Save the files first and the do a re-parse.
 //If you dont save all the files first then cpp functions and header functions of save class
 //will be added in the class browser and duplicates will be there.
@@ -993,10 +995,10 @@ begin
         end;
 		
 		// EAB TODO: Check if these next 2 can be done directly inside the SaveFileIfModified call
-        if (bHModified =true ) then	
+        if (bHModified = true ) then	
             main.ReParseFile(hFile);
 
-        if (bCppModified =true ) then
+        if (bCppModified = true ) then
             main.ReParseFile(cppFile);
     end
 end;
@@ -1022,8 +1024,9 @@ end;
 
 procedure TWXDsgn.OpenUnit(EditorFilename: String);
 var
-  AlreadyActivated:boolean;
+  AlreadyActivated: boolean;
 begin
+  AlreadyActivated := true;
 	if FileExists(ChangeFileExt(EditorFilename,WXFORM_EXT)) then
 	begin
 	  if not main.isFileOpenedinEditor(ChangeFileExt(EditorFilename, WXFORM_EXT)) then
@@ -1150,7 +1153,6 @@ function TWXDsgn.CreateCreateFormDlg(dsgnType: TWxDesignerType; insertProj: inte
 var
   SuggestedFilename: string;
   INI: Tinifile;
-  i : integer;
   profileNames: TStrings;
   defaultProfileIndex: Integer;
 begin
@@ -1216,10 +1218,6 @@ var
   BaseFilename: string;
   currFile: string;
   OwnsDlg: boolean;
-  
-  editor: TWXEditor;
-  tabSheet: TTabSheet;
-  text: TSynEdit;
 
   strFName, strCName, strFTitle: string;
   dlgSStyle: TWxDlgStyleSet;
@@ -1368,7 +1366,6 @@ var
   strAppCppFile, strAppHppFile, strAppRcFile:String;
   ini: Tinifile;
 
-  editor: TWXEditor;
 begin
   //Get the path of our templates
   TemplatesDir := IncludeTrailingBackslash(main.GetRealPathFix(main.GetDevDirsTemplates, ExtractFileDir(Application.ExeName)));
@@ -2793,7 +2790,7 @@ begin
                     Else
                     begin
                         MessageDlg('Contructor Function(in Header) or Sometimes all the Functions(in Source)  might not be renamed. '+#13+#10+''+#13+#10+'Please rename them manually.'+#13+#10+''+#13+#10+'We hope to fix this bug asap.'+#13+#10+'Sorry for the trouble.', mtInformation, [mbOK], 0);
-                        strDirName:=IncludeTrailingBackslash(ExtractFileDir(editorName));
+                        strDirName := IncludeTrailingBackslash(ExtractFileDir(editorName));
                         RenameFile(strDirName+'\'+PreviousStringValue+'_XPM.xpm',strDirName+'\'+TfrmNewForm(comp).Wx_Name+'_XPM.xpm');
                         Designerfrm.GenerateXPM((editors[ExtractFileName(editorName)] AS TWXEditor).GetDesigner, editorName, true);
                     end;
@@ -3192,7 +3189,6 @@ var
   strOldFunctionName:string;
   strFname:String;
   intLineNum:Integer;
-  I: integer;
   stID: Integer;
   boolFound: Boolean;
   editorName: String;
@@ -3303,7 +3299,7 @@ function TWXDsgn.CreateFunctionInEditor(var strFunctionName: string; strReturnTy
 var
   intFunctionCounter:Integer;
   strOldFunctionName:string;
-  I, Line: Integer;
+  Line: Integer;
   AddScopeStr: Boolean;
   VarType: string;
   VarArguments: string;
@@ -3313,7 +3309,8 @@ var
   CppEditor, Hppeditor: TSynEdit;
 begin
   Result := false;
-  boolFound := False;
+  boolFound := false;
+  AddScopeStr := false;
   editorName := main.GetActiveEditorName;
   if not main.IsEditorAssigned(editorName) or not isForm(editorName) then
     Exit;
@@ -4130,8 +4127,6 @@ begin
 end;
 
 function TWXDsgn.Retrieve_LeftDock_Panels: TList;
-var
-    items: TList;
 begin
     Result := nil;
 end;

@@ -9,16 +9,25 @@ const
 type
 
   IPlug_In = interface(IInterface) ['{C9E8FCF9-BEBD-4A51-80C1-16AF5197BBB3}']
+  
+	// Change to Create
     procedure StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
     procedure CutExecute;
     procedure CopyExecute;
     procedure PasteExecute;
+	
+	//Change to Destroy
     procedure Terminate;
+	
+	//Remove
     procedure DisableDesignerControls;
     procedure OnToolbarEvent(WM_COMMAND: Word);    
-    //procedure SetPnlBrowsersVisible(b: Boolean);
+	
+	// Move these 2 to a initialization code inside wxdesigner, before the Retrieve_Form_Items call
     procedure SetBoolInspectorDataClear(b: Boolean);
     procedure SetDisablePropertyBuilding(b: Boolean);	
+	
+	
     function IsCurrentPageDesigner: Boolean;
     function IsDelphiPlugin: Boolean;
     function GetChild: HWND;
@@ -30,7 +39,7 @@ type
     procedure OpenUnit(s: String);
     function IsForm(s: String): Boolean;
     function SaveFile(s: String; var pluginFileExist: Boolean): Boolean;	
-    //procedure Activate(FileName: String);
+
     function IsSource(FileName: String): Boolean;
     function GetDefaultText(FileName: String): String;	
     function GetFilter(editorName: String): String;

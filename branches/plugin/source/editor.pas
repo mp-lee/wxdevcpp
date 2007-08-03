@@ -1,4 +1,4 @@
-{
+{        
     $Id: editor.pas 802 2007-01-14 07:34:06Z lowjoel $
 
     This file is part of Dev-C++
@@ -483,7 +483,7 @@ begin
     fTabSheet.PageControl.ActivePage := fTabSheet;
     if fText.Visible then
       fText.SetFocus;  
-
+             
     //Call the post-change event handler
 {$IFDEF PLUGIN_BUILD}
   pluginCatched := false;
@@ -493,8 +493,7 @@ begin
       pluginCatched := true;
   end;
 {$ENDIF}
-    if MainForm.ClassBrowser1.Enabled {$IFDEF WX_BUILD} or pluginCatched {$ENDIF} then
-    pluginCatched := false;
+    if MainForm.ClassBrowser1.Enabled {$IFDEF PLUGIN_BUILD} or pluginCatched {$ENDIF} then
       MainForm.PageControl.OnChange(MainForm.PageControl); // this makes sure that the classbrowser is consistent
   end;
 end;
