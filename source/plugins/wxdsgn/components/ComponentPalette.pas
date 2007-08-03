@@ -123,6 +123,7 @@ begin
     Align := alClient;
     Parent := Self;
     Width := Self.Width;
+    ReadOnly := true;
 
     //Tree-view styles
     RowSelect := True;

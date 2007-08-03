@@ -1751,22 +1751,12 @@ end;
 
 {$IFDEF PLUGIN_BUILD}
 procedure TMainForm.OnDockableFormClosed(Sender: TObject; var Action: TCloseAction);
-var
-  i: Integer;
-  b: Boolean;
 begin
   //Sanity check
   if not (Sender is TForm) then
     Exit;
 
-  //Update the menu list
-  {b := false;
-  for i := 0 to packagesCount - 1 do
-  begin
-        b := b or (plugins[delphi_plugins[i]] AS IPlug_In_BPL).OnDockableFormClosed(Sender);
-  end;}
-
-  if {(not b) and (}TForm(Sender) = frmProjMgrDock then
+  if TForm(Sender) = frmProjMgrDock then
     ShowProjectInspItem.Checked := False;
 end;
 {$ENDIF}
@@ -1776,12 +1766,8 @@ var
   JvAppIniFileStorage: TJvAppIniFileStorage;
 {$IFDEF PLUGIN_BUILD}
     items: TList;
-    menuItem: TMenuItem;
     toolbar: TToolBar;
-    tabs: TTabSheet;
-    panel: TForm;
-    i,j, idx, temp_left, temp_top: Integer;
-
+    i, j: Integer;
     panel1: TForm;
     panel2: TForm;
 {$ENDIF}
@@ -1872,8 +1858,6 @@ begin
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
-var
-  i: Integer;
 begin
   if fDebugger.Executing then
     fDebugger.CloseDebugger(Sender);
@@ -3492,7 +3476,6 @@ var
   i : integer;
   pt: TPoint;
   e: TEditor;
-  EditorFilename:String;
   AlreadyActivated:boolean;
 {$IFDEF PLUGIN_BUILD}
   j: Integer;
@@ -3741,6 +3724,7 @@ var
   j, I: Integer;
 {$ENDIF}  
 begin
+  built := false;
   prj := -1;
   if not BuildFilter(flt, ftOpen) then
   if not BuildFilter(flt, [FLT_PROJECTS, FLT_HEADS, FLT_CS, FLT_CPPS, FLT_RES]) then
@@ -6509,8 +6493,6 @@ begin
 end;
 
 procedure TMainForm.HandleFileMonitorChanges;
-var
-  I: Integer;
 
   procedure ReloadEditor(FileName: string);
   var
@@ -8620,6 +8602,7 @@ var
 begin
    entries := TStringList.Create;
    EOFound:= False;
+   Result := nil;
    if FindFirst(Path, Attr, Res) < 0 then
      exit
    else
@@ -8639,19 +8622,15 @@ var
   menuItem: TMenuItem;
   toolbar: TToolBar;
   tabs: TTabSheet;
-  i,j, idx, temp_left, temp_top: Integer;
+  i,j: Integer;
   AClass: TPersistentClass;
   loadablePlugins: TStringList;
   plugin: IPlug_In_BPL;
-  pluginModule: HModule;
-  tempName: String;
-  c_interface: TPlug_In_DLL;
   pluginName: String;
   panel1: TForm;
   panel2: TForm;
   lbDockClient2: TJvDockClient;
   lbDockClient3: TJvDockClient;
-  p: Integer;
 begin
 
   packagesCount := 0;
@@ -9100,7 +9079,6 @@ end;
 procedure TMainForm.SaveFileAndCloseEditor(EditorFilename: String; extension: String; Saved:Boolean);
 var
   tempEditor:TEditor;
-  flag:Boolean;
 begin
     tempEditor := MainForm.GetEditorFromFileName(ChangeFileExt(EditorFilename, extension), True);
     if assigned(tempEditor) then begin
@@ -9131,7 +9109,6 @@ end;
 
 procedure TMainForm.PrepareFileForEditor(currFile: String; insertProj: Integer; creatingProject: Boolean; assertMessage: Boolean; alsoReasignEditor: Boolean);
 var
-  FolderNode: TTreeNode;
   editor: TEditor;
 begin
   if (creatingProject = True) or (insertProj = 1) then
@@ -9230,7 +9207,7 @@ end;
 
 function TMainForm.RetrieveUserName(var buffer: array of char; size: dword): Boolean;
 begin
-    GetUserName(buffer, size);
+    Result := GetUserName(buffer, size);
 end;
 
 procedure TMainForm.CreateEditor(strFileN: String; extension: String; InProject: Boolean);
@@ -9336,7 +9313,7 @@ begin
   else
     HideDockForm(form);
 end;
-
+  
 {ENDIF PLUGIN_BUILD}
 
 end.
