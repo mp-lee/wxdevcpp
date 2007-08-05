@@ -265,6 +265,7 @@ public
     procedure CreateNewXPMs(strFileName:String);
     function EditorDisplaysText(FileName: String): Boolean;
 	  function GetTextHighlighterType(FileName: String): String;
+    function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
   end;
 
 var
@@ -4266,6 +4267,11 @@ end;
 function TWXDsgn.GetTextHighlighterType(FileName: String): String;
 begin
     Result := 'RES';
+end;
+
+function TWXDsgn.GET_COMMON_CPP_INCLUDE_DIR: String;
+begin
+    Result := COMMON_CPP_INCLUDE_DIR;
 end;
 
 initialization

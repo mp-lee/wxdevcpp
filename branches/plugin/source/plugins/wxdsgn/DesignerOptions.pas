@@ -106,7 +106,6 @@ end;
 procedure TDesignerForm.btnOkClick(Sender: TObject);
 var
   ini:      TiniFile;
-  node:     TTreeNode;
   FileName: string;
   strLstXRCCode: TStringList;
   editorName: String;

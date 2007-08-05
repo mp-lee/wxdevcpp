@@ -90,6 +90,7 @@ type
 implementation
 
 uses
+  main, 
 {$IFDEF WIN32}
   Windows, Forms, SysUtils, version, utils, Dialogs, MultiLangSupport;
 {$ENDIF}
@@ -147,6 +148,15 @@ var
     devCompilerSet.LoadSet(CurrentSet);
   end;
 begin
+
+{$IFDEF PLUGIN_BUILD}
+  // EAB TODO: Check if this is a good solution for plugins and COMMON_CPP_INCLUDE_DIR
+  for i := 0 to MainForm.pluginsCount - 1 do
+  begin
+	  COMMON_CPP_INCLUDE_DIR := MainForm.plugins[i].GET_COMMON_CPP_INCLUDE_DIR;
+  end;
+{$ENDIF PLUGIN_BUILD}
+
   if Assigned(fTemplate) then
     fTemplate.Free;
   if FileExists(FileName) then
