@@ -1772,7 +1772,7 @@ var
     i, j: Integer;
     panel1: TForm;
     panel2: TForm;
-{$ENDIF}
+{$ENDIF PLUGIN_BUILD}
 begin
   if assigned(fProject) then
     actCloseProject.Execute;
@@ -1854,12 +1854,16 @@ begin
     plugins[i].Terminate;
     plugins[i] := nil;
   end;
-
+  {$ENDIF PLUGIN_BUILD}
   SaveOptions;
 
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
+{$IFDEF PLUGIN_BUILD}
+var
+  i: Integer;
+{$ENDIF PLUGIN_BUILD}
 begin
   if fDebugger.Executing then
     fDebugger.CloseDebugger(Sender);
@@ -1878,6 +1882,7 @@ begin
     end;
   fToDoList.Free;
 
+  {$IFDEF PLUGIN_BUILD}
   {$IFNDEF PLUGIN_TESTING}
   for i := 0 to packagesCount - 1 do
     UnloadPackage(plugin_modules[delphi_plugins[i]]);
@@ -8396,6 +8401,7 @@ begin
     end;
 end;
 
+{$IFDEF PLUGIN_BUILD}
 function TMainForm.GetEditorTabSheet(FileName: String): TTabSheet;
  var
    e: TEditor;
@@ -8624,11 +8630,14 @@ var
   menuItem: TMenuItem;
   toolbar: TToolBar;
   tabs: TTabSheet;
-  i,j: Integer;
+  i,j, idx, temp_left, temp_top: Integer;
   AClass: TPersistentClass;
   loadablePlugins: TStringList;
   plugin: IPlug_In_BPL;
+  pluginModule: HModule;
   pluginName: String;
+  tempName: String;
+  c_interface: TPlug_In_DLL;
   panel1: TForm;
   panel2: TForm;
   lbDockClient2: TJvDockClient;
@@ -9052,7 +9061,6 @@ begin
     end
 end;
 
-{IFDEF PLUGIN_BUILD}
 function TMainForm.SaveFileIfModified(EditorFilename: String; extension: String; var isEXAssigned: Boolean; var isEXModified: Boolean; var eXFileName: String): Boolean;
 var
     eX:TEditor;
@@ -9316,7 +9324,7 @@ begin
     HideDockForm(form);
 end;
   
-{ENDIF PLUGIN_BUILD}
+{$ENDIF PLUGIN_BUILD}
 
 end.
 

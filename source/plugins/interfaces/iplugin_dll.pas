@@ -57,6 +57,7 @@ type
     C_GetXMLExtension: function: PChar; stdcall;
 	C_EditorDisplaysText: function(FileName: PChar): Boolean; stdcall;
 	C_GetTextHighlighterType: function(FileName: PChar): PChar; stdcall;	
+	C_GET_COMMON_CPP_INCLUDE_DIR: function: PChar; stdcall;  // EAB TODO: Generalize this.
   public
     procedure StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
     procedure CutExecute;
@@ -100,6 +101,7 @@ type
     function GetXMLExtension: String;
 	function EditorDisplaysText(FileName: String): Boolean;
 	function GetTextHighlighterType(FileName: String): String;
+	function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
   end;
 
 implementation
@@ -148,6 +150,7 @@ begin
     @C_GetXMLExtension := GetProcAddress(module, 'GetXMLExtension');
 	@C_EditorDisplaysText := GetProcAddress(module, 'EditorDisplaysText');
 	@C_GetTextHighlighterType := GetProcAddress(module, 'GetTextHighlighterType');
+	@C_GET_COMMON_CPP_INCLUDE_DIR := GetProcAddress(module, 'GET_COMMON_CPP_INCLUDE_DIR');
 
     tool := TToolBar.Create(nil);
     tool.Left:= toolbar_x;
@@ -452,6 +455,16 @@ var
     res: String;
 begin
     temp := C_GetTextHighlighterType(PChar(FileName));
+    res := temp;
+    Result := res;
+end;
+
+function TPlug_In_DLL.GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
+var
+    temp: PChar;
+    res: String;
+begin
+    temp := C_GET_COMMON_CPP_INCLUDE_DIR;
     res := temp;
     Result := res;
 end;

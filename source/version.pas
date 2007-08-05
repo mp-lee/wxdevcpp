@@ -29,6 +29,7 @@ var
   LIB_EXT: string;
   OBJ_EXT: string;
   PCH_EXT: string;
+  COMMON_CPP_INCLUDE_DIR: string;
   
 const
   GCC_VERSION          = '3.4.2';
@@ -105,7 +106,7 @@ resourcestring
   WATCOM_RC_INCLUDE_DIR  = 'include'+ pd + 'common;';
 
 
-  COMMON_CPP_INCLUDE_DIR = '';	
+  //COMMON_CPP_INCLUDE_DIR = ''; EAB TODO: see special cases with plugins
   GCC_CPP_INCLUDE_DIR  =
                         ';include'
                        //one of below directories will be deleted if don't exist, later

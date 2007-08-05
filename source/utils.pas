@@ -531,12 +531,12 @@ begin
 end;
 
 function BuildFilter(var value: string; const FLTStyle: TFILTERSET): boolean; overload;
-{IFDEF PLUGIN_BUILD}
+{$IFDEF PLUGIN_BUILD}
 var
     b: Boolean;
     filters: TStringList;
     i, j: Integer;
-{ENDIF}
+{$ENDIF}
 begin
   value:= FLT_BASE +FLT_ALLFILES;
   case FLTStyle of

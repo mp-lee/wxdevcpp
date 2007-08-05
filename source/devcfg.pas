@@ -895,6 +895,9 @@ end;
 
 procedure InitializeOptions;
 begin
+
+  COMMON_CPP_INCLUDE_DIR := '';  // EAB TODO: Is this the right place for initializing this var?
+
   if not assigned(devDirs) then
     devDirs := TdevDirs.Create;
 
@@ -2142,7 +2145,7 @@ begin
   fCDir   := ValidatePaths(C_INCLUDE_DIR(fCompilerType), tempstr);
   fCppDir := ValidatePaths(CPP_INCLUDE_DIR(fCompilerType), tempstr);
   fLibDir := ValidatePaths(LIB_DIR(fCompilerType), tempstr);
-{$IFDEF PLUGINBUILD}
+{$IFDEF PLUGIN_BUILD}
   fRCDir  := ValidatePaths(RC_INCLUDE_DIR(fCompilerType), tempstr);
 {$ELSE}
   fRCDir  := '';
@@ -2508,7 +2511,10 @@ begin
 end;
 
 procedure TdevCompilerSet.AssignToCompiler;
+var
+  tempstr: String;
 begin
+  tempstr := '';
   devCompiler.Name                  := Name;
   devCompiler.gccName               := gccName;
   devCompiler.gppName               := gppName;
@@ -2539,7 +2545,7 @@ begin
   // we have to set the devDirs too
   devDirs.Bins := BinDir;
   devDirs.C := CDir;
-  devDirs.Cpp := CppDir;
+  devDirs.Cpp := CppDir + ';' + ValidatePaths(CPP_INCLUDE_DIR(fCompilerType), tempstr);  // EAB TODO: Check if this is a good solution for plugins and COMMON_CPP_INCLUDE_DIR
   devDirs.Lib := LibDir;
   devDirs.RC := RCDir;
 
@@ -2906,7 +2912,11 @@ begin
 end;
 
 procedure TdevCompilerSet.SettoDefaults;
+var
+  tempstr: String;
 begin
+
+  tempstr := '';
   // Programs
   fgccName     := CP_PROGRAM(CompilerType);
   fgppName     := CPP_PROGRAM(CompilerType);
@@ -2976,7 +2986,7 @@ begin
   // dirs
   fBinDir  := devDirs.Bins;
   fCDir    := devDirs.C;
-  fCppDir  := devDirs.Cpp;
+  fCppDir  := devDirs.Cpp + ';' + ValidatePaths(CPP_INCLUDE_DIR(fCompilerType), tempstr);   // EAB TODO: Check if this is a good solution for plugins and COMMON_CPP_INCLUDE_DIR
   fLibDir  := devDirs.Lib;
   fRCDir   := devDirs.RC;
 end;

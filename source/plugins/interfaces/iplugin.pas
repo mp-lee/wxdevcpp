@@ -62,6 +62,7 @@ type
 	function GetXMLExtension: String;
 	function EditorDisplaysText(FileName: String): Boolean;
 	function GetTextHighlighterType(FileName: String): String;
+	function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
   end;
 
 
