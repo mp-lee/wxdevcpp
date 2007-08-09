@@ -144,9 +144,7 @@ contains
   jpeg in 'jpeg.pas',
   JConsts in 'JConsts.pas',
   Spin in 'Spin.pas',
-{$IFDEF WIN32}
   FileCtrl in 'FileCtrl.pas',
-{$EDIF WIN32}
   CheckLst in 'CheckLst.pas',
   XPMenu in 'XPMenu.pas',
   ELDsgnr in 'ELDsgnr.pas',
