@@ -982,8 +982,8 @@ object MainForm: TMainForm
     Align = alTop
     BevelOuter = bvNone
     Caption = 
-      'Dev-C++ version 5.0 full screen press shift+F12 to toggle Toolba' +
-      'rs or F12 to go to normal mode.'
+      'wxDev-C++ Full Screen Mode. Press Shift-F12 to toggle Toolbars o' +
+      'r F12 to exit Full Screen mode.'
     TabOrder = 3
     Visible = False
     DesignSize = (
