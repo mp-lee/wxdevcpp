@@ -8,7 +8,7 @@ uses
   StdCtrls, Forms, SysUtils, Windows, Dialogs, Graphics,
   JclStrings, JvExControls, JvComponent, TypInfo, JclRTTI, JvStringHolder,
   ELDsgnr, JvInspector, dmCreateNewProp, DbugIntf,
-  wxSizerpanel, Designerfrm, ELPropInsp, ThemeMgr,     
+  wxSizerpanel, Designerfrm, ELPropInsp, {$IFNDEF COMPILER_7_UP}ThemeMgr,{$ENDIF}     
   CompFileIO, SynEdit, StrUtils,
   DesignerOptions, JvExStdCtrls, JvEdit, iplugin_bpl, iplugger,
   hashes,    // <-- EAB Help for indexing the editor designers based on their associated file names from TEditor.
