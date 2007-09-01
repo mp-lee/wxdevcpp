@@ -232,7 +232,7 @@ var
   tsi: TStartupInfo;
   tpi: TProcessInformation;
   nRead: DWORD;
-  aBuf: array[0..101] of char;
+  aBuf: array[0..1024] of Char;
   sa: TSecurityAttributes;
   hOutputReadTmp, hOutputRead, hOutputWrite, hInputWriteTmp, hInputRead,
     hInputWrite, hErrorWrite: THandle;
@@ -275,18 +275,20 @@ begin
     exit;
   end;
   CloseHandle(hOutputWrite);
-  CloseHandle(hInputRead );
+  CloseHandle(hInputRead);
   CloseHandle(hErrorWrite);
 
   bAbort:=False;
-  repeat
+  while True do
+  begin
     if Assigned(CheckAbortFunc) then
       CheckAbortFunc(bAbort);
-     if bAbort then begin
+    if bAbort then begin
       TerminateProcess(tpi.hProcess, 1);
       Break;
     end;
-    if (not ReadFile(hOutputRead, aBuf, 16, nRead, nil)) or (nRead = 0) then
+
+    if (not ReadFile(hOutputRead, aBuf, SizeOf(aBuf) - 1, nRead, nil)) or (nRead = 0) then
     begin
       if GetLastError = ERROR_BROKEN_PIPE then
         Break
@@ -307,7 +309,8 @@ begin
         CurrentLine := '';
       end;
     end;
-  until False;
+  end;
+
   GetExitCodeProcess(tpi.hProcess, nRead);
   if ShowReturnValue then
     Result := FOutput + ' ' + inttostr(nread)
@@ -318,18 +321,6 @@ begin
   CloseHandle(hInputWrite);
   CloseHandle(tpi.hProcess);
   CloseHandle(tpi.hThread);
-
-end;
-
-function FormatMessage(SysErrorCode: DWORD): string;
-var
-  Buffer: Pointer;
-begin
-  if Windows.FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER or FORMAT_MESSAGE_FROM_SYSTEM,
-                           nil, SysErrorCode, 0, @Buffer, 0, nil) = 0 then
-    raise Exception.Create('Could not find system error string for error ' + IntToStr(SysErrorCode));
-  Result := PChar(Buffer);
-  LocalFree(Cardinal(Buffer));
 end;
 
 procedure StrtoList(s: string; List: TStrings; const delimiter: string=';');
@@ -561,10 +552,10 @@ begin
   setlasterror(0);
   if FileExists(Store) and not DeleteFile(PChar(Store)) then
     raise Exception.Create('Could not delete destination file ' + Store + ': ' +
-                           FormatMessage(GetLastError));
+                           SysErrorMessage(GetLastError));
   if not CopyFile(PChar(SourcePath), PChar(Store), False) then
     raise Exception.Create('Could not save to destination file: ' + Store +
-                           FormatMessage(GetLastError));
+                           SysErrorMessage(GetLastError));
   LoadStore(Store);
 end;
 
@@ -1524,7 +1515,6 @@ begin
     EnumDecl.Free;
     FunctionDecl.Free;
     ClassMembers.Free;
-//    Tags.Free;
   end;
 end;
 
