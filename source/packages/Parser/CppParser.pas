@@ -232,7 +232,7 @@ var
   tsi: TStartupInfo;
   tpi: TProcessInformation;
   nRead: DWORD;
-  aBuf: array[0..1024] of Char;
+  aBuf: array[0..32768] of Char;
   sa: TSecurityAttributes;
   hOutputReadTmp, hOutputRead, hOutputWrite, hInputWriteTmp, hInputRead,
     hInputWrite, hErrorWrite: THandle;
@@ -278,7 +278,7 @@ begin
   CloseHandle(hInputRead);
   CloseHandle(hErrorWrite);
 
-  bAbort:=False;
+  bAbort := False;
   while True do
   begin
     if Assigned(CheckAbortFunc) then
@@ -289,13 +289,10 @@ begin
     end;
 
     if (not ReadFile(hOutputRead, aBuf, SizeOf(aBuf) - 1, nRead, nil)) or (nRead = 0) then
-    begin
       if GetLastError = ERROR_BROKEN_PIPE then
         Break
       else
-        //MessageDlg('Pipe read error, could not execute file', mtError, [mbOK], 0);
         ErrFunc('Pipe read error, could not execute file');
-    end;
     aBuf[nRead] := #0;
     FOutput := FOutput + PChar(@aBuf[0]);
 
@@ -321,34 +318,6 @@ begin
   CloseHandle(hInputWrite);
   CloseHandle(tpi.hProcess);
   CloseHandle(tpi.hThread);
-end;
-
-procedure StrtoList(s: string; List: TStrings; const delimiter: string=';');
-var
-  start, stop, DelimitedLength: Integer;
-begin
-  DelimitedLength := Length(delimiter);
-  List.BeginUpdate;
-  Start := 1;
-  Stop := 1;
-  
-  while Stop <= Length(s) do
-  begin
-    //Look ahead
-    if Copy(s, Stop, DelimitedLength) = Delimiter then
-    begin
-      List.Add(Trim(Copy(s, Start, Stop - Start)));
-      List.Add(Delimiter);
-      Inc(Stop, Length(Delimiter));
-      Start := Stop;
-    end
-    else
-      Inc(Stop);
-  end;
-
-  if Start <= Length(s) then
-    List.Add(Copy(s, Start, Length(s)));
-  List.EndUpdate;
 end;
 
 function GetWindowsDir: TFileName;
@@ -1318,7 +1287,7 @@ begin
   ClassMembers := TRegExpr.Create;
 
   try
-    //Optimize StrToList. This can take FOREVER with a long file
+    //Retrieve the tags from the file
     RawTags := RunAndGetOutput('ctags -u -f - --fields=+a+i+m+n+S+z --c++-kinds=+lpx ' +
                               '--line-directives=yes "' + PreProcFile + '"', '',
                               nil, nil, nil, False);
