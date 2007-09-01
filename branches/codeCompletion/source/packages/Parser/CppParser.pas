@@ -23,7 +23,7 @@ unit CppParser;
 interface
 
 uses
-  Dbugintf, SQLiteTable3, SyncObjs, Classes, SysUtils, StrUtils, RegExpr, U_IntList,
+  SQLiteTable3, SyncObjs, Classes, SysUtils, StrUtils, RegExpr, U_IntList,
 {$IFDEF WIN32}
   Dialogs, Windows, ComCtrls;
 {$ENDIF}
@@ -95,19 +95,28 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
 
-    //The following functions are meant to be used asynchronously.
+    //Open existing databases
+    procedure LoadStore(Store: string);
     procedure LoadCache(Cache: string);
-    procedure SaveCache(Cache: string; CacheIndex: Integer);
+    procedure Save(Store: string);
+
+    //List the current entries in the database
+    function ListFiles: TStringList;
+
+    //And supplement data
     procedure QueueFile(Path: string);
 
     //Change how parsing works
     procedure AddIncludePath(Path: string); //TODO: lowjoel: NOT IMPLEMENTED
 
     //Retrieve stuff from the database
-    function FindIdentifierID(Identifier: string; Scope: Int64): Int64; overload;
-    function FindIdentifierID(Identifier: string): Int64; overload;
+    function FindIdentifierID(Identifier: string; Scope: Int64;
+                              IdType: TIdentifierGroup = []): Int64; overload;
+    function FindIdentifierID(Identifier: string; IdType:
+                              TIdentifierGroup = []): Int64; overload;
     function FindIdentifierName(IdentifierID: Int64): string;
     function FilterByType(IdentifierType: TIdentifierGroup; PartialName: string = ''): TIntList;
+
     //Using the code fragment Phrase find the possible candidates for completion
     function FindTypeOf(Phrase: string; Scope: Int64; out IncompleteID: string): Int64;
     function FindScopeOfLine(Filename: string; Line: Integer): Int64;
@@ -118,7 +127,7 @@ type
 
   private
     //Initialize a database file (Data source) if necessary
-    class procedure CreateDataSource(Path: string);
+    procedure CreateDataSource;
 
   private
     //Make sure that only one thread can use our class at a time
@@ -126,6 +135,7 @@ type
 
     //The first DataSource is made up of tokens parsed in this session.
     LocalSource: TSQLiteDatabase;
+    SourcePath: TFileName;
 
     //The actual scanning thread
     Parser: TParseThread;
@@ -151,7 +161,7 @@ type
 
     //Dummy properties
     property Enabled: Boolean read fEnabled write fEnabled;
-    property RecursionDepth: Integer read fDepth write fDepth default 0;
+    property RecursionDepth: Integer read fDepth write fDepth;
   end;
 
   TParseThread = class(TThread)
@@ -166,11 +176,14 @@ type
     function ProcessFile(Path: string): string;
     function ProcessFunction(Header, ClassMembers, FunctionDecl: TRegExpr;
                              Definition: Boolean): Int64;
+    procedure InsertIdentifier(Name: string; Scope: Int64; IdType: TIdentifierType;
+                               AccessSpec: string; DeclFile: string; DeclLine: Integer);
 
-    function FindIdentifierID(Identifier: string; Scope: Int64): Int64; overload;
-    function FindIdentifierID(Identifier: string): Int64; overload;
+    function FindIdentifierID(Identifier: string; Scope: Int64; IdType: TIdentifierGroup = []): Int64; overload;
+    function FindIdentifierID(Identifier: string; IdType: TIdentifierGroup = []): Int64; overload;
 
     procedure BreakUpVariableStr(VariableStr: string; var RegExp: TRegExpr; NameHint: string);
+    function GetBaseDataType(VariableStr: string; NameHint: string = ''): string;
     function GetDataType(VariableStr: string; NameHint: string = ''): string;
     function GetPointerType(VariableName: string): TPointerType;
     procedure DeleteIdentifiersInFile(Path: string);
@@ -192,7 +205,12 @@ type
     Lock: TCriticalSection;
   end;
 
+  TIntegrityError = class(Exception)
+  end;
+
 implementation
+uses
+  Dbugintf;
 
 //Replace with the one in utils.pas
 type
@@ -303,24 +321,43 @@ begin
 
 end;
 
-procedure StrtoList(s: string; List: TStrings; const delimiter: string=';');
-var tmp : string;
-    i   : integer;
+function FormatMessage(SysErrorCode: DWORD): string;
+var
+  Buffer: Pointer;
 begin
+  if Windows.FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER or FORMAT_MESSAGE_FROM_SYSTEM,
+                           nil, SysErrorCode, 0, @Buffer, 0, nil) = 0 then
+    raise Exception.Create('Could not find system error string for error ' + IntToStr(SysErrorCode));
+  Result := PChar(Buffer);
+  LocalFree(Cardinal(Buffer));
+end;
+
+procedure StrtoList(s: string; List: TStrings; const delimiter: string=';');
+var
+  start, stop, DelimitedLength: Integer;
+begin
+  DelimitedLength := Length(delimiter);
   List.BeginUpdate;
-  try
-    List.Clear;
-   while pos(delimiter, s) > 0 do begin
-      i := pos(delimiter, s);
-      tmp := Copy(s, 1, i - 1);
-      Delete(s, 1, i + Length(delimiter) - 1);
-      List.Add(tmp);
-    end;
-    if s <> '' then
-      List.Add(s);
-  finally
-    List.EndUpdate;
+  Start := 1;
+  Stop := 1;
+  
+  while Stop <= Length(s) do
+  begin
+    //Look ahead
+    if Copy(s, Stop, DelimitedLength) = Delimiter then
+    begin
+      List.Add(Trim(Copy(s, Start, Stop - Start)));
+      List.Add(Delimiter);
+      Inc(Stop, Length(Delimiter));
+      Start := Stop;
+    end
+    else
+      Inc(Stop);
   end;
+
+  if Start <= Length(s) then
+    List.Add(Copy(s, Start, Length(s)));
+  List.EndUpdate;
 end;
 
 function GetWindowsDir: TFileName;
@@ -394,21 +431,23 @@ var
 begin
   //Create our parent
   inherited;
-  
+
+  //Initialize the Wave recursion depth
+  RecursionDepth := 0;
+
   //Create the synchronization object so we don't corrupt each other's memory
   Lock := TCriticalSection.Create;
 
   //Initialize the database structures
-  TempName := GetTempName;
+  //TempName := GetTempName;
   TempName := 'D:\Test.sqlite';
-  if not FileExists(TempName) then
-    CreateDataSource(TempName);
-  LocalSource := TSQLiteDatabase.Create(TempName);
-  LocalSource.ExecSQL('DELETE FROM Identifiers WHERE ID > 6');
-  LocalSource.ExecSQL('DELETE FROM Variables');
-  LocalSource.ExecSQL('DELETE FROM functions');
-  LocalSource.ExecSQL('DELETE FROM locations');
-  LocalSource.ExecSQL('DELETE FROM inheritance');
+  try
+    LoadStore(TempName);
+  except
+    on E: Exception do
+      MessageBox(0, PChar('SQLite database could not be loaded: ' + E.Message),
+                 'TCppParser', MB_ICONERROR or MB_OK or MB_APPLMODAL);
+  end;
 
   //Then wait for parse requests
   Parser := TParseThread.Create(True, Self);
@@ -426,18 +465,14 @@ begin
   inherited;
 end;
 
-class procedure TCppParser.CreateDataSource(Path: string);
-var
-  db: TSQLiteDatabase;
-
+procedure TCppParser.CreateDataSource;
   procedure InsertPrimitiveType(Primitive: string);
   begin
-    db.ExecSQL('INSERT INTO Identifiers (Name, Scope, Type) VALUES (''' + Primitive + ''',' +
-               '-2, ' + IntToStr(Integer(itPrimitive)) + ');');
+    LocalSource.ExecSQL('INSERT INTO Identifiers (Name, Scope, Type) VALUES (''' +
+                        Primitive + ''', -2, ' + IntToStr(Integer(itPrimitive)) + ');');
   end;
 begin
-  db := TSQLiteDatabase.Create(Path);
-  db.ExecSQL('CREATE TABLE Identifiers (' +
+  LocalSource.ExecSQL('CREATE TABLE IF NOT EXISTS Identifiers (' +
     'ID INTEGER PRIMARY KEY AUTOINCREMENT,' +
     'Name VARCHAR(2048) NOT NULL,' +
     'Scope INTEGER(8) DEFAULT -1,' +
@@ -445,7 +480,7 @@ begin
     'AccessSpec INTEGER(2) DEFAULT 0' +
   ');');
 
-  db.ExecSQL('CREATE TABLE Locations (' +
+  LocalSource.ExecSQL('CREATE TABLE IF NOT EXISTS Locations (' +
     'ID INTEGER PRIMARY KEY NOT NULL,' +
     'DeclarationFile TEXT NOT NULL,' +
     'DeclarationLine INTEGER(8),' +
@@ -453,19 +488,19 @@ begin
     'ImplementationLine INTEGER(8)' +
   ');');
 
-  db.ExecSQL('CREATE TABLE Inheritance (' +
+  LocalSource.ExecSQL('CREATE TABLE IF NOT EXISTS Inheritance (' +
     'ClassID INTEGER(8) PRIMARY KEY,' +
     'BaseClass INTEGER(8)' +
   ');');
 
-  db.ExecSQL('CREATE TABLE Functions (' +
+  LocalSource.ExecSQL('CREATE TABLE IF NOT EXISTS Functions (' +
     'ID INTEGER(8),' +
     'Returns INTEGER(8),' +
     'Prototype TEXT,' +
     'Modifiers INTEGER(6)' +
   ');');
 
-  db.ExecSQL('CREATE TABLE Variables (' +
+  LocalSource.ExecSQL('CREATE TABLE IF NOT EXISTS Variables (' +
     'ID INTEGER(8),' +
     'Datatype INTEGER(8),' +
     'Pointer INTEGER(2),' +
@@ -473,20 +508,84 @@ begin
   ');');
 
   //Insert the default primitives
-  InsertPrimitiveType('void');
-  InsertPrimitiveType('char');
-  InsertPrimitiveType('int');
-  InsertPrimitiveType('bool');
-  InsertPrimitiveType('float');
-  InsertPrimitiveType('double');
+  if LocalSource.GetTableValue('SELECT COUNT(*) FROM Identifiers') = 0 then
+  begin
+    InsertPrimitiveType('void');
+    InsertPrimitiveType('char');
+    InsertPrimitiveType('int');
+    InsertPrimitiveType('bool');
+    InsertPrimitiveType('float');
+    InsertPrimitiveType('double');
+    InsertPrimitiveType('wchar_t');
+  end;
+end;
+
+procedure TCppParser.LoadStore(Store: string);
+begin
+  //Open the handle
+  if SourcePath <> '' then
+    Exit;
+  SourcePath := Store;
+  LocalSource := TSQLiteDatabase.Create(SourcePath);
+  CreateDataSource;
+
+  //Then clean up
+//  senddebug(SourcePath);
+{  LocalSource.ExecSQL('DELETE FROM Identifiers WHERE ID > 7');
+  LocalSource.ExecSQL('DELETE FROM Variables');
+  LocalSource.ExecSQL('DELETE FROM functions');
+  LocalSource.ExecSQL('DELETE FROM locations');
+  LocalSource.ExecSQL('DELETE FROM inheritance');}
 end;
 
 procedure TCppParser.LoadCache(Cache: string);
+resourcestring
+  Message = 'A temporary file has the same name as the current data source.';
+var
+  NewStore: string;
 begin
+  //Differs from loading the store in that cache's force the database contents to
+  //be copied before use.
+  Exit;
+  NewStore := GetTempName;
+  if FileExists(Cache) and not CopyFile(PChar(Cache), PChar(NewStore), False) then
+    raise Exception.Create(IntToStr(GetLastError));
+  LoadStore(NewStore);
 end;
 
-procedure TCppParser.SaveCache(Cache: string; CacheIndex: Integer);
+procedure TCppParser.Save(Store: string);
+resourcestring
+  Message = 'The path you are saving to has an existing file.';
 begin
+  FreeAndNil(LocalSource); //Close the file
+  setlasterror(0);
+  if FileExists(Store) and not DeleteFile(PChar(Store)) then
+    raise Exception.Create('Could not delete destination file ' + Store + ': ' +
+                           FormatMessage(GetLastError));
+  if not CopyFile(PChar(SourcePath), PChar(Store), False) then
+    raise Exception.Create('Could not save to destination file: ' + Store +
+                           FormatMessage(GetLastError));
+  LoadStore(Store);
+end;
+
+function TCppParser.ListFiles: TStringList;
+  procedure DistinctFiles(Column: string);
+  var
+    Table: TSQLiteTable;
+  begin
+    Table := LocalSource.GetTable('SELECT DISTINCT (' + Column + '), * FROM Locations;');
+    while not Table.EOF do
+    begin
+      Result.Add(Table.FieldAsString(0));
+      Table.Next;
+    end;
+    Table.Free;
+  end;
+begin
+  Result := TStringList.Create;
+  Result.Duplicates := dupIgnore;
+  DistinctFiles('DeclarationFile');
+  DistinctFiles('ImplementationFile');
 end;
 
 procedure TCppParser.QueueFile(Path: string);
@@ -500,36 +599,48 @@ begin
 end;
 
 //TODO: lowjoel: Allow searching for identifiers given a function scope
-function TCppParser.FindIdentifierID(Identifier: string; Scope: Int64): Int64;
+function TCppParser.FindIdentifierID(Identifier: string; Scope: Int64;
+                                     IdType: TIdentifierGroup): Int64;
 var
+  I: Integer;
+  Query: string;
   Table: TSQLiteTable;
-begin
-  Table := LocalSource.GetTable('SELECT ID FROM Identifiers WHERE Name=''' + Identifier +
-                                ''' AND Scope=' + IntToStr(Scope) + ';');
-  if not Table.EOF then
-  begin
-    Result := StrToInt(Table.Fields[0]);
-    Table.Next;
-
-    if not Table.EOF then
-      raise Exception.Create('Error: Integrity Failure: Duplicate entries of ' +
-                             Identifier + ' found in code');
-  end
-  else
-    Result := -1;
-end;
-
-function TCppParser.FindIdentifierID(Identifier: string): Int64;
-var
   ScopeOperatorPos: Integer;
 begin
   //Process the identifier string for identifiers of the sort className::memberName
   ScopeOperatorPos := Pos('::', Identifier);
   if ScopeOperatorPos <> 0 then
     Result := FindIdentifierID(Copy(Identifier, ScopeOperatorPos + 2, Length(Identifier)),
-                               FindIdentifierID(Copy(Identifier, 1, ScopeOperatorPos - 1)))
+                               FindIdentifierID(Copy(Identifier, 1, ScopeOperatorPos - 1),
+                                                Scope, [itClass, itStructure, itUnion, itNamespace]),
+                               IdType)
   else
-    Result := FindIdentifierID(Identifier, -1);
+  begin
+    Query := 'SELECT ID FROM Identifiers WHERE Name=''' + Identifier + '''';
+    if Scope >= 0 then
+      Query := Query + ' AND Scope=' + IntToStr(Scope);
+    if IdType <> [] then
+    begin
+      Query := Query + ' AND Type IN (';
+      for I := Integer(itPrimitive) to Integer(itNamespace) do
+        if TIdentifierType(I) in IdType then
+          Query := Query + IntToStr(Integer(I)) + ', ';
+      Query := Copy(Query, 1, Length(Query) - 2) + ');';
+    end;
+
+    Table := LocalSource.GetTable(Query + ';');
+    if not Table.EOF then
+      Result := StrToInt(Table.Fields[0])
+    else
+      Result := -1;
+
+    Table.Free;
+  end;
+end;
+
+function TCppParser.FindIdentifierID(Identifier: string; IdType: TIdentifierGroup): Int64;
+begin
+  Result := FindIdentifierID(Identifier, -1, IdType);
 end;
 
 function TCppParser.FindIdentifierName(IdentifierID: Int64): string;
@@ -539,16 +650,10 @@ begin
   Table := LocalSource.GetTable('SELECT Name FROM Identifiers WHERE ID=' + IntToStr(IdentifierID) +
                                 ';');
   if not Table.EOF then
-  begin
-    Result := Table.FieldAsString(0);
-    Table.Next;
-
-    if not Table.EOF then
-      raise Exception.Create('Error: Integrity Failure: Duplicate entries of ' +
-                             IntToStr(IdentifierID) + ' found in code');
-  end
+    Result := Table.FieldAsString(0)
   else
     Result := '<unknown>';
+  Table.Free;
 end;
 
 function TCppParser.FilterByType(IdentifierType: TIdentifierGroup; PartialName: string): TIntList;
@@ -707,6 +812,7 @@ var
     end;
   end;
 begin
+  currID := -1;
   Result := Scope;
   RegExp := TRegExpr.Create;
   IdentifierParts := BreakUpIdentifier(Phrase);
@@ -722,7 +828,7 @@ begin
     except
       on E: ESqliteException do
       begin
-        currID := -1;
+        Result := -1;
         Exit;
       end;
     end;
@@ -866,7 +972,6 @@ begin
                                 IntToStr(IdentifierId));
   if Table.Eof then
   begin
-    senddebug('cant find info on ' + IntToStr(identifierid));
     Result := nil;
     Exit;
   end;
@@ -954,8 +1059,10 @@ procedure TParseThread.Execute;
 var
   Path: string;
   QueueLength: Integer;
+  CurrentConsecutiveFile: Integer;
 begin
   QueueLength := 0;
+  CurrentConsecutiveFile := 0;
   while not Self.Terminated do
   begin
     try
@@ -964,7 +1071,9 @@ begin
       if InputQueue.Count = 0 then
       begin
         Lock.Release;
-        Synchronize(OnEndParsing);
+        if Assigned(Parser.OnEndParsing) then
+          Synchronize(OnEndParsing);
+        CurrentConsecutiveFile := 0;
         Suspend;
         Continue;
       end;
@@ -973,12 +1082,15 @@ begin
       Path := InputQueue[0];
       QueueLength := InputQueue.Count;
       InputQueue.Delete(0);
+
+      Inc(CurrentConsecutiveFile);
     finally
       Lock.Release;
     end;
 
     //Keep the main frame up to date about our parse progress
-    Synchronize(OnStartParsing);
+    if Assigned(Parser.OnStartParsing) then
+      Synchronize(OnStartParsing);
     if Assigned(Parser.OnTotalProgress) then
     begin
       SyncMarshal := TParseThreadProgressMarshal.Create;
@@ -986,7 +1098,7 @@ begin
       begin
         FileName := Path;
         Total := QueueLength;
-        Current := 1;
+        Current := CurrentConsecutiveFile;
       end;
       Synchronize(OnTotalProgress);
       SyncMarshal.Free;
@@ -1010,14 +1122,14 @@ begin
     Self.Resume;
 end;
 
-function TParseThread.FindIdentifierID(Identifier: string; Scope: Int64): Int64;
+function TParseThread.FindIdentifierID(Identifier: string; Scope: Int64; IdType: TIdentifierGroup): Int64;
 begin
-  Result := Parser.FindIdentifierID(Identifier, Scope);
+  Result := Parser.FindIdentifierID(Identifier, Scope, IdType);
 end;
 
-function TParseThread.FindIdentifierID(Identifier: string): Int64;
+function TParseThread.FindIdentifierID(Identifier: string; IdType: TIdentifierGroup): Int64;
 begin
-  Result := Parser.FindIdentifierID(Identifier);
+  Result := Parser.FindIdentifierID(Identifier, IdType);
 end;
 
 //TODO: lowjoel: functions whose return type is const do lose their const-ness if they
@@ -1031,19 +1143,36 @@ begin
   if Trim(NameHint) = '' then
     NameHint := '[_a-zA-Z0-9<>]+';
 
-  //Constructor and destructor
-  if not RegExp.Exec(VariableStr, '(static\s|extern\s|virtual\s|inline\s)*()()()(~{0,1}[_a-zA-Z0-9:]*)[\s]*\(.*\)') then
+  //Then do the quick check -- is the VariableStr equal to the NameHint? If so then
+  //the answer is straightforward
+  if Trim(VariableStr) = NameHint then
+    Exit;
 
   //Function declarations
   if not RegExp.Exec(VariableStr, '(static\s|extern\s|virtual\s|inline\s)*(const\s|long\s|short\s|unsigned\s|signed\s)*([_a-zA-Z0-9<>]+)([\s*&]+){0,1}(~{0,1}[_a-zA-Z0-9:]*)[\s]*\(.*\)') then
 
   //Operator functions
   if not RegExp.Exec(VariableStr, '(static\s|extern\s|virtual\s|inline\s)*operator\s+(const\s|long\s|short\s|unsigned\s|signed\s)*(' + NameHint + ')([\s*&]*)\(.*?\)(.{0,0})') then
-  if not RegExp.Exec(VariableStr, '(static\s|extern\s|virtual\s|inline\s)*(const\s|long\s|short\s|unsigned\s|signed\s)*([_a-zA-Z0-9<>]+)\s+operator\s*([+-]{1,2}|[/*|!%&()=\[\]]|[+\-/*~|&]\=)\s*\(.*?\)(.{0,0})') then
+  if not RegExp.Exec(VariableStr, '(static\s|extern\s|virtual\s|inline\s)*(const\s|long\s|short\s|unsigned\s|signed\s)*([_a-zA-Z0-9<>]+)\s+operator\s*([+-]{1,2}|[/*|!%&()=]|[+\-/*~|&]\=|\[\])\s*\(.*?\)(.{0,0})') then
+
+  //Constructor and destructor
+  if not RegExp.Exec(VariableStr, '(static\s|extern\s|virtual\s|inline\s)*()()()(~{0,1}[_a-zA-Z0-9:]*)[\s]*\(.*\)') then
 
   //Variables
   if not RegExp.Exec(VariableStr, '(static\s|extern\s)*(const\s|long\s|short\s|unsigned\s|signed\s)*([_a-zA-Z0-9<>]+)([\s*&]*)(' + NameHint + ')') then
-    raise Exception.Create('Cannot break up variable string: ' + VariableStr);
+    SendDebug('Cannot break up variable string: ' + VariableStr);
+end;
+
+function TParseThread.GetBaseDataType(VariableStr: string; NameHint: string): string;
+var
+  RegExp: TRegExpr;
+begin
+  RegExp := TRegExpr.Create;
+  BreakUpVariableStr(VariableStr, RegExp, NameHint);
+
+  if RegExp.SubExprMatchCount <> 0 then
+    Result := RegExp.Match[3];
+  RegExp.Free;
 end;
 
 function TParseThread.GetDataType(VariableStr: string; NameHint: string): string;
@@ -1106,16 +1235,39 @@ begin
   DataSource.Commit;
 end;
 
+procedure TParseThread.InsertIdentifier(Name: string; Scope: Int64; IdType: TIdentifierType;
+                                        AccessSpec: string; DeclFile: string; DeclLine: Integer);
+const
+  IdentifiersSQL: string = 'INSERT INTO Identifiers (Name, Scope, Type, AccessSpec) VALUES (''%s'', %d, %d, %d);';
+  LocationSQL: string    = 'INSERT INTO Locations (ID, DeclarationFile, DeclarationLine) VALUES '+
+                           '(%d, ''%s'', %d)';
+var
+  Tbl: TSQLiteTable;
+begin
+  Tbl := DataSource.GetTable('SELECT ID FROM Identifiers WHERE Name=''' + Name + ''' AND Scope=' + IntToStr(Scope) +
+                             ' AND Type=' + IntToStr(Integer(IdType)) + ' AND NOT ' +
+                             'Type  IN(' + Format('%d, %d', [Integer(itFunction), Integer(itClass)]) + ');');
+  if tbl.RowCount <> 0 then
+    SendDebug('Error: Integrity Failure: Duplicate entries of ' +
+                                 Name + ' found in code: ' + IntToStr(Tbl.RowCount));
+  DataSource.ExecSQL(Format(IdentifiersSQL, [Name, Scope, Integer(IdType), AccessSpecToIdAccess(AccessSpec)]));
+  DataSource.ExecSQL(Format(LocationSQL, [DataSource.GetLastInsertRowID, DeclFile, DeclLine]));
+end;
+
 function TParseThread.ProcessFile(Path: string): string;
 var
   Header, ClassDecl, ClassMembers, EnumDecl, FunctionDecl: TRegExpr;
   PreProcFile: string;
-  Tags: TStringList;
+  //Tags: TStringList;
   Properties: string;
+
+  RawTags: string;
+  CurrentTagStart: Integer;
+  CurrentTagEnd: Integer;
+  CurrentTag: string;
 
   CurrentFunction: Int64;
   CurrentType: string;
-  CurrentTag: Integer;
   CachedType: Int64; //Temporary variable to hold variable types across commas
   ScopeId: Int64;
 
@@ -1147,27 +1299,6 @@ var
       raise EAbstractError.Create('Unknown ctags tag kind value: ' + Kind);
     end;
   end;
-
-  procedure InsertIdentifier(Name: string; Scope: Int64; IdType: TIdentifierType;
-                             AccessSpec: string; DeclFile: string; DeclLine: Integer);
-  const
-    IdentifiersSQL: string = 'INSERT INTO Identifiers (Name, Scope, Type, AccessSpec) VALUES (''%s'', %d, %d, %d);';
-    LocationSQL: string    = 'INSERT INTO Locations (ID, DeclarationFile, DeclarationLine) VALUES '+
-                             '(%d, ''%s'', %d)';
-  var
-    Tbl: TSQLiteTable;
-  begin
-  if Name = 'wxString' then
-    asm int 3; end;
-    Tbl := DataSource.GetTable('SELECT ID FROM Identifiers WHERE Name=''' + Name + ''' AND Scope=' + IntToStr(Scope) +
-                               ' AND Type=' + IntToStr(Integer(IdType)));
-    if tbl.RowCount <> 0 then
-      raise Exception.Create('Error: Integrity Failure: Duplicate entries of ' +
-                             Name + ' found in code');
-    DataSource.ExecSQL(Format(IdentifiersSQL, [Name, Scope, Integer(IdType), AccessSpecToIdAccess(AccessSpec)]));
-    DataSource.ExecSQL(Format(LocationSQL, [DataSource.GetLastInsertRowID, DeclFile, DeclLine]));
-  end;
-
 begin
   PreProcFile := GetTempName + '.cpp';
   //TODO: Make wave emulate another compiler?
@@ -1179,16 +1310,16 @@ begin
                   '"', '', nil, nil, nil, False);
   if Properties <> '' then
   begin
-    MessageBox(0, PChar('Wave had output: ' + Properties), 'Code Completion',
-               MB_OK or MB_ICONHAND or MB_APPLMODAL);
-    Exit;
+    if MessageBox(0, PChar('Wave had output: '#10#13 + Properties + #10#13#10#13 +
+                           'Continue with tagging?'), 'Code Completion',
+                  MB_ICONHAND or MB_APPLMODAL or MB_YESNO) = IDNO then
+      Exit;
   end;
 
   //Cheat ctags. The first few lines need to get a #line directive to set the
   //correct "source" file
   InsertLineDirective(PreProcFile, Path);
 
-  Tags := TStringList.Create;
   Header := TRegExpr.Create;
   ClassDecl := TRegExpr.Create;
   EnumDecl := TRegExpr.Create;
@@ -1196,9 +1327,10 @@ begin
   ClassMembers := TRegExpr.Create;
 
   try
-    StrToList(RunAndGetOutput('ctags -u -f - --fields=+a+i+m+n+S+z --c++-kinds=+lpx ' +
+    //Optimize StrToList. This can take FOREVER with a long file
+    RawTags := RunAndGetOutput('ctags -u -f - --fields=+a+i+m+n+S+z --c++-kinds=+lpx ' +
                               '--line-directives=yes "' + PreProcFile + '"', '',
-                              nil, nil, nil, False), Tags, #13#10);
+                              nil, nil, nil, False);
 
     //Begin parsing!
     Header.Expression := '([^'#9']+)	([^'#9']+)	\/\^(.*)\$\/;"['#9' ]+kind:([a-zA-Z])['#9' ]+line:([0-9]+)['#9' ]*(.*)';
@@ -1219,27 +1351,32 @@ begin
 
     CachedType := -1;
     CurrentFunction := -1;
-    for CurrentTag := 0 to Tags.Count - 1 do
+    CurrentTagEnd := -1;
+    while CurrentTagEnd + 2 < Length(RawTags) do
     begin
+      CurrentTagStart := CurrentTagEnd + 2;
+      CurrentTagEnd := PosEx(#13#10, RawTags, CurrentTagStart);
+      CurrentTag := Trim(Copy(RawTags, CurrentTagStart, CurrentTagEnd - CurrentTagStart));
+
       if Assigned(Parser.OnFileProgress) then
       begin
         SyncMarshal := TParseThreadProgressMarshal.Create;
         with TParseThreadProgressMarshal(SyncMarshal) do
         begin
           FileName := Path;
-          Total := Tags.Count;
-          Current := CurrentTag;
+          Total := Length(RawTags);
+          Current := CurrentTagStart;
         end;
         Self.Synchronize(OnFileProgress);
         SyncMarshal.Free;
       end;
       
       //Skip empty lines
-      if Length(Trim(Tags[CurrentTag])) = 0 then
+      if Length(CurrentTag) = 0 then
         Continue;
 
       try
-        if Header.Exec(Tags[CurrentTag]) then
+        if Header.Exec(CurrentTag) then
         begin
           //Remove the class body stuff (access spec, parent class etc)
           if ClassMembers.Exec(Header.Match[6]) then
@@ -1249,12 +1386,9 @@ begin
 
           //Ignore tags from files which is not the file we are told to parse
           if StringReplace(Header.Match[2], '\\', '\', [rfReplaceAll]) <> Path then
-          begin
-            SendDebug('Ignoring tag from ' + Header.Match[2]);
             Continue;
-          end;
 
-          ScopeId := FindIdentifierID(ClassMembers.Match[2]);
+          ScopeId := FindIdentifierID(ClassMembers.Match[2], [itClass, itStructure, itUnion, itNamespace]);
           case Header.Match[4][1] of
             'c', //classes
             'u', //union names
@@ -1268,7 +1402,7 @@ begin
                   DataSource.ExecSQL('INSERT INTO Inheritance VALUES (' + IntToStr(DataSource.GetLastInsertRowID) +
                                      ', ' + IntToStr(FindIdentifierID(ClassDecl.Match[1])) + ');')
                 else
-                  Exception.Create('Parse Failure: ' + Tags[CurrentTag]);
+                  raise Exception.Create('Parse Failure: ' + CurrentTag);
             end;
 
             'e': //enumerators (values inside an enumeration)
@@ -1279,14 +1413,14 @@ begin
                                  ClassDecl.Match[4], Header.Match[2],
                                  StrToInt(Header.Match[5]))
               else
-                raise Exception.Create('Parse Failure: ' + Tags[CurrentTag]);
+                raise Exception.Create('Parse Failure: ' + CurrentTag);
             end;
 
             'f', //function definitions
             'p': //function prototypes [off]
             begin
               if not FunctionDecl.Exec(Properties) then
-                raise Exception.Create('Parse Failure: ' + Tags[CurrentTag]);
+                raise Exception.Create('Parse Failure: ' + CurrentTag);
 
               if Header.Match[4][1] = 'f' then
               begin
@@ -1300,7 +1434,7 @@ begin
             'g': //enumeration names
             begin
               if (not EnumDecl.Exec(Properties)) and (Properties <> '') then
-                raise Exception.Create('Parse Failure: ' + Tags[CurrentTag]);
+                raise Exception.Create('Parse Failure: ' + CurrentTag);
               InsertIdentifier(Header.Match[1], ScopeID,
                                KindToIdentifierType(Header.Match[4][1]),
                                ClassDecl.Match[4], Header.Match[2],
@@ -1315,12 +1449,13 @@ begin
               //sure marker of an invalid tag (forward-declaration-like)
               CurrentType := GetDataType(Header.Match[3], Header.Match[1]);
               if (CurrentType = 'class') or (CurrentType = 'union') or
-                 (CurrentType = 'struct') or (CurrentType = '') then
+                 (CurrentType = 'struct') then
               begin
-                SendDebug(Header.Match[1] + ' is in function ' + IntToStr(CurrentFunction) + ', is of type '+
-                          CurrentType + ', and is a pointer of type ' +
-                          IntToStr(Integer(GetPointerType(Header.Match[1]))) + '            '#10#13+
-                          Header.Match[0]);
+                raise Exception.Create(Header.Match[1] + ' is in function ' +
+                                       IntToStr(CurrentFunction) + ', is of type '+
+                                       CurrentType + ', and is a pointer of type ' +
+                                       IntToStr(Integer(GetPointerType(Header.Match[1]))) +
+                                       '            '#10#13 + Header.Match[0]);
                 Continue;
               end;
 
@@ -1335,7 +1470,7 @@ begin
                 InsertIdentifier(Header.Match[1], ScopeID, KindToIdentifierType(Header.Match[4][1]),
                                  ClassDecl.Match[4], Header.Match[2], StrToInt(Header.Match[5]));
               end
-              else if Header.Match[4][1] in ['l'] then
+              else if Header.Match[4][1] = 'l' then
                 //CurrentFunction can be used ONLY because locals can only be in a function (hence, locals)
                 InsertIdentifier(Header.Match[1], CurrentFunction, KindToIdentifierType(Header.Match[4][1]),
                                  'access:public', Header.Match[2], StrToInt(Header.Match[5]))
@@ -1363,13 +1498,15 @@ begin
             'n', //namespaces
             'x': //external variable declarations [off]
             else
-              raise EAbstractError.Create('Parse Failure: Not implemented: ' + Tags[CurrentTag]);}
+              raise EAbstractError.Create('Parse Failure: Not implemented: ' + CurrentTag);}
           end
         end
         else
-          raise Exception.Create('Parse Failure: Unknown tag: ' + Tags[CurrentTag]);
+          raise Exception.Create('Parse Failure: Unknown tag: ' + CurrentTag);
       except
         on E: EAbstractError do
+          SendDebug(E.Message);
+        on E: TIntegrityError do
           SendDebug(E.Message);
         on E: Exception do
           MessageBox(0, PChar('Code Completion Error: ' + E.Message), 'wxDev-C++ Code Completion',
@@ -1387,7 +1524,7 @@ begin
     EnumDecl.Free;
     FunctionDecl.Free;
     ClassMembers.Free;
-    Tags.Free;
+//    Tags.Free;
   end;
 end;
 
@@ -1395,14 +1532,11 @@ end;
 function TParseThread.ProcessFunction(Header, ClassMembers, FunctionDecl: TRegExpr;
                                       Definition: Boolean): Int64;
 const
-  IdentifiersSQL: string  = 'INSERT INTO Identifiers (Name, Scope, Type, AccessSpec) VALUES (''%s'', %d, %d, %d);';
   FunctionSQL: string     = 'INSERT INTO Functions (ID, Returns, Prototype, Modifiers) VALUES ' +
                            '(%d, %d, ''%s'', %d);';
   LocationSQL: string     = 'INSERT INTO Locations (ID, ImplementationFile, ImplementationLine, ' +
                             'DeclarationFile, DeclarationLine) VALUES (%d, ''%s'', %s, ''%s'', %s);';
   ImplLocationSQL: string = 'UPDATE Locations SET ImplementationFile=''%s'', ImplementationLine=%s ' +
-                            'WHERE ID=%d;';
-  DeclLocationSQL: string = 'UPDATE Locations SET DeclarationFile=''%s'', DeclarationLine=%d ' +
                             'WHERE ID=%d;';
 var
   NewOverload: Boolean;
@@ -1410,40 +1544,41 @@ var
   Table: TSQLiteTable;
   Scope: Int64;
 
-  procedure InsertPrototype(ID, Returns: Int64; Prototype: string; Modifiers: Integer;
-                            DeclarationFile: string; DeclarationLine: string;
+  procedure InsertPrototype(ID, Scope, Returns: Int64; Prototype: string; Modifiers: Integer;
                             ImplementationFile: string; ImplementationLine: string);
-  var
-    ThisID: Int64;
   begin
     DataSource.ExecSQL(Format(FunctionSQL, [ID, Returns, FunctionDecl.Match[1], 0]));
-    DataSource.ExecSQL(Format(LocationSQL, [ID, DeclarationFile, DeclarationLine,
-                                            ImplementationFile, ImplementationLine]));
+    DataSource.ExecSQL(Format(ImplLocationSQL, [ImplementationFile, ImplementationLine, ID]));
 
     if Scope <> -1 then
     begin
       //These functions are in classes, so they have a THIS pointer. Account for it.
-      DataSource.ExecSQL('INSERT INTO Identifiers (Name, Scope, Type) VALUES (' +
-                         '''this'', ' + IntToStr(ID) + ', ' +
-                         IntToStr(Integer(itVariable)) + ');');
-      ThisID := DataSource.GetLastInsertRowID;
-      DataSource.ExecSQL('INSERT INTO Variables (ID, Datatype, Pointer, Modifiers) VALUES (' +
-                         IntToStr(ThisID) + ', ' +
-                         IntToStr(Scope) + ', ' +
-                         IntToStr(Integer(ptPointer)) +
-                         ', 0);');
-      DataSource.ExecSQL(Format(LocationSQL, [ThisID, DeclarationFile, DeclarationLine,
-                                              ImplementationFile, ImplementationLine]));
+      InsertIdentifier('this', ID, itVariable, 'access:public', ImplementationFile,
+                       StrToIntDef(ImplementationLine, -1));
+      DataSource.ExecSQL(Format('INSERT INTO Variables (ID, Datatype, Pointer, Modifiers) ' +
+                                'VALUES (%d, %d, %d, 0)',
+                                [DataSource.GetLastInsertRowID, Scope, Integer(ptPointer)]));
     end;
   end;
 begin
-  //First determine if we have any other overloads for this function
-  Scope := FindIdentifierID(ClassMembers.Match[2]);
-  Table := DataSource.GetTable('SELECT ID FROM Identifiers WHERE Name=''' + Header.Match[1] +
-                               ''' AND Type=' + IntToStr(Integer(itFunction)) + ' AND ' +
-                               'Scope=' + IntToStr(Scope));
-  ReturnType := GetDataType(Header.Match[3]);
-  SendDebug(Header.Match[1] + ' returns ' + ReturnType + '(' + Header.MAtch[3] + ')');
+  //Firstly find the class this function is in
+  {Scope := DataSource.GetTableValue('SELECT ID FROM Identifiers WHERE Name=''' +
+                                    ClassMembers.Match[2] + ''' AND Type=' +
+                                    IntToStr(Integer(itClass)));}
+  Scope := Parser.FindIdentifierID(ClassMembers.Match[2], [itClass, itStructure, itUnion, itNamespace]);
+  if (Scope = -1) and (ClassMembers.Match[2] <> '') then
+  begin
+    {DataSource.Commit;
+    asm int 3; end;
+    DataSource.BeginTransaction;}
+//DELETE FROM IDENTIFIERS; DELETE FROM VARIABLES; DELETE FROM LOCATIONS; DELETE FROM FUNCTIONS; DELETE FROM INHERITANCE; VACUUM;    
+  end;
+
+  //Then determine if we have any other overloads for this function
+  Table := DataSource.GetTable('SELECT ID FROM Identifiers WHERE Name=''' +
+                               Header.Match[1] + ''' AND Type=' + IntToStr(Integer(itFunction)) +
+                               ' AND Scope=' + IntToStr(Scope));
+  ReturnType := GetBaseDataType(Header.Match[3]);
   NewOverload := (not Table.Eof) and
                  (DataSource.GetTableValue('SELECT COUNT(*) FROM Functions WHERE ID=' +
                                            IntToStr(Table.FieldAsInteger(0)) + ' AND Prototype=''' +
@@ -1451,16 +1586,15 @@ begin
 
   if Table.EOF or NewOverload then
   begin
-    DataSource.ExecSQL(Format(IdentifiersSQL, [Header.Match[1], Scope, Integer(itFunction),
-                                               AccessSpecToIdAccess(ClassMembers.Match[4])]));
+    InsertIdentifier(Header.Match[1], Scope, itFunction, ClassMembers.Match[4],
+                     Header.Match[2], StrToInt(Header.Match[5]));
     Result := DataSource.GetLastInsertRowID;
     if Definition then
-      InsertPrototype(Result, FindIdentifierID(ReturnType), FunctionDecl.Match[1],
-                      0, Header.Match[2], Header.Match[5], Header.Match[2],
-                      Header.Match[5])
+      InsertPrototype(Result, Scope, FindIdentifierID(ReturnType), FunctionDecl.Match[1],
+                      0, Header.Match[2], Header.Match[5])
     else
-      InsertPrototype(Result, FindIdentifierID(ReturnType), FunctionDecl.Match[1],
-                      0, Header.Match[2], Header.Match[5], 'NULL', 'NULL');
+      InsertPrototype(Result, Scope, FindIdentifierID(ReturnType), FunctionDecl.Match[1],
+                      0, 'NULL', 'NULL');
   end
   else
   begin
@@ -1469,9 +1603,14 @@ begin
     begin
       DataSource.ExecSQL(Format(ImplLocationSQL, [Header.Match[2], Header.Match[5],
                                                   Result]));
+      try
       DataSource.ExecSQL(Format(ImplLocationSQL, [Header.Match[2], Header.Match[5],
-          DataSource.GetTableValue('SELECT * FROM Identifiers WHERE Name=''this'' AND ' +
+          DataSource.GetTableValue('SELECT ID FROM Identifiers WHERE Name=''this'' AND ' +
                                    'Scope=' + IntToStr(Result))]));
+      except
+        on E: Exception do
+          asm int 3; end;
+      end;
     end;
   end;
 
