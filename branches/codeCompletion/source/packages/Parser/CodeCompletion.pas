@@ -29,7 +29,8 @@ unit CodeCompletion;
 
 interface
 
-uses 
+uses
+  DevCodeToolTip,
 {$IFDEF WIN32}
   Windows, Classes, Forms, SysUtils, Controls, Graphics, StrUtils, CppParser,
   ExtCtrls, U_IntList, Dialogs;
@@ -55,7 +56,7 @@ type
     fWidth: integer;
     fHeight: integer;
     fEnabled: boolean;
-    fHintWindow: THintWindow;
+    fHintWindow: TDevCodeToolTip;
     fHintTimer: TTimer;
     fHintTimeout: cardinal;
     fOnKeyPress: TKeyPressEvent;
@@ -65,6 +66,7 @@ type
 
     function GetOnCompletion: TCompletionEvent;
     procedure SetOnCompletion(Value: TCompletionEvent);
+    function GetSelectedStatement: Int64;
 
     procedure GetCompletionFor(Phrase, Filename: string; Line: Integer);
     procedure SetParser(Value: TCppParser);
@@ -82,11 +84,13 @@ type
     procedure Search(Sender: TWinControl; Phrase, Filename: string; Line: Integer);
     procedure Hide;
 
-    procedure ShowArgsHint(FuncName: string; Rect: TRect);
+    procedure ShowArgsHint(Phrase, Filename: string; Line: Integer);
     procedure ShowMsgHint(Rect: TRect; HintText: string);
     
   published
+    property Tooltip:TDevCodeToolTip read fHintWindow;
     property Parser: TCppParser read fParser write SetParser;
+    property SelectedStatement: Int64 read GetSelectedStatement;
     property Position: TPoint read fPos write SetPosition;
     property Color: TColor read fColor write SetColor;
     property Width: integer read fWidth write fWidth;
@@ -112,8 +116,9 @@ constructor TCodeCompletion.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
-  fHintWindow := THintWindow.Create(Self);
+  fHintWindow := TDevCodeToolTip.Create(AOwner);
   fHintWindow.Color := clInfoBk;
+  
   fHintTimer := TTimer.Create(Self);
   fHintTimeout := 4000;
   fHintTimer.Interval := fHintTimeout;
@@ -212,12 +217,13 @@ procedure TCodeCompletion.Search(Sender: TWinControl; Phrase, Filename: string; 
 var
   P: TPoint;
 begin
-  if fEnabled then begin
+  if fEnabled then
+  begin
     CodeComplForm.OnKeyPress := ComplKeyPress;
     CodeComplForm.SetColor(fColor);
     
     if (Sender <> nil) and (Sender is TWinControl) then
-     begin
+    begin
       P.X := TWinControl(Sender).Left;
       P.Y := TWinControl(Sender).Top + 16;
       if (Sender.Parent <> nil) and (Sender.Parent is TWinControl) then
@@ -232,28 +238,28 @@ begin
     CodeComplForm.Constraints.MinHeight := fMinHeight;
     CodeComplForm.Constraints.MaxWidth := 0;
     CodeComplForm.Constraints.MaxHeight := 0;
-    
+
     CodeComplForm.lbCompletion.Visible := False;
 
-      try
-        Screen.Cursor := crHourglass;
-        GetCompletionFor(Phrase, Filename, Line);
-      finally
-        Screen.Cursor := crDefault;
-      end;
+    try
+      Screen.Cursor := crHourglass;
+      GetCompletionFor(Phrase, Filename, Line);
+    finally
+      Screen.Cursor := crDefault;
+    end;
 
-      CodeComplForm.lbCompletion.Visible := True;
-      if fCompletionStatementList.Count > 0 then
-      begin
-        SetWindowPos(CodeComplForm.Handle, 0, CodeComplForm.Left, CodeComplForm.Top, fWidth, fHeight, SWP_NOZORDER);
-        CodeComplForm.lbCompletion.Repaint;
-        CodeComplForm.Show;
-        CodeComplForm.lbCompletion.SetFocus;
-        if CodeComplForm.lbCompletion.Items.Count > 0 then
-          CodeComplForm.lbCompletion.ItemIndex := 0;
-      end
-      else
-        CodeComplForm.Hide;
+    CodeComplForm.lbCompletion.Visible := True;
+    if fCompletionStatementList.Count > 0 then
+    begin
+      SetWindowPos(CodeComplForm.Handle, 0, CodeComplForm.Left, CodeComplForm.Top, fWidth, fHeight, SWP_NOZORDER);
+      CodeComplForm.lbCompletion.Repaint;
+      CodeComplForm.Show;
+      CodeComplForm.lbCompletion.SetFocus;
+      if CodeComplForm.lbCompletion.Items.Count > 0 then
+        CodeComplForm.lbCompletion.ItemIndex := 0;
+    end
+    else
+      CodeComplForm.Hide;
   end;
 end;
 
@@ -288,28 +294,50 @@ begin
   end;
 end;
 
-//TODO: lowjoel: More to be done
-procedure TCodeCompletion.ShowArgsHint(FuncName: string; Rect: TRect);
+procedure TCodeCompletion.ShowArgsHint(Phrase, Filename: string; Line: Integer);
 var
-  HintText: string;
-  I: integer;
-  S: string;
+  I: Integer;
+  Overloads: TIntList;
+  Prototypes: TStringList;
+  FunctionName: string;
+  IdentifierDetails: TParseFunctionIdentifier;
+  
+  TypeID: Int64;
+  FuncID: Int64;
+  Scope: Int64;
 begin
-{  HintText := '';
-  fCompletionStatementList.Clear;
+  //Before we can find the identifier we are talking about, we need to find the
+  //scope of the current character.
+  Scope := fParser.FindScopeOfLine(Filename, Line);
 
-  for I := 0 to fParser.Statements.Count - 1 do
-    if AnsiCompareStr(PStatement(fParser.Statements[I])^._ScopelessCmd, FuncName) = 0 then begin
-      S := Trim(PStatement(fParser.Statements[I])^._Args);
-      if S <> '' then begin
-        if HintText <> '' then
-          HintText := HintText + #10;
-        HintText := HintText + S;
-      end;
+  //Then find the function referred to by Phrase. Phrase can be a class name
+  //or a variable, and we're trying to resolve the variable. The Identifier returned
+  //is the type of the expression left of the . or -> or ::
+  TypeID := fParser.FindTypeOf(Phrase, Scope, FunctionName);
+
+  //Then narrow the list of identifiers to be that of those which are accessible
+  //from the scope IdentifierID
+  FuncID := fParser.FindIdentifierID(FunctionName, TypeID, [itFunction]);
+  if FuncID <> -1 then
+  begin
+    Overloads := fParser.GetOverloadsOf(FuncID);
+    Prototypes := TStringList.Create;
+    for I := 0 to Overloads.Count - 1 do
+    begin
+      IdentifierDetails := fParser.GetIdentifierDetails(Overloads[I]) as TParseFunctionIdentifier;
+      Prototypes.Add(FunctionName + IdentifierDetails.Prototype);
+      IdentifierDetails.Free;
     end;
-  if HintText = '' then
-    HintText := '* No parameters known *';
-  ShowMsgHint(Rect, HintText);}
+
+    fHintWindow.Hints := Prototypes;
+    Overloads.Free;
+    Prototypes.Free;
+
+    if fHintWindow.Hints.Count <> 0 then
+      fHintWindow.Show
+  end
+  else
+    fHintWindow.ReleaseHandle;
 end;
 
 procedure TCodeCompletion.ShowMsgHint(Rect: TRect; HintText: string);
@@ -317,6 +345,7 @@ var
   P, MaxX, Lines: integer;
   s, s1: string;
 begin
+  asm int 3; end;
  { MaxX := 0;
   Lines := 1;
   S := HintText;
@@ -366,6 +395,11 @@ end;
 procedure TCodeCompletion.SetOnCompletion(Value: TCompletionEvent);
 begin
   CodeComplForm.OnCompletion := Value;
+end;
+
+function TCodeCompletion.GetSelectedStatement: Int64;
+begin
+  Result := fCompletionStatementList[CodeComplForm.lbCompletion.ItemIndex];
 end;
 
 end.

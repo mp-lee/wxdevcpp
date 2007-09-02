@@ -129,7 +129,6 @@ type
     procedure WMNCHitTest(var Message: TWMNCHitTest); message WM_NCHITTEST;
 
   protected
-    function GetCommaIndex(P: PChar; BraceStart, CurPos: Integer):Integer; virtual;
     function FindClosestToolTip: Integer; virtual;
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
     procedure Paint; override;
@@ -331,114 +330,6 @@ end;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-function TBaseCodeToolTip.GetCommaIndex(P: PChar; BraceStart, CurPos: Integer):Integer;
-//  to highlight the current prototype argument, we need
-//  to know where the cursor in the prototype is.
-//  this functions returns the count of commas from the beginning
-//  prototype.
-//  for example: 
-//  definition is -> void foo(int a, int b, int c);
-//  we write this -> foo(1, 2|
-//  The '|' represents the cursor. In this example this function returns 1, since
-//  it progressed one comma.
-var
-  I: Integer;
-  Parentheses: Integer;
-  TplArgs: Integer;
-
-  // skip to EOL
-  procedure SkipLine;
-  begin
-    repeat
-      Inc(i);
-      if i > CurPos then
-        Break;
-    until P[i] in [#0,#10,#13];
-  end;
-
-  // skip c/c++ commentblocks
-  procedure SkipCommentBlock;
-  begin
-    repeat
-      case P[i] of
-        '*':
-          if P[i+1] = '/' then
-          begin
-            Break;
-          end;
-      end;
-      Inc(i);
-      if i > CurPos then
-        Break;
-    until P[i] in [#0];
-  end;
-
-  // skip strings! since it not unusual to
-  // have commas in string we MUST ignore them!
-  procedure SkipStrings;
-  begin
-    Inc(i);
-    repeat
-      case P[i] of
-        // Don't skip escaped strings. For example: "Hello \"Bond, James\"..."
-        // This is one string only and we do not want to count commas in it
-        '\':
-          if P[i + 1] = '"' then
-            Inc(i);
-            
-        '"':
-          Break;
-      end;
-      Inc(i);
-      if i > CurPos then
-        Break;
-    until P[i] in [#0];
-  end;
-
-begin
-  Result := 0;
-  TplArgs := 0;
-  Parentheses := 0;
-  I := BraceStart;
-  
-  while I <= CurPos do
-  begin
-    case P[i] of
-      // strings
-      '"':
-        SkipStrings;
-
-      // comments
-      '/':
-        if P[i+1] = '/' then
-          SkipLine
-        else
-        if P[i+1] = '*' then
-          SkipCommentBlock;
-
-      // commas
-      ',':
-        if (Parentheses = 0) and (TplArgs = 0) then
-          Inc(Result);
-
-      // parentheses
-      '(':
-        Inc(Parentheses);
-      ')':
-        Dec(Parentheses);
-
-      // template arguments
-      '<':
-        Inc(TplArgs);
-      '>':
-        Dec(TplArgs);
-    end;
-    Inc(i);
-  end;
-end;
-
-//----------------------------------------------------------------------------------------------------------------------
-
 procedure TBaseCodeToolTip.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var
   Pt: TPoint;
@@ -456,8 +347,10 @@ begin
       // check if we clicked in the UpButton
       if PtInRect(FUpButton.ClientRect, Pt) then
       begin
-        if FSelIndex < FToolTips.Count-1 then Inc(FSelIndex, 1)
-        else FSelIndex := 0;
+        if FSelIndex < FToolTips.Count - 1 then
+          Inc(FSelIndex, 1)
+        else
+          FSelIndex := 0;
         NeedRefresh := True;
         FCustomSelIndex := True;
       end;
@@ -465,8 +358,10 @@ begin
       // check if we clicked in the DownButton
       if PtInRect(FDownButton.ClientRect, Pt) then
       begin
-        if FSelIndex > 0 then Dec(FSelIndex, 1)
-        else FSelIndex := FToolTips.Count-1;
+        if FSelIndex > 0
+          then Dec(FSelIndex, 1)
+        else
+          FSelIndex := FToolTips.Count - 1;
         NeedRefresh := True;
         FCustomSelIndex := True;
       end; 
@@ -683,7 +578,7 @@ begin
   // when the user has chosen his own index, when he clicked
   // either the UP or DOWN button, don't try to find the closest
   // tooltip, use the selected index as the string
-  if (shoFindBestMatchingToolTip in FOptions) then
+  if (shoFindBestMatchingToolTip in FOptions) and (not FCustomSelIndex) then
     SelIndex := FindClosestToolTip;
 
   if (FToolTips.Count > 0) and (FSelIndex < FToolTips.Count) then
