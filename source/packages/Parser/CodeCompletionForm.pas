@@ -183,7 +183,7 @@ begin
           Canvas.Font.Color := clGray;
         end;
       end;
-
+      assert(Identifier <> nil);
       Offset := Rect.Bottom - Rect.Top;
       C := Canvas.Font.Color;
       BC := Canvas.Brush.Color;
