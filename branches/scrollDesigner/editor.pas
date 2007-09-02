@@ -1,21 +1,21 @@
 {
     $Id$
 
-    This file is part of Dev-C++
-    Copyright (c) 2004 Bloodshed Software
+    This file is part of wxDev-C++
+    Copyright (c) 2007 wxDev-C++ Developers
 
-    Dev-C++ is free software; you can redistribute it and/or modify
+    wxDev-C++ is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
-    Dev-C++ is distributed in the hope that it will be useful,
+    wxDev-C++ is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Dev-C++; if not, write to the Free Software
+    along with wxDev-C++; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 }
 
@@ -84,7 +84,6 @@ type
     fDebugHintTimer: TTimer;
     fCurrentHint: string;
     //////// CODE-COMPLETION - mandrav /////////////
-    flastStartParenthesis: integer;
     fCompletionEatSpace: boolean;
     fToolTipTimer: TTimer;
     fTimer: TTimer;
@@ -93,7 +92,6 @@ type
     fRunToCursorLine: integer;
     fFunctionArgs: TSynCompletionProposal;
     fLastParamFunc: TList;
-    FCodeToolTip: TDevCodeToolTip;
     FAutoIndent: TSynAutoIndent;
     procedure CompletionTimer(Sender: TObject);
     procedure ToolTipTimer(Sender: TObject);
@@ -137,7 +135,7 @@ type
     procedure FunctionArgsExecute(Kind: SynCompletionType; Sender: TObject;
       var AString: String; var x, y: Integer; var CanExecute: Boolean);
   protected
-    procedure DoOnCodeCompletion(Sender: TObject; const AStatement: TStatement;const AIndex: Integer); {** Modified by Peter **}
+    procedure DoOnCodeCompletion(Sender: TObject; const AIndex: Integer); {** Modified by Peter **}
   public
     procedure Init(In_Project: boolean; Caption_, File_name: string; DoOpen: boolean; const IsRes: boolean = FALSE);
     destructor Destroy; override;
@@ -179,10 +177,11 @@ type
     procedure UncommentSelection;
     procedure IndentSelection;
     procedure UnindentSelection;
-
+    
     procedure UpdateParser; // Must be called after recreating the parser
     //////// CODE-COMPLETION - mandrav /////////////
     procedure ReconfigCompletion;
+    function GetCodeToolTip: TDevCodeToolTip;
     //////// CODE-COMPLETION - mandrav /////////////
 
     property FileName: string read fFileName write SetFileName;
@@ -193,7 +192,7 @@ type
     property Text: TSynEdit read fText write fText;
     property TabSheet: TTabSheet read fTabSheet write fTabSheet;
 
-    property CodeToolTip: TDevCodeToolTip read FCodeToolTip; // added on 23rd may 2004 by peter_
+    property CodeToolTip: TDevCodeToolTip read GetCodeToolTip; // added on 23rd may 2004 by peter_
 {$IFDEF WX_BUILD}
   private
     fDesignerClassName, fDesignerTitle: string;
@@ -272,7 +271,6 @@ begin
   fRunToCursorLine := -1;
   fRes := IsRes;
   fInProject := In_Project;
-  flastStartParenthesis := -1;
   fLastParamFunc := nil;
   if File_name = '' then
     fFileName := Caption_
@@ -463,12 +461,6 @@ begin
 {$ENDIF}
   end;
 
-  // create the codetooltip
-  FCodeToolTip := TDevCodeToolTip.Create(Application);
-  FCodeToolTip.Editor := FText;
-  FCodeToolTip.Parser := MainForm.CppParser1;
-  FCodeToolTip.DropShadow := True;
-
   // The Editor must have 'Auto Indent' activated  to use FAutoIndent.
   // It's under Tools | Editor Options and then the General tab
   FAutoIndent := TSynAutoIndent.Create(Application);
@@ -535,9 +527,6 @@ begin
         ActivePageIndex := lastActPage;
     end;
   end;
-
-  if Assigned(FCodeToolTip) then
-    FreeAndNil(FCodeToolTip);
 
   if Assigned(FAutoIndent) then
     FreeAndNil(FAutoIndent);
@@ -846,26 +835,64 @@ begin
     Panels[3].Text := format(Lang[ID_LINECOUNT], [fText.Lines.Count]);
   end;
 
-  if (scCaretX in Changes) or (scCaretY in Changes) then
-    if assigned(FCodeToolTip) and FCodeToolTip.Enabled then
-    begin
-      fToolTipTimer.Enabled := False;
-      fToolTipTimer.Enabled := True;
-    end;
+  if ((scCaretX in Changes) or (scCaretY in Changes)) and
+     (Assigned(CodeToolTip) and CodeToolTip.Enabled) then
+  begin
+    fToolTipTimer.Enabled := False;
+    fToolTipTimer.Enabled := True;
+  end;
 end;
 
 procedure TEditor.ToolTipTimer(Sender: TObject);
-var
-  startParenthesis: integer;
+  function PreviousWordString(S: string; Index: Integer):string;
+  var
+    I: Integer;
+    TplArgs: Integer;
 
-  function Max(a, b: integer): Integer;
+    procedure SkipSpaces;
+    begin
+      repeat
+        Dec(Index);
+      until (Index = 0) or (not (S[Index] in [#32,#9]));
+    end;
   begin
-    if a > b then
-      Result := a
-    else
-      Result := b;
-  end;
+    Result := '';
+    if (Index <= 1) or (S = '') then
+      Exit;
 
+    // Skip blanks and tabs
+    SkipSpaces;
+
+    // Skip template parameters
+    if S[Index] = '>' then //template parameter
+    begin
+      TplArgs := 1;
+      while (TplArgs <> 0) and (Index > 1) do
+      begin
+        Dec(Index);
+        case S[Index] of
+          '>':
+            Inc(TplArgs);
+          '<':
+            Dec(TplArgs);
+        end;
+      end;
+    end;
+
+    Inc(Index);
+    I := Index;
+    repeat
+      Dec(Index);
+      if Index < 2 then
+        Break;
+    until not (S[Index] in ['a'..'z', 'A'..'Z', '_', '.']);
+
+    if not (S[Index] in ['a'..'z', 'A'..'Z', '_', '.']) then
+      Inc(Index);
+
+    Result := Copy(S, Index, I-Index);
+  end;
+  
   function FindStart: integer;
   var
     FillingParameter: Boolean;
@@ -922,35 +949,36 @@ var
       Dec(I);
     end;
   end;
+
+  function CountCommas(const S: string): Integer;
+  var
+    J: Integer;
+  begin
+    Result := 0;
+    for J := 1 to Length(S) do
+      if S[J] = ',' then Inc(Result);
+  end;
+var
+  Phrase: string;
+  Start: Integer;
 begin
   // stop the timer so we don't recurse
   fToolTipTimer.Enabled := False;
-  startParenthesis := FindStart;
 
-  // check if the last parenthesis selected is the same one as the one we
-  // have now. Otherwise, we should get rid of the tooltip
-  if startParenthesis <> flastStartParenthesis then
-    FCodeToolTip.ReleaseHandle;
+  //Then look for the string to pass to the Completion object
+  Start := FindStart;
+  Phrase := PreviousWordString(fText.Text, Start);
 
-  // when the hint is already activated when call ShowHint again, because the
-  //current argument could have been changed, so we need to make another arg in bold
-  if FCodeToolTip.Activated then
-    FCodeToolTip.Show
-  else
-    // it's not showing yet, so we check if the cursor
-    // is in the bracket and when it is, we show the hint.
-    if assigned(FText) and (not FText.SelAvail) and (FText.SelStart > 1) and (startParenthesis <> -1) then
-      FCodeToolTip.Show;
-
-  // cache the current parenthesis index so that we can check if we
-  // have changed since we first displayed it
-  flastStartParenthesis := startParenthesis;
+  //Position the text box properly
+  fCompletionBox.Tooltip.PositionTooltip(fText);
+  fCompletionBox.Tooltip.CurrParam := CountCommas(Copy(fText.Text, Start + 1, fText.SelStart - Start));
+  fCompletionBox.ShowArgsHint(Phrase, FileName, fText.CaretY);
 end;
 
 procedure TEditor.EditorOnScroll(Sender: TObject; ScrollBar: TScrollBarKind);
 begin
-  if assigned(FCodeToolTip) and (FCodeToolTip.Caption <> '') and FCodeToolTip.Activated then
-    FCodeToolTip.RethinkCoordAndActivate;
+  if Assigned(CodeToolTip) and (CodeToolTip.Caption <> '') and CodeToolTip.Activated then
+    CodeToolTip.PositionTooltip(fText);
 end;
 
 procedure TEditor.ExportTo(const isHTML: boolean);
@@ -1317,8 +1345,8 @@ procedure TEditor.EditorKeyPress(Sender: TObject; var Key: Char);
 var
   P: TPoint;
 begin
-if Key = char($7F) then // happens when doing ctrl+backspace with completion on
-    exit;
+  {if Key = char(VK_BACK) then // happens when doing ctrl+backspace with completion on
+    exit;}
   if fCompletionBox.Enabled then
   begin
     if not (Sender is TForm) then
@@ -1332,7 +1360,7 @@ if Key = char($7F) then // happens when doing ctrl+backspace with completion on
         ' ': if fCompletionEatSpace then Key := #0; // eat space if it was ctrl+space (code-completion)
       end;
       P := fText.RowColumnToPixels(fText.DisplayXY);
-      P.Y := P.Y + 16;
+      P.Y := P.Y + fText.LineHeight;
 
       P := fText.ClientToScreen(P);
       fCompletionBox.Position := P;
@@ -1346,37 +1374,37 @@ if Key = char($7F) then // happens when doing ctrl+backspace with completion on
 {$IFDEF LINUX}
         Char(XK_BackSpace): if fText.SelStart > 0 then 
 {$ENDIF}
-          begin
-            fText.SelStart := fText.SelStart - 1;
-            fText.SelEnd := fText.SelStart + 1;
-            fText.SelText := '';
-            fCompletionBox.Search(nil, CurrentPhrase, fFileName);
-          end;
+        begin
+          fText.SelStart := fText.SelStart - 1;
+          fText.SelEnd := fText.SelStart + 1;
+          fText.SelText := '';
+          fCompletionBox.Search(nil, CurrentPhrase, fFileName, fText.CaretY);
+        end;
 {$IFDEF WIN32}
         Char(vk_Return):
 {$ENDIF}
 {$IFDEF LINUX}
-        Char(XK_Return): 
+        Char(XK_Return):
 {$ENDIF}
-          begin
-            SetEditorText(Key);
-            fCompletionBox.Hide;
-          end;
+        begin
+          SetEditorText(Key);
+          fCompletionBox.Hide;
+        end;
         ';', '(':
-          begin
-            SetEditorText(Key);
-            fCompletionBox.Hide;
-          end;
+        begin
+          SetEditorText(Key);
+          fCompletionBox.Hide;
+        end;
         '.', '>', ':':
-          begin
-            SetEditorText(Key);
-            fCompletionBox.Search(nil, CurrentPhrase, fFileName);
-          end;
-      else if Key >= ' ' then
-      begin
-        fText.SelText := Key;
-        fCompletionBox.Search(nil, CurrentPhrase, fFileName);
-      end;
+        begin
+          SetEditorText(Key);
+          fCompletionBox.Search(nil, CurrentPhrase, fFileName, fText.CaretY);
+        end;
+        else if Key >= ' ' then
+        begin
+          fText.SelText := Key;
+          fCompletionBox.Search(nil, CurrentPhrase, fFileName, fText.CaretY);
+        end;
       end;
     end;
     fCompletionEatSpace := False;
@@ -1385,8 +1413,6 @@ end;
 
 procedure TEditor.EditorKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
-var
-  M: TMemoryStream;
 begin
 
   {** Modified by Peter **}
@@ -1406,13 +1432,13 @@ begin
     end;
   end;
 
-{$IFDEF GURUS_BUILD}
 {$IFDEF WIN32}
   if (Key = VK_UP) or (Key = VK_DOWN) then
 {$ENDIF}
 {$IFDEF LINUX}
   if (Key = XK_UP) or (Key = VK_DOWN) then
 {$ENDIF}
+{$IFDEF GURUS_BUILD}
   begin
     if (ssCtrl in Shift) and (ssAlt in Shift) then
     begin
@@ -1420,6 +1446,25 @@ begin
         SearchKeyNavigation(false)
       else
         SearchKeyNavigation(true);
+    end;
+  end;
+{$ELSE}
+  begin
+    if Key = VK_UP then
+    begin
+      if CodeToolTip.SelIndex <> CodeToolTip.Hints.Count - 1 then
+        CodeToolTip.SelIndex := CodeToolTip.SelIndex + 1
+      else
+        CodeToolTip.SelIndex := 0;
+      Key := 0;
+    end
+    else
+    begin
+      if CodeToolTip.SelIndex > 0 then
+        CodeToolTip.SelIndex := CodeToolTip.SelIndex - 1
+      else
+        CodeToolTip.SelIndex := CodeToolTip.Hints.Count - 1;
+      Key := 0;
     end;
   end;
 {$ENDIF} //GURUS_BUILD
@@ -1434,16 +1479,8 @@ begin
       if Key = XK_Space then begin
 {$ENDIF}
         Key := 0;
-        if not (ssShift in Shift) then begin
-          M := TMemoryStream.Create;
-          try
-            fText.Lines.SaveToStream(M);
-            fCompletionBox.CurrentClass := MainForm.CppParser1.FindAndScanBlockAt(fFileName, fText.CaretY, M);
-          finally
-            M.Free;
-          end;
-          fCompletionBox.Search(nil, CurrentPhrase, fFileName);
-        end;
+        if not (ssShift in Shift) then
+          fCompletionBox.Search(nil, CurrentPhrase, fFileName, fText.CaretY);
         fCompletionEatSpace := True; // this is a hack. without this after ctrl+space, the space appears in the editor :(
       end;
   end
@@ -1461,32 +1498,25 @@ end;
 
 procedure TEditor.CompletionTimer(Sender: TObject);
 var
-  M: TMemoryStream;
   curr: string;
 begin
   fTimer.Enabled := False;
   curr := CurrentPhrase;
 
-  if not CheckAttributes(BufferCoord(fText.CaretX-1, fText.CaretY), curr) then begin
-        fTimerKey := #0;
-        Exit;
-    end;
-
-  M := TMemoryStream.Create;
-  try
-    fText.Lines.SaveToStream(M);
-    fCompletionBox.CurrentClass := MainForm.CppParser1.FindAndScanBlockAt(fFileName, fText.CaretY, M);
-  finally
-    M.Free;
+  if not CheckAttributes(BufferCoord(fText.CaretX-1, fText.CaretY), curr) then
+  begin
+    fTimerKey := #0;
+    Exit;
   end;
+
   case fTimerKey of
-    '.': fCompletionBox.Search(nil, curr, fFileName);
+    '.': fCompletionBox.Search(nil, curr, fFileName, fText.CaretY);
     '>': if fText.CaretX - 2 >= 0 then
         if fText.LineText[fText.CaretX - 2] = '-' then // it makes a '->'
-          fCompletionBox.Search(nil, curr, fFileName);
+          fCompletionBox.Search(nil, curr, fFileName, fText.CaretY);
     ':': if fText.CaretX - 2 >= 0 then
         if fText.LineText[fText.CaretX - 2] = ':' then // it makes a '::'
-          fCompletionBox.Search(nil, curr, fFileName);
+          fCompletionBox.Search(nil, curr, fFileName, fText.CaretY);
   end;
   fTimerKey := #0;
 end;
@@ -1511,7 +1541,7 @@ procedure TEditor.InitCompletion;
 begin
   fCompletionBox := MainForm.CodeCompletion1;
   fCompletionBox.Enabled := devCodeCompletion.Enabled;
-  fCompletionBox.OnCompletion := DoOnCodeCompletion; {** Modified by Peter **}
+  fCompletionBox.OnCompletion := DoOnCodeCompletion;
 
   if fCompletionBox.Enabled then begin
     fText.OnKeyPress := EditorKeyPress;
@@ -1576,75 +1606,67 @@ end;
 
 procedure TEditor.SetEditorText(Key: Char);
 var
-  Phrase: string;
-  I, CurrSel: integer;
-  ST: PStatement;
+  I, SelEnd: Integer;
+  CurrText: string;
+  Selection: Int64;
   FuncAddOn: string;
+  Identifier: TParseIdentifier;
 begin
-  ST := fCompletionBox.SelectedStatement;
-  if fCompletionBox.SelectedIsFunction then begin
-    if Key = ';' then
-      FuncAddOn := '();'
-    else if Key = '.' then
-      FuncAddOn := '().'
-    else if Key = '>' then
-      FuncAddOn := '()->'
-{$IFDEF WIN32}
-    else if Key = Char(vk_Return) then
-{$ENDIF}
-{$IFDEF LINUX}
-    else if Key=Char(Xk_Return) then
-{$ENDIF}
-      FuncAddOn := '()'
-    else
-      FuncAddOn := '(';
-  end
-  else begin
-{$IFDEF WIN32}
-    if Key = Char(vk_Return) then
-{$ENDIF}
-{$IFDEF LINUX}
-    if Key=Char(Xk_Return) then
-{$ENDIF}
-      FuncAddOn := ''
-    else if Key = '>' then
-      FuncAddOn := '->'
-    else if Key = ':' then
-      FuncAddOn := '::'
-    else
-      FuncAddOn := Key;
-  end;
+  CurrText := CurrentPhrase;
+  Selection := fCompletionBox.SelectedStatement;
+  Identifier := fCompletionBox.Parser.GetIdentifierDetails(Selection);
 
-  if ST <> nil then
-  begin
-    Phrase := ST^._Command;
-
-    // if already has a selection, delete it
-    if fText.SelAvail then
-      fText.SelText := '';
-
-    // find the start of the word
-    CurrSel := fText.SelStart;
-    I := CurrSel;
-    while (I<>0) and (fText.Text[I] in ['A'..'Z', 'a'..'z', '0'..'9', '_']) do
-      Dec(I);
-    fText.SelStart:=I;
-    fText.SelEnd := CurrSel;
-    // don't add () if already there
-    if fText.Text[CurrSel] = '(' then
-      FuncAddOn := '';
-
-    fText.SelText := Phrase + FuncAddOn;
-
-    // if we added "()" move caret inside parenthesis
-    // only if Key<>'.' and Key<>'>'
-    // and function takes arguments...
-    if (not (Key in ['.', '>'])) and (FuncAddOn <> '') and (Length(ST^._Args) > 2) then
+  try
+    if Identifier is TParseFunctionIdentifier then
     begin
-      fText.CaretX := fText.CaretX - Length(FuncAddOn) + 1;
-      fFunctionArgs.ExecuteEx(Phrase, fText.DisplayX, fText.DisplayY, ctParams);
-    end;
+      case Key of
+        ';': FuncAddOn := '();';
+        '.': FuncAddOn := '().';
+        '>': FuncAddOn := '()->';
+      else
+        FuncAddOn := '(';
+      end;
+
+      if (not (Key in ['.', '>'])) and (Pos('()', TParseFunctionIdentifier(Identifier).Prototype) = 0) then
+      begin
+        fText.CaretX := fText.CaretX + 1;
+        fFunctionArgs.ExecuteEx(Identifier.Name, fText.DisplayX, fText.DisplayY, ctParams);
+      end;
+    end
+    else
+      case Key of
+        ';': FuncAddOn := ';';
+        ':': FuncAddOn := '::';
+        '.': FuncAddOn := '.';
+        '>': FuncAddOn := '->';
+{$IFDEF WIN32}
+        Char(vk_Return)
+{$ENDIF}
+{$IFDEF LINUX}
+        Char(Xk_Return)
+{$ENDIF}
+           : ;
+      else
+        FuncAddOn := Key;
+      end;
+
+    FuncAddOn := Identifier.Name + FuncAddOn;
+  finally
+    Identifier.Free;
   end;
+
+  //If there is already a selection, clear it
+  if fText.SelAvail then
+    fText.SelText := '';
+
+  // find the start of the word
+  SelEnd := fText.SelStart;
+  I := fText.SelStart;
+  while (I <> 0) and (fText.Text[I] in ['A'..'Z', 'a'..'z', '0'..'9', '_']) do
+    Dec(I);
+  fText.SelStart := I;
+  fText.SelEnd := SelEnd;
+  fText.SelText := FuncAddOn;
 end;
 
 function TEditor.CheckAttributes(P: TBufferCoord; Phrase: string): boolean;
@@ -1740,7 +1762,7 @@ procedure TEditor.DebugHintTimer(sender: TObject);
 var
   r: TRect;
   p: TPoint;
-  st: PStatement;
+//  st: PStatement;
   M: TMemoryStream;
 begin
   fDebugHintTimer.Enabled := false;
@@ -1759,16 +1781,17 @@ begin
       M := TMemoryStream.Create;
       try
         fText.Lines.SaveToStream(M);
-        MainForm.CppParser1.FindAndScanBlockAt(fFileName, fText.PixelsToRowColumn(fText.ScreenToClient(Mouse.CursorPos).X,
-          fText.ScreenToClient(Mouse.CursorPos).Y).Row, M)
+        //TODO: lowjoel: How do we determine the current class we're in?
+        //MainForm.CppParser1.FindAndScanBlockAt(fFileName, fText.PixelsToRowColumn(fText.ScreenToClient(Mouse.CursorPos).X,
+//          fText.ScreenToClient(Mouse.CursorPos).Y).Row, M)
       finally
         M.Free;
       end;
-      st := PStatement(MainForm.CppParser1.Locate(fCurrentHint, False));
-      if Assigned(st) and (not FCodeToolTip.Activated) then begin
-        fCurrentHint := st^._FullText;
-        fCompletionBox.ShowMsgHint(r, fCurrentHint);
-      end;
+//      st := PStatement(MainForm.CppParser1.Locate(fCurrentHint, False));
+//      if Assigned(st) and (not FCodeToolTip.Activated) then begin
+//        fCurrentHint := st^._FullText;
+//        fCompletionBox.ShowMsgHint(r, fCurrentHint);
+//      end;
     end
     else if devData.WatchHint and MainForm.fDebugger.Executing then // debugging - evaluate var under cursor and show value in a hint
     begin
@@ -1782,7 +1805,7 @@ procedure TEditor.OnVariableHint(Hint: string);
 begin
   fText.Hint := Hint;
   fText.ShowHint := True;
-  if not FCodeToolTip.Activated then
+  if not CodeToolTip.Activated then
     Application.ActivateHint(Mouse.CursorPos);
 end;
 
@@ -1938,7 +1961,7 @@ var
   p: TPoint;
   s, s1: string;
   I: integer;
-  umSt: PStatement;
+//  umSt: PStatement;
   fname: string;
   line: integer;
   f1, f2: integer;
@@ -1972,7 +1995,7 @@ begin
           // not located...
           Abort;
         f2 := f2 - f1;
-        DoOpen(MainForm.CppParser1.GetFullFileName(Copy(s1, f1, f2)), 1, '');
+//        DoOpen(MainForm.CppParser1.GetFullFileName(Copy(s1, f1, f2)), 1, '');
         // the mousedown must *not* get to the SynEdit or else it repositions the caret!!!
         Abort;
       end;
@@ -1989,7 +2012,7 @@ begin
           // not located...
           Abort;
         f2 := f2 - f1;
-        DoOpen(MainForm.CppParser1.GetFullFileName(Copy(s1, f1, f2)), 1, '');
+//        DoOpen(MainForm.CppParser1.GetFullFileName(Copy(s1, f1, f2)), 1, '');
         // the mousedown must *not* get to the SynEdit or else it repositions the caret!!!
         Abort;
       end;
@@ -1999,19 +2022,19 @@ begin
     end; // #include
 
 
-    umSt := nil;
+//    umSt := nil;
     // if there *is* a word under the mouse cursor
     if S<>'' then begin
       // search for statement
-      for I := 0 to MainForm.CppParser1.Statements.Count - 1 do
+{      for I := 0 to MainForm.CppParser1.Statements.Count - 1 do
       if AnsiCompareStr(PStatement(MainForm.CppParser1.Statements[I])^._ScopelessCmd, S)=0 then begin
           umSt := PStatement(MainForm.CppParser1.Statements[I]);
           Break;
-        end;
+        end;}
     end;
 
     // if statement found
-    if Assigned(umSt) then begin
+{    if Assigned(umSt) then begin
       // get the filename and the line number declared
       if umSt^._IsDeclaration then begin
         fname := umSt^._DeclImplFileName;
@@ -2026,7 +2049,7 @@ begin
 
       // the mousedown must *not* get to the SynEdit or else it repositions the caret!!!
       Abort;
-    end;
+    end;}
   end;
 end;
 
@@ -2203,18 +2226,18 @@ begin
             lookup := Copy(LocLine, TmpX, SavePos - TmpX + 1);
             if Assigned(fLastParamFunc) then begin
               if (fLastParamFunc.Count > 0) then
-                if (PStatement(fLastParamFunc.Items[0])^._Command = lookup) then // this avoid too much calls to CppParser.FillListOf
-                  sl := fLastParamFunc;
+{                if (PStatement(fLastParamFunc.Items[0])^._Command = lookup) then // this avoid too much calls to CppParser.FillListOf
+                  sl := fLastParamFunc;}
             end;
             if not Assigned(sl) then begin
               sl := TList.Create;
-              if MainForm.CppParser1.FillListOf(Lookup, False, sl) then begin  // and try to use only a minimum of FillListOf
+{              if MainForm.CppParser1.FillListOf(Lookup, False, sl) then begin  // and try to use only a minimum of FillListOf
                 if Assigned(fLastParamFunc) then
                   FreeAndNil(fLastParamFunc);
                 fLastParamFunc := sl;
               end
               else
-                FreeAndNil(sl);
+                FreeAndNil(sl);}
             end;
             FoundMatch := Assigned(sl);
             if not(FoundMatch) then begin
@@ -2236,7 +2259,7 @@ end;
 
 //this event is triggered whenever the codecompletion box is going to do the actual
 //code completion
-procedure TEditor.DoOnCodeCompletion(Sender: TObject; const AStatement: TStatement; const AIndex: Integer);
+procedure TEditor.DoOnCodeCompletion(Sender: TObject; const AIndex: Integer);
 //
 //  this event is triggered whenever the codecompletion box is going to make its work,
 //  or in other words, when it did a codecompletion ...
@@ -2275,15 +2298,15 @@ begin
   end;
 {$ELSE}
 begin
-  try
-    Assert(FCodeToolTip <> nil);
-    FCodeToolTip.Select(AStatement._FullText);
-    FCodeToolTip.Enabled := True;
-    FCodeToolTip.Show;
+{  try
+    Assert(CodeToolTip <> nil);
+//    FCodeToolTip.Select(AStatement._FullText);
+    CodeToolTip.Enabled := True;
+    CodeToolTip.Show;
   except
-    ShowMessage(inttostr(integer(FCodeToolTip)) + '/' + inttostr(integer(@AStatement)));
+//    ShowMessage(inttostr(integer(FCodeToolTip)) + '/' + inttostr(integer(@AStatement)));
     raise;
-  end;
+  end;}
 {$ENDIF}
 
   //When we don't invalidate the SynEditor here, it occurs sometimes that
@@ -2294,7 +2317,7 @@ end;
 // Editor needs to be told when class browser has been recreated otherwise AV !
 procedure TEditor.UpdateParser;
 begin
-  FCodeToolTip.Parser := MainForm.CppParser1;
+//  FCodeToolTip.Parser := MainForm.CppParser1;
 end;
 
 procedure TEditor.InvalidateGutter;
@@ -2578,6 +2601,11 @@ begin
       end;
     end;
   end;
+end;
+
+function TEditor.GetCodeToolTip: TDevCodeToolTip;
+begin
+  Result := fCompletionBox.Tooltip;
 end;
 
 {$ENDIF}
