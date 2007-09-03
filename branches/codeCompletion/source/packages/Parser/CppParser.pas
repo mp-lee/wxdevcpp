@@ -1,19 +1,21 @@
 {
-    This file is part of Dev-C++
-    Copyright (c) 2004 Bloodshed Software
+    $Id$
 
-    Dev-C++ is free software; you can redistribute it and/or modify
+    This file is part of wxDev-C++
+    Copyright (c) 2007 wxDev-C++ Developers
+
+    wxDev-C++ is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
-    Dev-C++ is distributed in the hope that it will be useful,
+    wxDev-C++ is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Dev-C++; if not, write to the Free Software
+    along with wxDev-C++; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 }
 
@@ -121,8 +123,12 @@ type
     function FindTypeOf(Phrase: string; Scope: Int64; out IncompleteID: string): Int64;
     function FindScopeOfLine(Filename: string; Line: Integer): Int64;
 
-    function GetDescendantsOf(IdentifierID: Int64; PartialName: string = ''): TIntList;
-    function GetIdentifiersInScope(Scope: Int64; PartialName: string = ''): TIntList;
+    function GetOverloadsOf(IdentifierID: Int64): TIntList;
+    function GetDescendantsOf(IdentifierID: Int64; PartialName: string = '';
+                              IdentifierType: TIdentifierGroup = []): TIntList;
+    function GetIdentifiersInScope(Scope: Int64; GetParentScopes: Boolean = True;
+                                   PartialName: string = '';
+                                   IdentifierType: TIdentifierGroup = []): TIntList;
     function GetIdentifierDetails(IdentifierID: Int64): TParseIdentifier;
 
   private
@@ -398,9 +404,12 @@ begin
   //Create the synchronization object so we don't corrupt each other's memory
   Lock := TCriticalSection.Create;
 
+  //Initialize our variables
+  LocalSource := nil;
+  Parser := nil;
+
   //Initialize the database structures
-  //TempName := GetTempName;
-  TempName := 'D:\Test.sqlite';
+  TempName := GetTempName;
   try
     LoadStore(TempName);
   except
@@ -408,10 +417,6 @@ begin
       MessageBox(0, PChar('SQLite database could not be loaded: ' + E.Message),
                  'TCppParser', MB_ICONERROR or MB_OK or MB_APPLMODAL);
   end;
-
-  //Then wait for parse requests
-  Parser := TParseThread.Create(True, Self);
-  Parser.FreeOnTerminate := True;
 end;
 
 destructor TCppParser.Destroy;
@@ -482,20 +487,22 @@ end;
 
 procedure TCppParser.LoadStore(Store: string);
 begin
-  //Open the handle
-  if SourcePath <> '' then
-    Exit;
+  //Close existing handles first
+  LocalSource.Free;
+  if Assigned(Parser) then
+  begin
+    Parser.Terminate;
+    Parser.Resume;
+  end;
+  
+  //Get the new path
   SourcePath := Store;
-  LocalSource := TSQLiteDatabase.Create(SourcePath);
-  CreateDataSource;
 
-  //Then clean up
-//  senddebug(SourcePath);
-{  LocalSource.ExecSQL('DELETE FROM Identifiers WHERE ID > 7');
-  LocalSource.ExecSQL('DELETE FROM Variables');
-  LocalSource.ExecSQL('DELETE FROM functions');
-  LocalSource.ExecSQL('DELETE FROM locations');
-  LocalSource.ExecSQL('DELETE FROM inheritance');}
+  //Then open the new database
+  LocalSource := TSQLiteDatabase.Create(SourcePath);
+  Parser := TParseThread.Create(True, Self);
+  Parser.FreeOnTerminate := True;
+  CreateDataSource;
 end;
 
 procedure TCppParser.LoadCache(Cache: string);
@@ -506,7 +513,6 @@ var
 begin
   //Differs from loading the store in that cache's force the database contents to
   //be copied before use.
-  Exit;
   NewStore := GetTempName;
   if FileExists(Cache) and not CopyFile(PChar(Cache), PChar(NewStore), False) then
     raise Exception.Create(IntToStr(GetLastError));
@@ -518,7 +524,6 @@ resourcestring
   Message = 'The path you are saving to has an existing file.';
 begin
   FreeAndNil(LocalSource); //Close the file
-  setlasterror(0);
   if FileExists(Store) and not DeleteFile(PChar(Store)) then
     raise Exception.Create('Could not delete destination file ' + Store + ': ' +
                            SysErrorMessage(GetLastError));
@@ -532,17 +537,22 @@ function TCppParser.ListFiles: TStringList;
   procedure DistinctFiles(Column: string);
   var
     Table: TSQLiteTable;
+    currFile: string;
   begin
-    Table := LocalSource.GetTable('SELECT DISTINCT (' + Column + '), * FROM Locations;');
+    Table := LocalSource.GetTable(Format('SELECT %s FROM Locations GROUP BY %0:s;',
+                                         [Column]));
     while not Table.EOF do
     begin
-      Result.Add(Table.FieldAsString(0));
+      currFile := Table.FieldAsString(0);
+      if (currFile <> '') and (currFile <> 'NULL') then
+        Result.Add(StringReplace(currFile, '\\', '\', [rfReplaceAll]));
       Table.Next;
     end;
     Table.Free;
   end;
 begin
   Result := TStringList.Create;
+  Result.Sorted := True;
   Result.Duplicates := dupIgnore;
   DistinctFiles('DeclarationFile');
   DistinctFiles('ImplementationFile');
@@ -585,12 +595,12 @@ begin
       for I := Integer(itPrimitive) to Integer(itNamespace) do
         if TIdentifierType(I) in IdType then
           Query := Query + IntToStr(Integer(I)) + ', ';
-      Query := Copy(Query, 1, Length(Query) - 2) + ');';
+      Query := Copy(Query, 1, Length(Query) - 2) + ')';
     end;
 
     Table := LocalSource.GetTable(Query + ';');
     if not Table.EOF then
-      Result := StrToInt(Table.Fields[0])
+      Result := Table.FieldAsInteger(0)
     else
       Result := -1;
 
@@ -738,8 +748,11 @@ var
         ID := -1;
     end;
 
-    AvailableScopes.Delimiter := ',';
-    Result := AvailableScopes.DelimitedText;
+    if AvailableScopes.Count <> 0 then
+    begin
+      AvailableScopes.Delimiter := ',';
+      Result := ',' + AvailableScopes.DelimitedText;
+    end;
     AvailableScopes.Free;
   end;
 
@@ -749,24 +762,24 @@ var
     if RegExp.Exec(Identifier, '([0-9a-zA-Z_]+)[ '#9']*\(.*\)') then
     begin
       if StrictMatch then
-        Result := LocalSource.GetTableValue('SELECT ID FROM Identifiers WHERE Scope IN (' +
-                                             AccessibleScopes(Scope) + ',-1) AND Name=''' +
+        Result := LocalSource.GetTableValue('SELECT ID FROM Identifiers WHERE Scope IN (-1' +
+                                             AccessibleScopes(Scope) + ') AND Name=''' +
                                              Identifier + '''')
       else
-        Result := LocalSource.GetTableValue('SELECT ID FROM Identifiers WHERE Scope IN (' +
-                                             AccessibleScopes(Scope) + ',-1) AND Name ' +
+        Result := LocalSource.GetTableValue('SELECT ID FROM Identifiers WHERE Scope IN (-1' +
+                                             AccessibleScopes(Scope) + ') AND Name ' +
                                              'LIKE ''' + Identifier + '%''');
     end
     else
     begin
       if StrictMatch then
-        Result := LocalSource.GetTableValue('SELECT ID FROM Identifiers WHERE Scope IN (' +
-                                             AccessibleScopes(Scope) + ',-1) AND Name=''' +
+        Result := LocalSource.GetTableValue('SELECT ID FROM Identifiers WHERE Scope IN (-1' +
+                                             AccessibleScopes(Scope) + ') AND Name=''' +
                                              Identifier + ''' AND Type <> ' +
                                              IntToStr(Integer(itFunction)))
       else
-        Result := LocalSource.GetTableValue('SELECT ID FROM Identifiers WHERE Scope IN(' +
-                                             AccessibleScopes(Scope) + ',-1) ' +
+        Result := LocalSource.GetTableValue('SELECT ID FROM Identifiers WHERE Scope IN(-1' +
+                                             AccessibleScopes(Scope) +
                                              ' AND Name LIKE ''' + Identifier +
                                              '%'' AND Type <> ' + IntToStr(Integer(itFunction)));
     end;
@@ -777,55 +790,59 @@ begin
   RegExp := TRegExpr.Create;
   IdentifierParts := BreakUpIdentifier(Phrase);
 
-  //Parse the thing left-to-right. Use the delimiter ahead of the current token
-  //as a guide for the identifier to look up for.
-  I := 0;
-  while I < IdentifierParts.Count do
-  begin
-    //Get the ID of the identifier we are trying to use
-    try
-      currID := MatchIdentifierFromScope(IdentifierParts[I], Result, I < IdentifierParts.Count - 1);
-    except
-      on E: ESqliteException do
-      begin
-        Result := -1;
-        Exit;
-      end;
-    end;
-
-    //Then retrieve the identifier details
-    IdentifierDetails := GetIdentifierDetails(currID);
-
-    //Reduce the scope to the return type of the function or to list the class members
-    case IdentifierDetails.IdentifierType of
-      itClass:
-        Result := currID;
-      itVariable:
-      begin
-        //Resolve the variable's type
-        Assert(Assigned(IdentifierDetails) and ((IdentifierDetails is TParseVariableIdentifier)));
-        if Assigned(IdentifierDetails) then
+  try
+    //Parse the thing left-to-right. Use the delimiter ahead of the current token
+    //as a guide for the identifier to look up for.
+    I := 0;
+    while I < IdentifierParts.Count do
+    begin
+      //Get the ID of the identifier we are trying to use
+      try
+        currID := MatchIdentifierFromScope(IdentifierParts[I], Result, I < IdentifierParts.Count - 1);
+      except
+        on E: ESqliteException do
         begin
-          Result := (IdentifierDetails as TParseVariableIdentifier).DataType;
-          IdentifierDetails.Free;
+          Result := -1;
+          Exit;
         end;
       end;
-      itFunction:
-      begin
-        if Assigned(IdentifierDetails) then
+
+      //Then retrieve the identifier details
+      IdentifierDetails := GetIdentifierDetails(currID);
+
+      //Reduce the scope to the return type of the function or to list the class members
+      case IdentifierDetails.IdentifierType of
+        itClass:
+          Result := currID;
+        itVariable:
         begin
-          Result := (IdentifierDetails as TParseFunctionIdentifier).Returns;
-          IdentifierDetails.Free;
+          //Resolve the variable's type
+          Assert(Assigned(IdentifierDetails) and ((IdentifierDetails is TParseVariableIdentifier)));
+          if Assigned(IdentifierDetails) then
+          begin
+            Result := (IdentifierDetails as TParseVariableIdentifier).DataType;
+            IdentifierDetails.Free;
+          end;
+        end;
+        itFunction:
+        begin
+          if Assigned(IdentifierDetails) then
+          begin
+            Result := (IdentifierDetails as TParseFunctionIdentifier).Returns;
+            IdentifierDetails.Free;
+          end;
         end;
       end;
+      Inc(I, 2);
     end;
-    Inc(I, 2);
+
+    //If I is still zero, return the WHOLE scope since we don't have any information
+    if I = 0 then
+      Result := -1;
+  finally
+    IdentifierParts.Free;
+    RegExp.Free;
   end;
-
-  //If I is still zero, return the WHOLE scope since we don't have any information
-  if I = 0 then
-    Result := -1; 
-  IdentifierParts.Free;
 end;
 
 //TODO: lowjoel: Improve this?
@@ -842,15 +859,38 @@ begin
     Result := Table.FieldAsInteger(0)
   else
     Result := -1;
+  Table.Free;
 end;
 
-function TCppParser.GetDescendantsOf(IdentifierID: Int64; PartialName: string): TIntList;
+function TCppParser.GetOverloadsOf(IdentifierID: Int64): TIntList;
+var
+  Table: TSQLiteTable;
+begin
+  Result := TIntList.Create;
+  Table := LocalSource.GetTable('SELECT Functions.ID FROM Functions INNER JOIN ' +
+                                'Identifiers ON Identifiers.ID=Functions.ID WHERE ' +
+                                'Name=(SELECT Name FROM Identifiers WHERE ID=112);');
+  while not Table.Eof do
+  begin
+    Result.Add(Table.FieldAsInteger(0));
+    Table.Next;
+  end;
+  Table.Free;
+end;
+
+function TCppParser.GetDescendantsOf(IdentifierID: Int64; PartialName: string;
+                                     IdentifierType: TIdentifierGroup): TIntList;
+var
+  TypeFilter: string;
+  
   procedure RecurseDescendant(IdentifierID: Int64);
   var
     Table: TSQLiteTable;
     currRow: Int64;
   begin
-    Table := LocalSource.GetTable('SELECT ID FROM Identifiers WHERE Scope=' + IntToStr(IdentifierID) + ';');
+    Table := LocalSource.GetTable('SELECT ID FROM Identifiers WHERE Scope=' +
+                                  IntToStr(IdentifierID) + TypeFilter +
+                                  ' AND Name <> ''this'';');
     try
       while not Table.EOF do
       begin
@@ -864,6 +904,7 @@ function TCppParser.GetDescendantsOf(IdentifierID: Int64; PartialName: string): 
     end;
   end;
 var
+  I: Integer;
   Table: TSQLiteTable;
   currRow: Int64;
   NameFilter: string;
@@ -872,7 +913,18 @@ begin
   if PartialName <> '' then
     NameFilter := ' AND Name LIKE ''' + PartialName + '%''';
 
-  Table := LocalSource.GetTable('SELECT ID FROM Identifiers WHERE Scope=' + IntToStr(IdentifierID) + NameFilter + ';');
+  if IdentifierType <> [] then
+  begin
+    TypeFilter := ' AND Type IN (';
+    for I := Integer(itPrimitive) to Integer(itNamespace) do
+      if TIdentifierType(I) in IdentifierType then
+        TypeFilter := TypeFilter + IntToStr(Integer(I)) + ', ';
+    TypeFilter := Copy(TypeFilter, 1, Length(TypeFilter) - 2) + ')';
+  end;
+
+  Table := LocalSource.GetTable('SELECT ID FROM Identifiers WHERE Scope=' +
+                                IntToStr(IdentifierID) + NameFilter + TypeFilter +
+                                ' AND Name <> ''this'';');
   try
     while not Table.EOF do
     begin
@@ -886,16 +938,21 @@ begin
   end;
 end;
 
-function TCppParser.GetIdentifiersInScope(Scope: Int64; PartialName: string): TIntList;
+function TCppParser.GetIdentifiersInScope(Scope: Int64; GetParentScopes: Boolean;
+                                          PartialName: string;
+                                          IdentifierType: TIdentifierGroup): TIntList;
 var
   NameFilter: string;
+  TypeFilter: string;
+  
   procedure ListScopeIdentifiers(Scope: Int64);
   var
     Table: TSQLiteTable;
     currRow: Int64;
   begin
     Table := LocalSource.GetTable('SELECT ID FROM Identifiers WHERE Scope=' +
-                                  IntToStr(Scope) + NameFilter + ';');
+                                  IntToStr(Scope) + TypeFilter + NameFilter +
+                                  ' AND Name <> ''this'';');
     try
       while not Table.EOF do
       begin
@@ -907,18 +964,39 @@ var
       Table.Free;
     end;
   end;
+
+var
+  I: Integer;
+  Table: TSQLiteTable;
 begin
   Result := TIntList.Create;
   if PartialName <> '' then
     NameFilter := ' AND Name LIKE ''' + PartialName + '%''';
 
-  //The following code finds identifiers in the current scope
-  while Scope <> -1 do
+  if IdentifierType <> [] then
   begin
-    ListScopeIdentifiers(Scope);
-    Scope := LocalSource.GetTableValue('SELECT Scope FROM Identifiers WHERE ID=' +
-                                       IntToStr(Scope) + ';');
+    TypeFilter := ' AND Type IN (';
+    for I := Integer(itPrimitive) to Integer(itNamespace) do
+      if TIdentifierType(I) in IdentifierType then
+        TypeFilter := TypeFilter + IntToStr(Integer(I)) + ', ';
+    TypeFilter := Copy(TypeFilter, 1, Length(TypeFilter) - 2) + ')';
   end;
+  
+  //The following code finds identifiers in the current scope
+  repeat
+    ListScopeIdentifiers(Scope);
+    if not GetParentScopes then
+      Break;
+
+    Table := LocalSource.GetTable('SELECT Scope FROM Identifiers WHERE ID=' +
+                                  IntToStr(Scope) + TypeFilter + ' AND Name <> ''this'';');
+
+    if not Table.Eof then
+      Scope := Table.FieldAsInteger(0)
+    else
+      Scope := -1;
+    Table.Free;
+  until Scope = -1;
 end;
 
 function TCppParser.GetIdentifierDetails(IdentifierId: Int64): TParseIdentifier;
@@ -1013,6 +1091,8 @@ destructor TParseThread.Destroy;
 begin
   InputQueue.Free;
   Lock.Free;
+
+  inherited;
 end;
 
 procedure TParseThread.Execute;
@@ -1204,12 +1284,17 @@ const
 var
   Tbl: TSQLiteTable;
 begin
+  //TODO: lowjoel: Remove Debug Code
   Tbl := DataSource.GetTable('SELECT ID FROM Identifiers WHERE Name=''' + Name + ''' AND Scope=' + IntToStr(Scope) +
                              ' AND Type=' + IntToStr(Integer(IdType)) + ' AND NOT ' +
                              'Type  IN(' + Format('%d, %d', [Integer(itFunction), Integer(itClass)]) + ');');
-  if tbl.RowCount <> 0 then
-    SendDebug('Error: Integrity Failure: Duplicate entries of ' +
-                                 Name + ' found in code: ' + IntToStr(Tbl.RowCount));
+  try
+    if tbl.RowCount <> 0 then
+      SendDebug('Error: Integrity Failure: Duplicate entries of ' +
+                Name + ' found in code: ' + IntToStr(Tbl.RowCount));
+  finally
+    Tbl.Free;
+  end;
   DataSource.ExecSQL(Format(IdentifiersSQL, [Name, Scope, Integer(IdType), AccessSpecToIdAccess(AccessSpec)]));
   DataSource.ExecSQL(Format(LocationSQL, [DataSource.GetLastInsertRowID, DeclFile, DeclLine]));
 end;
@@ -1521,16 +1606,11 @@ var
   end;
 begin
   //Firstly find the class this function is in
-  {Scope := DataSource.GetTableValue('SELECT ID FROM Identifiers WHERE Name=''' +
-                                    ClassMembers.Match[2] + ''' AND Type=' +
-                                    IntToStr(Integer(itClass)));}
-  Scope := Parser.FindIdentifierID(ClassMembers.Match[2], [itClass, itStructure, itUnion, itNamespace]);
+  Scope := Parser.FindIdentifierID(ClassMembers.Match[2], [itClass, itStructure,
+                                                           itUnion, itNamespace]);
   if (Scope = -1) and (ClassMembers.Match[2] <> '') then
   begin
-    {DataSource.Commit;
-    asm int 3; end;
-    DataSource.BeginTransaction;}
-//DELETE FROM IDENTIFIERS; DELETE FROM VARIABLES; DELETE FROM LOCATIONS; DELETE FROM FUNCTIONS; DELETE FROM INHERITANCE; VACUUM;    
+    asm nop; end;   
   end;
 
   //Then determine if we have any other overloads for this function

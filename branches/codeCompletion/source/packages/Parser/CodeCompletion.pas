@@ -1,19 +1,21 @@
 {
-    This file is part of Dev-C++
-    Copyright (c) 2004 Bloodshed Software
+    $Id$
 
-    Dev-C++ is free software; you can redistribute it and/or modify
+    This file is part of wxDev-C++
+    Copyright (c) 2007 wxDev-C++ Developers
+
+    wxDev-C++ is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
-    Dev-C++ is distributed in the hope that it will be useful,
+    wxDev-C++ is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Dev-C++; if not, write to the Free Software
+    along with wxDev-C++; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 }
 {
@@ -30,7 +32,7 @@ unit CodeCompletion;
 interface
 
 uses
-  DevCodeToolTip,
+  CodeToolTip,
 {$IFDEF WIN32}
   Windows, Classes, Forms, SysUtils, Controls, Graphics, StrUtils, CppParser,
   ExtCtrls, U_IntList, Dialogs;
@@ -56,7 +58,7 @@ type
     fWidth: integer;
     fHeight: integer;
     fEnabled: boolean;
-    fHintWindow: TDevCodeToolTip;
+    fHintWindow: TBaseCodeToolTip;
     fHintTimer: TTimer;
     fHintTimeout: cardinal;
     fOnKeyPress: TKeyPressEvent;
@@ -86,9 +88,9 @@ type
 
     procedure ShowArgsHint(Phrase, Filename: string; Line: Integer);
     procedure ShowMsgHint(Rect: TRect; HintText: string);
-    
+
+    property Tooltip: TBaseCodeToolTip read fHintWindow;
   published
-    property Tooltip:TDevCodeToolTip read fHintWindow;
     property Parser: TCppParser read fParser write SetParser;
     property SelectedStatement: Int64 read GetSelectedStatement;
     property Position: TPoint read fPos write SetPosition;
@@ -108,7 +110,8 @@ type
 
 implementation
 
-uses CodeCompletionForm, dbugintf;
+uses
+  CodeCompletionForm;
 
 { TCodeCompletion }
 
@@ -116,7 +119,7 @@ constructor TCodeCompletion.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
-  fHintWindow := TDevCodeToolTip.Create(AOwner);
+  fHintWindow := TBaseCodeToolTip.Create(Self);
   fHintWindow.Color := clInfoBk;
   
   fHintTimer := TTimer.Create(Self);
@@ -176,7 +179,7 @@ begin
   if IdentifierID <> -1 then
     FilteredList := fParser.GetDescendantsOf(IdentifierID, IncompleteID)
   else
-    FilteredList := fParser.GetIdentifiersInScope(Scope, IncompleteID);
+    FilteredList := fParser.GetIdentifiersInScope(Scope, True, IncompleteID);
   fCompletionStatementList.Assign(FilteredList);
   FilteredList.Free;
 
@@ -325,7 +328,7 @@ begin
     for I := 0 to Overloads.Count - 1 do
     begin
       IdentifierDetails := fParser.GetIdentifierDetails(Overloads[I]) as TParseFunctionIdentifier;
-      Prototypes.Add(FunctionName + IdentifierDetails.Prototype);
+      Prototypes.Add(IdentifierDetails.Name + IdentifierDetails.Prototype);
       IdentifierDetails.Free;
     end;
 

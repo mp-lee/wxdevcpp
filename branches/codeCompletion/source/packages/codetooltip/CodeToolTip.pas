@@ -125,7 +125,6 @@ type
     procedure SetHighlighter(Highlighter: TSynCustomHighlighter);
     function GetHighlighter: TSynCustomHighlighter;
 
-//    procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure WMNCHitTest(var Message: TWMNCHitTest); message WM_NCHITTEST;
 
   protected
@@ -151,18 +150,14 @@ type
     property Highlighter: TSynCustomHighlighter read GetHighlighter write SetHighlighter;
   end;
 
-  
   TCodeToolTip = class(TBaseCodeToolTip)
-  public
-    property Activated;
-    property SelIndex;
-
   published
-    property Color;
     property Hints;
     property Options;
+    property SelIndex;
+    property CurrParam;
+    property Highlighter;
   end;
-
   
 implementation
 // contains the up/down buttons
@@ -500,12 +495,15 @@ end;
 //----------------------------------------------------------------------------------------------------------------------
 
 procedure TBaseCodeToolTip.PositionTooltip(Editor: TCustomSynEdit);
+var
+  Point: TPoint;
 begin
-  FPoint := Editor.ClientToScreen(Editor.RowColumnToPixels(Editor.DisplayXY));
-  Inc(FPoint.Y, Editor.LineHeight);
+  Point := Editor.ClientToScreen(Editor.RowColumnToPixels(Editor.DisplayXY));
+  Inc(Point.Y, Editor.LineHeight);
 
-  if Activated then
-    
+  if Point.Y = FPoint.Y then
+    Point.X := FPoint.X;
+  FPoint := Point;
 end;
 
 //----------------------------------------------------------------------------------------------------------------------

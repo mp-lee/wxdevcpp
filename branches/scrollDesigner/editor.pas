@@ -30,7 +30,7 @@ uses
   SynCompletionProposal, StrUtils, SynEditTypes, SynEditHighlighter,
 
   {** Modified by Peter **}
-  DevCodeToolTip, SynAutoIndent,utils
+  CodeToolTip, SynAutoIndent, utils
 
   {$IFDEF WX_BUILD}
     ,Designerfrm, CompFileIo, wxutils,DbugIntf
@@ -95,7 +95,6 @@ type
     FAutoIndent: TSynAutoIndent;
     procedure CompletionTimer(Sender: TObject);
     procedure ToolTipTimer(Sender: TObject);
-    procedure CodeRushLikeEditorKeyPress(Sender: TObject; var Key: Char);
     procedure EditorOnScroll(Sender: TObject; ScrollBar: TScrollBarKind);
     procedure EditorKeyPress(Sender: TObject; var Key: Char);
     procedure EditorKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -181,7 +180,7 @@ type
     procedure UpdateParser; // Must be called after recreating the parser
     //////// CODE-COMPLETION - mandrav /////////////
     procedure ReconfigCompletion;
-    function GetCodeToolTip: TDevCodeToolTip;
+    function GetCodeToolTip: TBaseCodeToolTip;
     //////// CODE-COMPLETION - mandrav /////////////
 
     property FileName: string read fFileName write SetFileName;
@@ -192,7 +191,7 @@ type
     property Text: TSynEdit read fText write fText;
     property TabSheet: TTabSheet read fTabSheet write fTabSheet;
 
-    property CodeToolTip: TDevCodeToolTip read GetCodeToolTip; // added on 23rd may 2004 by peter_
+    property CodeToolTip: TBaseCodeToolTip read GetCodeToolTip; // added on 23rd may 2004 by peter_
 {$IFDEF WX_BUILD}
   private
     fDesignerClassName, fDesignerTitle: string;
@@ -405,7 +404,6 @@ begin
   fText.OnDblClick := EditorDblClick;
   fText.OnMouseDown := EditorMouseDown;
   fText.OnPaintTransient := EditorPaintTransient;
-  fText.OnKeyPress := CodeRushLikeEditorKeyPress;
   fText.OnScroll := EditorOnScroll;
 
   fText.MaxScrollWidth:=4096; // bug-fix #600748
@@ -843,144 +841,6 @@ begin
   end;
 end;
 
-procedure TEditor.ToolTipTimer(Sender: TObject);
-  function PreviousWordString(S: string; Index: Integer):string;
-  var
-    I: Integer;
-    TplArgs: Integer;
-
-    procedure SkipSpaces;
-    begin
-      repeat
-        Dec(Index);
-      until (Index = 0) or (not (S[Index] in [#32,#9]));
-    end;
-  begin
-    Result := '';
-    if (Index <= 1) or (S = '') then
-      Exit;
-
-    // Skip blanks and tabs
-    SkipSpaces;
-
-    // Skip template parameters
-    if S[Index] = '>' then //template parameter
-    begin
-      TplArgs := 1;
-      while (TplArgs <> 0) and (Index > 1) do
-      begin
-        Dec(Index);
-        case S[Index] of
-          '>':
-            Inc(TplArgs);
-          '<':
-            Dec(TplArgs);
-        end;
-      end;
-    end;
-
-    Inc(Index);
-    I := Index;
-    repeat
-      Dec(Index);
-      if Index < 2 then
-        Break;
-    until not (S[Index] in ['a'..'z', 'A'..'Z', '_', '.']);
-
-    if not (S[Index] in ['a'..'z', 'A'..'Z', '_', '.']) then
-      Inc(Index);
-
-    Result := Copy(S, Index, I-Index);
-  end;
-  
-  function FindStart: integer;
-  var
-    FillingParameter: Boolean;
-    Brackets: Integer;
-    I: Integer;
-  begin
-    //Give the current selection index, we need to find the start of the function
-    FillingParameter := False;
-    I := FText.SelStart;
-    Brackets := -1;
-    Result := -1;
-    
-    //Make sure the offset is valid
-    if I > Length(FText.Text) then
-      Exit;
-    
-    while I > 0 do
-    begin
-      if (I < 0) then
-        break;
-      case FText.Text[I] of
-        ')':
-          Dec(Brackets);
-        '(':
-          begin
-            Inc(Brackets);
-            if Brackets = 0 then
-            begin
-              Result := I;
-              Exit;
-            end
-          end;
-        #10, #13:
-          //Make sure we are not within a function call
-          if not FillingParameter then
-          begin
-            //Skip whitespace so we can see what is the last character
-            while (I > 1) and (FText.Text[I - 1] in [#10, #13, #9, ' ']) do
-              Dec(I); //Previous character is whitespace, skip it
-
-            //Is the character a comma or an opening parenthesis?
-            if I > 2 then
-              if not (FText.Text[I - 1] in [',', '(']) then
-                Exit;
-          end;
-        '{', '}':
-          Exit;
-        ',':
-          FillingParameter := True;
-        else
-          FillingParameter := False;
-      end;
-
-      Dec(I);
-    end;
-  end;
-
-  function CountCommas(const S: string): Integer;
-  var
-    J: Integer;
-  begin
-    Result := 0;
-    for J := 1 to Length(S) do
-      if S[J] = ',' then Inc(Result);
-  end;
-var
-  Phrase: string;
-  Start: Integer;
-begin
-  // stop the timer so we don't recurse
-  fToolTipTimer.Enabled := False;
-
-  //Then look for the string to pass to the Completion object
-  Start := FindStart;
-  Phrase := PreviousWordString(fText.Text, Start);
-
-  //Position the text box properly
-  fCompletionBox.Tooltip.PositionTooltip(fText);
-  fCompletionBox.Tooltip.CurrParam := CountCommas(Copy(fText.Text, Start + 1, fText.SelStart - Start));
-  fCompletionBox.ShowArgsHint(Phrase, FileName, fText.CaretY);
-end;
-
-procedure TEditor.EditorOnScroll(Sender: TObject; ScrollBar: TScrollBarKind);
-begin
-  if Assigned(CodeToolTip) and (CodeToolTip.Caption <> '') and CodeToolTip.Activated then
-    CodeToolTip.PositionTooltip(fText);
-end;
-
 procedure TEditor.ExportTo(const isHTML: boolean);
 begin
   if IsHTML then
@@ -1317,36 +1177,20 @@ begin
   Activate;
 end;
 
-procedure TEditor.CodeRushLikeEditorKeyPress(Sender: TObject; var Key: Char);
-var
-    strComment:string;
-begin
-
-  if fCompletionBox.Enabled then
-    Exit;
-
-  //----------------------------------------------------------------------------
-  //Guru: My Own CodeRush like Commentor :o)
-    if fText.SelAvail then
-    begin
-        if (String(Key) = '/') and (trim(String(fText.SelText)) <> '') then
-        begin
-            Key:=#0;
-            strComment:='/* '+fText.SelText+ ' */';
-            fText.SelText:=strComment;
-            Exit;
-        end;
-    end;
-  //----------------------------------------------------------------------------
-end;
-
 //////// CODE-COMPLETION - mandrav /////////////
 procedure TEditor.EditorKeyPress(Sender: TObject; var Key: Char);
 var
   P: TPoint;
 begin
-  {if Key = char(VK_BACK) then // happens when doing ctrl+backspace with completion on
-    exit;}
+  //Guru's CodeRush Commenting function
+  //TODO: Guru: Can we make this generic so that other keys can do similar things?
+  if fText.SelAvail and (Key = '/') and (Trim(fText.SelText) <> '') then
+  begin
+    Key := #0;
+    fText.SelText := '/* ' + fText.SelText + ' */';
+    Exit;
+  end;
+
   if fCompletionBox.Enabled then
   begin
     if not (Sender is TForm) then
@@ -1414,8 +1258,6 @@ end;
 procedure TEditor.EditorKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
-
-  {** Modified by Peter **}
 {$IFDEF WIN32}
   if Key = VK_TAB then
 {$ENDIF}
@@ -1426,68 +1268,53 @@ begin
     // Indent/Unindent selected text with TAB key, like Visual C++ ...
     if FText.SelText <> '' then
     begin
-      if not (ssShift in Shift) then FText.ExecuteCommand(ecBlockIndent, #0, nil)
-      else FText.ExecuteCommand(ecBlockUnindent, #0, nil);
-      Abort;
+      if not (ssShift in Shift) then
+        FText.ExecuteCommand(ecBlockIndent, #0, nil)
+      else
+        FText.ExecuteCommand(ecBlockUnindent, #0, nil);
     end;
+
+    Exit;
   end;
 
 {$IFDEF WIN32}
-  if (Key = VK_UP) or (Key = VK_DOWN) then
-{$ENDIF}
-{$IFDEF LINUX}
-  if (Key = XK_UP) or (Key = VK_DOWN) then
-{$ENDIF}
-{$IFDEF GURUS_BUILD}
+  if CodeToolTip.Activated and (Key in [VK_DOWN, VK_UP, VK_ESCAPE]) then
   begin
-    if (ssCtrl in Shift) and (ssAlt in Shift) then
-    begin
-      if Key = VK_UP then
-        SearchKeyNavigation(false)
-      else
-        SearchKeyNavigation(true);
-    end;
-  end;
-{$ELSE}
-  begin
-    if Key = VK_UP then
-    begin
-      if CodeToolTip.SelIndex <> CodeToolTip.Hints.Count - 1 then
-        CodeToolTip.SelIndex := CodeToolTip.SelIndex + 1
-      else
-        CodeToolTip.SelIndex := 0;
-      Key := 0;
-    end
-    else
-    begin
-      if CodeToolTip.SelIndex > 0 then
-        CodeToolTip.SelIndex := CodeToolTip.SelIndex - 1
-      else
-        CodeToolTip.SelIndex := CodeToolTip.Hints.Count - 1;
-      Key := 0;
-    end;
-  end;
-{$ENDIF} //GURUS_BUILD
+    case Key of
+      VK_UP:
+        if CodeToolTip.SelIndex <> CodeToolTip.Hints.Count - 1 then
+          CodeToolTip.SelIndex := CodeToolTip.SelIndex + 1
+        else
+          CodeToolTip.SelIndex := 0;
 
-  if fCompletionBox.Enabled then begin
+      VK_DOWN:
+        if CodeToolTip.SelIndex > 0 then
+          CodeToolTip.SelIndex := CodeToolTip.SelIndex - 1
+        else
+          CodeToolTip.SelIndex := CodeToolTip.Hints.Count - 1;
+
+      VK_ESCAPE:
+        CodeToolTip.ReleaseHandle;
+    end;
+    Key := 0;
+  end;
+
+  if fCompletionBox.Enabled then
+  begin
     fCompletionBox.OnKeyPress := EditorKeyPress;
     if ssCtrl in Shift then
-{$IFDEF WIN32}
-      if Key = vk_Space then begin
-{$ENDIF}
-{$IFDEF LINUX}
-      if Key = XK_Space then begin
-{$ENDIF}
+      if Key = VK_SPACE then
+      begin
         Key := 0;
         if not (ssShift in Shift) then
           fCompletionBox.Search(nil, CurrentPhrase, fFileName, fText.CaretY);
-        fCompletionEatSpace := True; // this is a hack. without this after ctrl+space, the space appears in the editor :(
+        fCompletionEatSpace := True;
       end;
-  end
-  else
-  begin
-    fText.OnKeyPress := CodeRushLikeEditorKeyPress;
   end;
+{$ENDIF}
+{$IFDEF LINUX}
+  NOT IMPLEMENTED;
+{$ENDIF}
 end;
 
 procedure TEditor.EditorKeyUp(Sender: TObject; var Key: Word;
@@ -1556,11 +1383,8 @@ begin
     fTimer.Enabled := False;
     fTimer.OnTimer := CompletionTimer;
     fTimer.Interval := devCodeCompletion.Delay;
-  end
-  Else
-  begin
-    fText.OnKeyPress := CodeRushLikeEditorKeyPress;
   end;
+
   fCompletionEatSpace := False;
 end;
 
@@ -1689,6 +1513,143 @@ begin
     ));
 end;
 
+procedure TEditor.ToolTipTimer(Sender: TObject);
+  function PreviousWordString(S: string; Index: Integer):string;
+  var
+    I: Integer;
+    TplArgs: Integer;
+
+    procedure SkipSpaces;
+    begin
+      repeat
+        Dec(Index);
+      until (Index = 0) or (not (S[Index] in [#32,#9]));
+    end;
+  begin
+    Result := '';
+    if (Index <= 1) or (S = '') then
+      Exit;
+
+    // Skip blanks and tabs
+    SkipSpaces;
+
+    // Skip template parameters
+    if S[Index] = '>' then //template parameter
+    begin
+      TplArgs := 1;
+      while (TplArgs <> 0) and (Index > 1) do
+      begin
+        Dec(Index);
+        case S[Index] of
+          '>':
+            Inc(TplArgs);
+          '<':
+            Dec(TplArgs);
+        end;
+      end;
+    end;
+
+    Inc(Index);
+    I := Index;
+    repeat
+      Dec(Index);
+      if Index < 2 then
+        Break;
+    until not (S[Index] in ['a'..'z', 'A'..'Z', '_', '.']);
+
+    if not (S[Index] in ['a'..'z', 'A'..'Z', '_', '.']) then
+      Inc(Index);
+
+    Result := Copy(S, Index, I-Index);
+  end;
+  
+  function FindStart: integer;
+  var
+    FillingParameter: Boolean;
+    Brackets: Integer;
+    I: Integer;
+  begin
+    //Give the current selection index, we need to find the start of the function
+    FillingParameter := False;
+    I := FText.SelStart;
+    Brackets := -1;
+    Result := -1;
+    
+    //Make sure the offset is valid
+    if I > Length(FText.Text) then
+      Exit;
+    
+    while I > 0 do
+    begin
+      if (I < 0) then
+        break;
+      case FText.Text[I] of
+        ')':
+          Dec(Brackets);
+        '(':
+          begin
+            Inc(Brackets);
+            if Brackets = 0 then
+            begin
+              Result := I;
+              Exit;
+            end
+          end;
+        #10, #13:
+          //Make sure we are not within a function call
+          if not FillingParameter then
+          begin
+            //Skip whitespace so we can see what is the last character
+            while (I > 1) and (FText.Text[I - 1] in [#10, #13, #9, ' ']) do
+              Dec(I); //Previous character is whitespace, skip it
+
+            //Is the character a comma or an opening parenthesis?
+            if I > 2 then
+              if not (FText.Text[I - 1] in [',', '(']) then
+                Exit;
+          end;
+        '{', '}':
+          Exit;
+        ',':
+          FillingParameter := True;
+        else
+          FillingParameter := False;
+      end;
+
+      Dec(I);
+    end;
+  end;
+
+  function CountCommas(const S: string): Integer;
+  var
+    J: Integer;
+  begin
+    Result := 0;
+    for J := 1 to Length(S) do
+      if S[J] = ',' then Inc(Result);
+  end;
+var
+  Phrase: string;
+  Start: Integer;
+begin
+  // stop the timer so we don't recurse
+  fToolTipTimer.Enabled := False;
+
+  //Then look for the string to pass to the Completion object
+  Start := FindStart;
+  Phrase := PreviousWordString(fText.Text, Start);
+
+  //Position the text box properly
+  fCompletionBox.Tooltip.PositionTooltip(fText);
+  fCompletionBox.Tooltip.CurrParam := CountCommas(Copy(fText.Text, Start + 1, fText.SelStart - Start));
+  fCompletionBox.ShowArgsHint(Phrase, FileName, fText.CaretY);
+end;
+
+procedure TEditor.EditorOnScroll(Sender: TObject; ScrollBar: TScrollBarKind);
+begin
+  if Assigned(CodeToolTip) and (CodeToolTip.Caption <> '') and CodeToolTip.Activated then
+    CodeToolTip.PositionTooltip(fText);
+end;
 //////// CODE-COMPLETION - mandrav - END ///////
 
 // variable info
@@ -2603,9 +2564,9 @@ begin
   end;
 end;
 
-function TEditor.GetCodeToolTip: TDevCodeToolTip;
+function TEditor.GetCodeToolTip: TBaseCodeToolTip;
 begin
-  Result := fCompletionBox.Tooltip;
+  Result := fCompletionBox.Tooltip; 
 end;
 
 {$ENDIF}
