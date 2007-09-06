@@ -1,5 +1,5 @@
 {
-    $Id: compiler.pas 916 2007-04-06 10:09:56Z lowjoel $
+    $Id: compiler.pas 934 2007-04-26 22:12:25Z lowjoel $
 
     This file is part of Dev-C++
     Copyright (c) 2004 Bloodshed Software
@@ -129,7 +129,7 @@ type
     function NewMakeFile(var F: TextFile): boolean; virtual;
     procedure WriteMakeClean(var F: TextFile); virtual;
     procedure WriteMakeObjFilesRules(var F: TextFile); virtual;
-    function PreProcDefines: string;
+    function PreprocDefines: string;
     function ExtractLibParams(strFullLibStr:String) :string;
     function ExtractLibFiles(strFullLibStr:String) :string;
   published
@@ -218,7 +218,7 @@ const
   cAppendStr = '%s %s';  
 
 var
-  ObjResFile, Objects, LinkObjects, Comp_ProgCpp, Comp_Prog, tfile: string;
+  ObjResFile, Objects, LinkObjects, Comp_ProgCpp, Comp_Prog, WxLibName, tfile: string;
   i: integer;
 begin
   Objects := '';
@@ -287,6 +287,15 @@ begin
   else
     Comp_Prog := CP_PROGRAM(devCompiler.CompilerType);
 
+  //Compile the wxWidgets library name
+  WxLibName := Format('wxmsw%d%d', [devCompiler.WxOpts.majorVersion, devCompiler.WxOpts.minorVersion]);
+
+  //And then do the library features
+  if devCompiler.WxOpts.unicodeSupport then
+    WxLibName := WxLibName + 'u';
+  if devCompiler.WxOpts.debugLibrary then
+    WxLibName := WxLibName + 'd';
+
   GetCompileParams;
   GetLibrariesParams;
   GetIncludesParams;
@@ -309,13 +318,13 @@ begin
   writeln(F, '# Project: ' + fProject.Name);
   writeln(F, '# Compiler: ' + devCompiler.Name);
   case devCompiler.CompilerType of
-    ID_COMPILER_MINGW : writeln(F, '# Compiler Type: MingW 3');
-    ID_COMPILER_VC6    : writeln(F, '# Compiler Type: Visual C++ 6');
-    ID_COMPILER_VC2003   : writeln(F, '# Compiler Type: Visual C++ .NET 2003');    
-    ID_COMPILER_VC2005: writeln(F, '# Compiler Type: Visual C++ 2005');
-    ID_COMPILER_DMARS : writeln(F, '# Compiler Type: Digital Mars');
-    ID_COMPILER_BORLAND    : writeln(F, '# Compiler Type: Borland C++ 5.5');
-    ID_COMPILER_WATCOM: writeln(F, '# Compiler Type: OpenWatCom');
+    ID_COMPILER_MINGW   : writeln(F, '# Compiler Type: MingW 3');
+    ID_COMPILER_VC6     : writeln(F, '# Compiler Type: Visual C++ 6');
+    ID_COMPILER_VC2003  : writeln(F, '# Compiler Type: Visual C++ .NET 2003');
+    ID_COMPILER_VC2005  : writeln(F, '# Compiler Type: Visual C++ 2005');
+    ID_COMPILER_DMARS   : writeln(F, '# Compiler Type: Digital Mars');
+    ID_COMPILER_BORLAND : writeln(F, '# Compiler Type: Borland C++ 5.5');
+    ID_COMPILER_WATCOM  : writeln(F, '# Compiler Type: OpenWatCom');
   end;
   writeln(F, Format('# Makefile created by %s %s on %s',
                     [DEVCPP, DEVCPP_VERSION, FormatDateTime('dd/mm/yy hh:nn', Now)]));
@@ -352,6 +361,7 @@ begin
   writeln(F, 'RCINCS    =' + StringReplace(fRcIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'BIN       = ' + GenMakePath2(ExtractRelativePath(Makefile, fProject.Executable)));
   writeln(F, 'DEFINES   = ' + PreprocDefines);
+  writeln(F, 'WXLIBNAME = ' + WxLibName);
   writeln(F, 'CXXFLAGS  = $(CXXINCS) $(DEFINES) ' + fCppCompileParams);
   writeln(F, 'CFLAGS    = $(INCS) $(DEFINES) ' + fCompileParams);
   writeln(F, 'GPROF     = ' + devCompilerSet.gprofName);
@@ -381,7 +391,7 @@ begin
 
   Writeln(F, '');
   if DoCheckSyntax then
-    Writeln(F,'.PHONY: all all-before all-after clean clean-custom $(OBJ) $(BIN)')
+    Writeln(F, '.PHONY: all all-before all-after clean clean-custom $(OBJ) $(BIN)')
   else
     Writeln(F, '.PHONY: all all-before all-after clean clean-custom');
   Writeln(F, 'all: all-before $(BIN) all-after');
@@ -865,7 +875,7 @@ var
   libStr,temps:String;
 begin
   fLibrariesParams := '';
-  if fProject.CurrentProfile.compilerType <> ID_COMPILER_DMARS then
+  if devCompiler.compilerType <> ID_COMPILER_DMARS then
   begin
     cAppendStr := '%s ' + devCompiler.LinkerPaths;
       fLibrariesParams := CommaStrToStr(devDirs.lib, cAppendStr);
@@ -1038,27 +1048,28 @@ begin
 end;
 
 
-function TCompiler.PreProcDefines: string;
+function TCompiler.PreprocDefines: string;
 var
-i: integer;
-values: TStringList;
-tempvalues: string;
+  i: integer;
+  values: TStringList;
 begin
   Result := '';
   if assigned(fProject) then
   begin
     values := TStringList.Create;
-    tempvalues := StringReplace(fProject.CurrentProfile.PreprocDefines, '_@@_', #10, [rfReplaceAll]);
-    strTokenToStrings(tempvalues, #10, values);
+    strTokenToStrings(StringReplace(fProject.CurrentProfile.PreprocDefines, '_@@_', #10, [rfReplaceAll]), #10, values);
 
     for i := 0 to values.Count - 1 do
-    begin
       Result := Result + ' ' + Format(devCompiler.PreprocDefines, [values[i]]);
-    end;
 
     //Clean up
     values.Destroy;
   end;
+
+  //Add the WXUSINGDLL if we are using a DLL build
+  if not devCompiler.WxOpts.staticLibrary then
+    Result := Result + ' ' + Format(devCompiler.PreprocDefines, ['WXUSINGDLL']);
+  Result := Trim(Result);
 end;
 
 procedure TCompiler.ShowResults;
@@ -2202,7 +2213,7 @@ begin
       lblStatus.Caption := sMsg;
       lblStatus.Font.Style := [fsBold];
       lblFile.Caption := '';
-      timeTimer.Enabled := False; // Disable the timer
+      timeTimer.Enabled := False;
     end;
     Application.ProcessMessages;
     if devData.AutoCloseProgress or (fErrCount > 0) or (fWarnCount > 0) then

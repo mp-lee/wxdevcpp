@@ -205,7 +205,7 @@ public
     procedure PasteExecute;
     procedure Initialize(owner: TForm; Config: String);
     procedure Init(strFileName: String);
-    procedure StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
+    procedure Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
     procedure AssignPlugger(plug: IPlug);
     procedure DisableDesignerControls;
     procedure OpenFile(s: String);
@@ -232,7 +232,7 @@ public
 	  function  ReloadForm(FileName: String): Boolean;
     procedure ReloadFromFile(FileName: String; fileToReloadFrom: String);
     procedure TerminateEditor(FileName: String);
-    procedure Terminate;
+    procedure Destroy;
 	  procedure OnDockableFormClosed(Sender: TObject; var Action: TCloseAction);
     function IsSource(FileName: String): Boolean;
     function GetDefaultText(FileName: String): String;
@@ -888,6 +888,9 @@ begin
     //Setting data for the newly created GUI
     intControlCount := 1000;
 
+    boolInspectorDataClear := true;
+    DisablePropertyBuilding := false;
+
 end;   // end Initialize
 
 procedure TWXDsgn.AssignPlugger(plug: IPlug);
@@ -948,59 +951,51 @@ end;
 function TWXDsgn.SaveFile(EditorFilename: String; var pluginFileExist: Boolean): Boolean;
 var
   isEXAssigned: Boolean;
-  isEXModified: Boolean;
-  eXFileName: String;
-  hFile,cppFile: String;
-  bHModified,bCppModified:Boolean;
 begin
     Result := false;
     isEXAssigned := false;
-    isEXModified := false;
-    eXFileName := '';
-    bCppModified := false;
-    bHModified := false;
-//Bug fix for 1123460 : Save the files first and the do a re-parse.
-//If you dont save all the files first then cpp functions and header functions of save class
-//will be added in the class browser and duplicates will be there.
-//Some times the functions will be not associated with the class and
-//there by will not be shown in the function assignment drop down box of the events.
-
+  //For a wxDev-C++ build, there are a few related editors that must be saved at
+  //the same time.
+  
+  //See if the current file is a Form-related document
+  //TODO: lowjoel: the following code assumes that the editor for the sibling file
+  //               is open. Why do we need such a lousy restriction?  
     if FileExists(ChangeFileExt(EditorFilename,WXFORM_EXT)) then
+	//The current file is a form and has related files. If we save the form, all
+    //the related files needs to be saved at the same time.	
     begin
         pluginFileExist := True;
         if main.isFileOpenedinEditor(ChangeFileExt(EditorFilename, WXFORM_EXT)) then
         begin
-            Result := main.SaveFileIfModified(EditorFilename, WXFORM_EXT, isEXAssigned, isEXModified, eXFileName);
+            Result := main.SaveFileIfModified(EditorFilename, WXFORM_EXT, isEXAssigned);
             if isEXAssigned then
-                (editors[ExtractFileName(ChangeFileExt(EditorFilename, WXFORM_EXT))] AS TWXEditor).GetDesigner.CreateNewXPMs(eXFileName);
+                (editors[ExtractFileName(ChangeFileExt(EditorFilename, WXFORM_EXT))] AS TWXEditor).GetDesigner.CreateNewXPMs(EditorFilename);
         end;
 
-        // XRC
-        if (ELDesigner1.GenerateXRC and main.isFileOpenedinEditor(ChangeFileExt(EditorFilename, XRC_EXT))) then        
+      //If the user wants XRC files to be generated, save the XRC file as well
+      //BUT: if the user does NOT want XRC files, we should not confuse the user
+      //     and delete the file
+        if ELDesigner1.GenerateXRC then        
         begin
-            Result := main.SaveFileIfModified(EditorFilename, XRC_EXT, isEXAssigned, isEXModified, eXFileName);
-        end;
+			if main.isFileOpenedinEditor(ChangeFileExt(EditorFilename, XRC_EXT)) then
+			begin
+				Result := Result and main.SaveFileIfModified(EditorFilename, XRC_EXT, isEXAssigned);
+			end;
+        end
+		else ;
+		//Delete the now-outdated XRC file
+		//TODO: lowjoel: safer way?
 
         if main.isFileOpenedinEditor(ChangeFileExt(EditorFilename, H_EXT)) then
         begin
-            Result := main.SaveFileIfModified(EditorFilename, H_EXT, isEXAssigned, isEXModified, eXFileName);
-            bHModified:=isEXModified;
-            hFile := eXFileName;
+            Result := Result and main.SaveFileIfModified(EditorFilename, H_EXT, isEXAssigned);
         end;
 
         if main.isFileOpenedinEditor(ChangeFileExt(EditorFilename, CPP_EXT)) then
         begin
-            Result := main.SaveFileIfModified(EditorFilename, CPP_EXT, isEXAssigned, isEXModified, eXFileName);
-            bCppModified:=isEXModified;
-            cppFile := eXFileName;
+            Result := Result and main.SaveFileIfModified(EditorFilename, CPP_EXT, isEXAssigned);
         end;
-		
-		// EAB TODO: Check if these next 2 can be done directly inside the SaveFileIfModified call
-        if (bHModified = true ) then	
-            main.ReParseFile(hFile);
 
-        if (bCppModified = true ) then
-            main.ReParseFile(cppFile);
     end
 end;
 
@@ -1456,7 +1451,7 @@ begin
     SetDesignerActiveState(true); }
 end;
 
-procedure TWXDsgn.StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
+procedure TWXDsgn.Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
 begin
     plugin_name := name;
     XPTheme := False;
@@ -2889,7 +2884,8 @@ begin
   Result := False;
 
   editorName := main.GetActiveEditorName;
-  if not main.IsEditorAssigned then
+
+  if not main.IsEditorAssigned(editorName) then
     Exit;
 
   if isForm(editorName) then
@@ -4045,7 +4041,7 @@ begin
       editors.Delete(ExtractFileName(FileName));
 end;
 
-procedure TWXDsgn.Terminate;
+procedure TWXDsgn.Destroy;
 begin  
   //strStdwxIDList.Free;
   editors.Free;
