@@ -20,7 +20,7 @@ type
 	function OpenUnitInProject(s: String): Boolean;
 	function FileAlreadyExistsInProject(s: String): Boolean;
   procedure SaveFileFromEditor(FileName: String);
-  function  SaveFileIfModified(EditorFilename: String; extension: String; var isEXAssigned: Boolean; var isEXModified: Boolean; var eXFileName: String): Boolean;
+  function SaveFileIfModified(EditorFilename: String; extension: String; var isEXAssigned: Boolean): Boolean;
   procedure SaveFileAndCloseEditor(EditorFilename: String; extension: String; Saved:Boolean);
   procedure ActivateEditor(EditorFilename: String);
   function RetrieveUserName(var buffer: array of char; size: dword): Boolean;

@@ -9,6 +9,8 @@
 {$WARN UNIT_LIBRARY ON}
 {$WARN UNIT_PLATFORM ON}
 {$WARN UNIT_DEPRECATED ON}
+
+{$IFDEF COMPILER_7_UP}
 {$WARN HRESULT_COMPAT ON}
 {$WARN HIDING_MEMBER ON}
 {$WARN HIDDEN_VIRTUAL ON}
@@ -51,8 +53,10 @@
 {$WARN UNSAFE_TYPE OFF}
 {$WARN UNSAFE_CODE OFF}
 {$WARN UNSAFE_CAST OFF}
+{$ENDIF COMPILER_7_UP}
+
 {
-    $Id: main.pas 915 2007-04-06 10:08:02Z lowjoel $
+    $Id: main.pas 1004 2007-09-04 13:29:14Z lowjoel $
 
     This file is part of Dev-C++
     Copyright (c) 2004 Bloodshed Software
@@ -982,8 +986,10 @@ type
     procedure CompSuccessProc(const messages: integer);
     procedure MainSearchProc(const SR: TdevSearchResult);
     procedure LoadText(force: boolean);
+  public    
     function SaveFile(e: TEditor): Boolean;
     function SaveFileAs(e: TEditor): Boolean;
+  private    
     procedure OpenUnit;
     function PrepareForCompile(rebuild: Boolean): Boolean;
     procedure LoadTheme;
@@ -1082,7 +1088,7 @@ type
     function GetDMNum:Integer;
     function GetProjectFileName: String;
     procedure CloseEditorInternal(eX: TEditor);  // <-- EAB Function extracted from CloseEditor
-    function  SaveFileIfModified(EditorFilename: String; extension: String; var isEXAssigned: Boolean; var isEXModified: Boolean; var eXFileName: String): Boolean;   // <-- EAB
+    function  SaveFileIfModified(EditorFilename: String; extension: String; var isEXAssigned: Boolean): Boolean;   // <-- EAB
     procedure SaveFileAndCloseEditor(EditorFilename: String; extension: String; Saved:Boolean);
     procedure SaveFileFromEditor(FileName: String);
     procedure ActivateEditor(EditorFilename: String);
@@ -1904,7 +1910,7 @@ begin
         devPluginToolbarsY.AddToolbarsY(plugins[i].GetPluginName, toolbar.Top);
     end;
 
-    plugins[i].Terminate;
+    plugins[i].Destroy;
     plugins[i] := nil;
   end;
   {$ENDIF PLUGIN_BUILD}
@@ -2482,7 +2488,9 @@ end;
 
 //TODO: lowjoel: The following three Save functions probably can be refactored for
 //               speed. Anyone can reorganize it to optimize it for speed and efficiency,
-//               as well as to cut the number of lines needed.
+//               as well as to cut the number of lines needed.\
+//Combine the Save functions together. The saveAS function should be able to use
+//the Save function, and the Save functionm can do
 function TMainForm.SaveFileAs(e: TEditor): Boolean;
 var
   I: Integer;
@@ -2702,24 +2710,38 @@ begin
   end;
 end;
 
-function TMainForm.SaveFileInternal(e: TEditor; bParseFile: Boolean): Boolean;
+  //SaveFileInternal will take the editor E and do all the checks before actually
+  //saving the file to disk. This is an anonymous function because we shouldn't
+  //be calling this anywhere else! (Call SaveFile instead)
+  // EAB note: I moved the function back out so it can be called from the
+  //"SaveFileIfModified" method, back from the designer plugin.
+function TMainForm.SaveFileInternal(e: TEditor; bParseFile: Boolean = True): Boolean;
 var
-  idx,index,I: Integer;
-  ccFile,hFile:String;
+    EditorUnitIndex: Integer;
 {$IFDEF PLUGIN_BUILD}
-  j: Integer;
-{$ENDIF}  
+  	j: Integer;
+{$ENDIF}
 begin
   Result := False;
-  if FileExists(e.FileName) and (FileGetAttr(e.FileName) and faReadOnly <> 0) then begin
-    // file is read-only
-    if MessageDlg(Format(Lang[ID_MSG_FILEISREADONLY], [e.FileName]),mtConfirmation, [mbYes, mbNo], 0) = mrNo then
-      Exit;
-    if FileSetAttr(e.FileName, FileGetAttr(e.FileName) - faReadOnly) <> 0 then begin
-      MessageDlg(Format(Lang[ID_MSG_FILEREADONLYERROR], [e.FileName]), mtError, [mbOk], 0);
-      Exit;
+
+    //First conduct a read-only check.
+    //TODO: lowjoel: If the file is read-only we should disable the editing of
+    //               the SynEdit?
+    if FileExists(e.FileName) and (FileGetAttr(e.FileName) and faReadOnly <> 0) then
+    begin
+      //File is read-only
+      if MessageDlg(Format(Lang[ID_MSG_FILEISREADONLY], [e.FileName]), mtConfirmation,
+                    [mbYes, mbNo], Handle) = mrNo then
+        Exit;
+
+      //Attempt to remove the read-only attribute
+      if FileSetAttr(e.FileName, FileGetAttr(e.FileName) - faReadOnly) <> 0 then
+      begin
+        MessageDlg(Format(Lang[ID_MSG_FILEREADONLYERROR], [e.FileName]), mtError,
+                   [mbOk], Handle);
+        Exit;
+      end;
     end;
-  end;
 
 {$IFDEF PLUGIN_BUILD}
   //Just Generate XPM's while saving the file
@@ -2730,119 +2752,54 @@ begin
   end;
 {$ENDIF}
 
-  if (not e.new) and e.Modified then
-  begin // not new but in project (relative path in e.filename)
-    if Assigned(fProject) and (e.InProject) then
+    Assert(not e.New, 'The code can call this function only on the premise that ' +
+                      'the editor being saved has a filename.');
+    if (not e.New) and e.Modified then
     begin
-      try
-        idx := fProject.GetUnitFromEditor(e);
-        if idx = -1 then
+      //OK. The file needs to be saved. But we treat project files differently
+      //from standalone files.
+      if Assigned(fProject) and (e.InProject) then
+      begin
+        EditorUnitIndex := fProject.GetUnitFromEditor(e);
+        if EditorUnitIndex = -1 then
           MessageDlg(Format(Lang[ID_ERR_SAVEFILE], [e.FileName]), mtError, [mbOk], Handle)
         else
-          fProject.units[idx].Save;
-      except
-{$IFNDEF PRIVATE_BUILD}
-         MessageDlg(Format(Lang[ID_ERR_SAVEFILE], [e.FileName]), mtError, [mbOk], Handle);
-         Exit;
-{$ELSE}
-         on Ex: Exception do
-         begin
-           MessageDlg(Format(Lang[ID_ERR_SAVEFILE] + ' (%s)', [e.FileName, Ex.Message]),
-                      mtError, [mbOk], Handle);
-           Exit;
-         end;
-{$ENDIF}
-      end;
+          Result := fProject.units[EditorUnitIndex].Save;
 
-      try
-        if (idx <> -1) and ClassBrowser1.Enabled and bParseFile then
-        begin
-          CppParser1.ReParseFile(fProject.units[idx].FileName, True);
-          if e.TabSheet = PageControl.ActivePage then
-            ClassBrowser1.CurrentFile := fProject.units[idx].FileName;
-          if GetFileTyp(e.FileName) = utHead then
-          begin
-            CppParser1.GetSourcePair(ExtractFileName(e.FileName), ccFile, hfile);
-            if trim(ccFile) <> '' then
-            begin
-              index := -1;
-              for I := CppParser1.ScannedFiles.Count - 1 downto 0 do    // Iterate
-              begin
-                if AnsiSameText(ExtractFileName(ccFile), ExtractFileName(CppParser1.ScannedFiles[i])) then
-                begin
-                  ccFile := CppParser1.ScannedFiles[i];
-                  index := i;
-                  Break;
-                end;
-              end;    // for
-
-              if index <> -1 then
-                CppParser1.ReParseFile(ccFile, true); //new cc
-            end;
-          end;
-        end;
-        Result := True;
-      except
-        MessageDlg(Format('Error reparsing file %s', [e.FileName]), mtError, [mbOk], Handle);
-      end;
-    end
-    else // stand alone file (should have fullpath in e.filename)
-    try
-      //Disable the file watch for this entry
-      idx := devFileMonitor.Files.IndexOf(e.FileName);
-      if idx <> -1 then
+        if (EditorUnitIndex <> -1) and ClassBrowser1.Enabled then
+          CppParser1.ReParseFile(fProject.units[EditorUnitIndex].FileName, True);
+      end
+      else // stand alone file (should have fullpath in e.filename)
       begin
-        devFileMonitor.Files.Delete(idx);
+        //Disable the file watch for this entry
+        EditorUnitIndex := devFileMonitor.Files.IndexOf(e.FileName);
+        if EditorUnitIndex <> -1 then
+        begin
+          devFileMonitor.Files.Delete(EditorUnitIndex);
+          devFileMonitor.Refresh(False);
+        end;
+
+        //Add the newline at the end of file if we were told to do so
+        if devEditor.AppendNewline then
+          with e.Text do
+            if Lines.Count > 0 then
+              if Lines[Lines.Count -1] <> '' then
+                Lines.Add('');
+
+        //And commit the file to disk
+        e.Text.Lines.SaveToFile(e.FileName);
+        e.Modified := false;
+
+        //Re-enable the file watch
+        devFileMonitor.Files.Add(e.FileName);
         devFileMonitor.Refresh(False);
-      end;
 
-      if devEditor.AppendNewline then
-        with e.Text do
-          if Lines.Count > 0 then
-            if Lines[Lines.Count -1] <> '' then
-              Lines.Add('');
-      e.Text.Lines.SaveToFile(e.FileName);
-      e.Modified := false;
-
-      //Re-enable the file watch
-      devFileMonitor.Files.Add(e.FileName);
-      devFileMonitor.Refresh(False);
-
-      if ClassBrowser1.Enabled and bParseFile then
-      begin
-        CppParser1.ReParseFile(e.FileName, False); //new cc
-        if e.TabSheet = PageControl.ActivePage then
-          ClassBrowser1.CurrentFile := e.FileName;
-
-        if GetFileTyp(e.FileName) = utHead then
-        begin
-          CppParser1.GetSourcePair(ExtractFileName(e.FileName), ccFile, hfile);
-          if trim(ccFile) <> '' then
-          begin
-            index := -1;
-            for I := CppParser1.ScannedFiles.Count - 1 downto 0 do    // Iterate
-            begin
-              if AnsiSameText(ExtractFileName(ccFile),ExtractFileName(CppParser1.ScannedFiles[i])) then
-              begin
-                ccFile := CppParser1.ScannedFiles[i];
-                index:=i;
-                break;
-              end;
-            end;    // for
-
-            if index <> -1 then
-              CppParser1.ReParseFile(ccFile, true); //new cc
-          end;
-        end;
-      end;
-      Result := True;
-    except
-      MessageDlg(Format(Lang[ID_ERR_SAVEFILE], [e.FileName]), mtError, [mbOk], Handle);
-    end
-  end
-  else if e.New then
-    Result := SaveFileAs(e);
+        if ClassBrowser1.Enabled then
+          CppParser1.ReParseFile(e.FileName, False);
+      end
+    end;
 end;
+
 
 function TMainForm.SaveFile(e: TEditor): Boolean;
 {$IFDEF PLUGIN_BUILD}
@@ -2851,17 +2808,11 @@ var
   pluginFileExist: Boolean;
 {$ENDIF}
 begin
-    Result:=false;
+    Result := True;
     pluginFileExist := false;
 
     if not assigned(e) then
         exit;
-
-//Bug fix for 1123460 : Save the files first and the do a re-parse.
-//If you dont save all the files first then cpp functions and header functions of save class 
-//will be added in the class browser and duplicates will be there.
-//Some times the functions will be not associated with the class and 
-//there by will not be shown in the function assignment drop down box of the events.
 
   {$IFDEF PLUGIN_BUILD}
   for i := 0 to pluginsCount - 1 do
@@ -2906,19 +2857,19 @@ end;
 
 procedure TMainForm.CloseEditorInternal(eX: TEditor);
 {$IFDEF PLUGIN_BUILD}
-  var
-    i: Integer;
+  {var                // EAB TODO: Remove this junk
+    i: Integer;   }
 {$ENDIF}
   begin
     if not eX.InProject then
     begin
       dmMain.AddtoHistory(eX.FileName);
 {$IFDEF PLUGIN_BUILD}
-        for i := 0 to pluginsCount - 1 do
+        {for i := 0 to pluginsCount - 1 do
         begin
             if plugins[i].IsForm(eX.FileName) then
                 plugins[i].TerminateEditor(eX.FileName);
-        end;
+        end;      }
 {$ENDIF}      
       eX.Close;
     end
@@ -2927,11 +2878,11 @@ procedure TMainForm.CloseEditorInternal(eX: TEditor);
       if eX.IsRes or (not Assigned(fProject)) then
       begin
 {$IFDEF PLUGIN_BUILD}
-            for i := 0 to pluginsCount - 1 do
+            {for i := 0 to pluginsCount - 1 do
             begin
                 if plugins[i].IsForm(eX.FileName) then
                     plugins[i].TerminateEditor(eX.FileName);
-            end;
+            end;  }
 {$ENDIF}    
         eX.Close
       end
@@ -7864,9 +7815,9 @@ begin
   {$IFDEF PLUGIN_BUILD}
     pluginDesigner := false;
     for i := 0 to pluginsCount - 1 do
-        pluginDesigner := pluginDesigner or plugins[i].IsCurrentPageDesigner;
+      pluginDesigner := pluginDesigner or plugins[i].IsCurrentPageDesigner;
     if not pluginDesigner then
-        Exit;
+      Exit;
   {$ENDIF}
 
   classname:=trim(classname);
@@ -8723,6 +8674,8 @@ begin
                 plugin := TComponentClass(AClass).Create(Application) as IPlug_In_BPL;
                 {$ENDIF}
                 {$IFDEF PLUGIN_TESTING}
+                if loadablePlugins.Count = 0 then
+                  Exit;
                 pluginName := loadablePlugins[0];
                 if pluginName = '' then
                   Exit;
@@ -8756,7 +8709,7 @@ begin
                     temp_top := current_max_toolbar_top;
                 end;
 
-                plugin.StartUp(pluginName, pluginModule, Self.Handle, ControlBar1, Self, temp_left, temp_top);
+                plugin.Create(pluginName, pluginModule, Self.Handle, ControlBar1, Self, temp_left, temp_top);
             end;
           end;
       end
@@ -8801,7 +8754,7 @@ begin
                 temp_top := current_max_toolbar_top;
             end;
 
-            c_interface.StartUp(pluginName, pluginModule, Self.Handle, ControlBar1, Self, temp_left, temp_top);
+            c_interface.Create(pluginName, pluginModule, Self.Handle, ControlBar1, Self, temp_left, temp_top);
           end;
       end;
   end;     
@@ -8810,9 +8763,6 @@ begin
   // Inserting plugin controls to the IDE
   for i := 0 to pluginsCount - 1 do
   begin
-      plugins[i].SetBoolInspectorDataClear(True);
-      plugins[i].SetDisablePropertyBuilding(false);
-
       items := plugins[i].Retrieve_Form_Items;
       if items <> nil then
       begin
@@ -9110,24 +9060,27 @@ begin
     for i := 0 to librariesCount - 1 do
     begin
         if ((plugins[c_plugins[i]] AS IPlug_In).GetChild = TheMessage.Ctl) then
-            (plugins[c_plugins[i]] AS IPlug_In).OnToolbarEvent(TheMessage.ItemID);
+            (plugins[c_plugins[i]] AS IPlug_In_DLL).OnToolbarEvent(TheMessage.ItemID);
     end
 end;
 
-function TMainForm.SaveFileIfModified(EditorFilename: String; extension: String; var isEXAssigned: Boolean; var isEXModified: Boolean; var eXFileName: String): Boolean;
+function TMainForm.SaveFileIfModified(EditorFilename: String; extension: String; var isEXAssigned: Boolean): Boolean;
 var
-    eX:TEditor;
+    CurrEditor:TEditor;
 begin
     Result := False;
 	
-    eX:=self.GetEditorFromFileName(ChangeFileExt(EditorFilename, extension));
-    if assigned(eX) then
+    CurrEditor := GetEditorFromFileName(ChangeFileExt(EditorFilename, extension));
+    if assigned(CurrEditor) then
     begin
-        if eX.Modified then
+    	
+    	// EAB TODO: check if this code from Joel is necesary on the plugin
+    	//The current editor must be a form
+        //Assert(CurrEditor.isForm);
+    	
+        if CurrEditor.Modified then
         begin
-            isEXModified := True;
-            Result := SaveFileInternal(eX,false);
-            eXFileName := eX.FileName;
+            Result := SaveFileInternal(CurrEditor, false);
         end;
         isEXAssigned := True;        	
     end;

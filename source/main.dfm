@@ -50,7 +50,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 616
-        Height = 97
+        Height = 98
         Align = alClient
         BevelOuter = bvRaised
         BevelKind = bkSoft
@@ -169,12 +169,12 @@ object MainForm: TMainForm
         TabOrder = 1
         DesignSize = (
           391
-          97)
+          98)
         object LogOutput: TMemo
           Left = 7
           Top = 16
           Width = 383
-          Height = 77
+          Height = 81
           Anchors = [akLeft, akTop, akRight, akBottom]
           PopupMenu = MessagePopup
           ReadOnly = True
@@ -191,7 +191,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 616
-        Height = 97
+        Height = 98
         ActivePage = tabDebugOutput
         Align = alClient
         TabIndex = 4
@@ -293,7 +293,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 608
-            Height = 69
+            Height = 70
             Align = alClient
             Images = dmMain.MenuImages_NewLook
             Indent = 19
@@ -413,7 +413,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 620
-        Height = 60
+        Height = 61
         Align = alClient
         Checkboxes = True
         Columns = <
@@ -448,7 +448,7 @@ object MainForm: TMainForm
       end
       object TodoSettings: TPanel
         Left = 0
-        Top = 60
+        Top = 61
         Width = 620
         Height = 41
         Align = alBottom

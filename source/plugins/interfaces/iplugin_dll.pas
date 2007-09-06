@@ -9,7 +9,13 @@ type PHWND = ^HWND;
 
 type
 
-  TPlug_In_DLL = class(TComponent, IPlug_In)
+  IPlug_In_DLL = interface(IPlug_In) ['{4AC04F94-BEBC-4A17-AA98-23809EF78D0C}']
+     procedure OnToolbarEvent(WM_COMMAND: Word);
+end;
+
+type
+
+  TPlug_In_DLL = class(TComponent, IPlug_In_DLL)
   private
     parent: HWND;
     child: HWND;
@@ -21,8 +27,7 @@ type
     C_CutExecute: procedure; stdcall;
     C_CopyExecute: procedure; stdcall;
     C_PasteExecute: procedure; stdcall;
-    C_Terminate: procedure; stdcall;
-    C_DisableDesignerControls: procedure; stdcall;
+    C_Destroy: procedure; stdcall;
     C_OnToolbarEvent: procedure(WM_COMMAND: Word); stdcall;
     C_SetBoolInspectorDataClear: procedure(b: Boolean); stdcall;
     C_SetDisablePropertyBuilding: procedure(b: Boolean); stdcall;
@@ -59,19 +64,18 @@ type
 	C_GetTextHighlighterType: function(FileName: PChar): PChar; stdcall;	
 	C_GET_COMMON_CPP_INCLUDE_DIR: function: PChar; stdcall;  // EAB TODO: Generalize this.
   public
-    procedure StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
+    procedure Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
     procedure CutExecute;
     procedure CopyExecute;
     procedure PasteExecute;
-    procedure Terminate;
-    procedure DisableDesignerControls;
+    procedure Destroy;
     procedure OnToolbarEvent(WM_COMMAND: Word);
     procedure SetBoolInspectorDataClear(b: Boolean);
     procedure SetDisablePropertyBuilding(b: Boolean);	
     function IsCurrentPageDesigner: Boolean;
     function IsDelphiPlugin: Boolean;
     function GetChild: HWND;
-	function HasDesigner(editorName: String): Boolean;
+	  function HasDesigner(editorName: String): Boolean;
 	
     function SaveFileAndCloseEditor(s: String; b: Boolean): Boolean;
     procedure Init(strFileName: String);
@@ -99,14 +103,14 @@ type
     function GetPluginName: String;
     function ConvertLibsToCurrentVersion(strValue: String): String;
     function GetXMLExtension: String;
-	function EditorDisplaysText(FileName: String): Boolean;
-	function GetTextHighlighterType(FileName: String): String;
-	function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
+	  function EditorDisplaysText(FileName: String): Boolean;
+	  function GetTextHighlighterType(FileName: String): String;
+	  function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
   end;
 
 implementation
 
-procedure TPlug_In_DLL.StartUp(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
+procedure TPlug_In_DLL.Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
 begin
     parent := _parent;
     owner := _owner;
@@ -115,8 +119,7 @@ begin
     @C_CutExecute := GetProcAddress(module, 'CutExecute');
     @C_CopyExecute := GetProcAddress(module, 'CopyExecute');
     @C_PasteExecute := GetProcAddress(module, 'PasteExecute');
-    @C_Terminate := GetProcAddress(module, 'Terminate');
-    @C_DisableDesignerControls := GetProcAddress(module, 'DisableDesignerControls');
+    @C_Destroy := GetProcAddress(module, 'Terminate');
     @C_OnToolbarEvent := GetProcAddress(module, 'OnToolbarEvent');
     @C_SetBoolInspectorDataClear := GetProcAddress(module, 'SetBoolInspectorDataClear');
     @C_SetDisablePropertyBuilding := GetProcAddress(module, 'SetDisablePropertyBuilding');
@@ -186,14 +189,9 @@ begin
     C_PasteExecute;
 end;
 
-procedure TPlug_In_DLL.Terminate;
+procedure TPlug_In_DLL.Destroy;
 begin
-    C_Terminate;
-end;
-
-procedure TPlug_In_DLL.DisableDesignerControls;
-begin
-    C_DisableDesignerControls;
+    C_Destroy;
 end;
 
 procedure TPlug_In_DLL.OnToolbarEvent(WM_COMMAND: Word);
@@ -470,4 +468,3 @@ begin
 end;
 
 end.
- 
