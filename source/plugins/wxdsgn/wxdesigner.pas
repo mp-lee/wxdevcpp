@@ -5,12 +5,12 @@ interface
 
 uses
   Classes, iniFiles, ActnList, Menus, ExtCtrls, ComCtrls, Controls, Types, Messages,
-  StdCtrls, Forms, SysUtils, Windows, Dialogs, Graphics,
+  StdCtrls, Forms, SysUtils, Windows, Dialogs, Graphics, Spin,
   JclStrings, JvExControls, JvComponent, TypInfo, JclRTTI, JvStringHolder,
   ELDsgnr, JvInspector, dmCreateNewProp, DbugIntf,
   wxSizerpanel, Designerfrm, ELPropInsp, {$IFNDEF COMPILER_7_UP}ThemeMgr,{$ENDIF}     
   CompFileIO, SynEdit, StrUtils,
-  DesignerOptions, JvExStdCtrls, JvEdit, iplugin_bpl, iplugger,
+  DesignerOptions, JvExStdCtrls, JvEdit, iplugin, iplugin_bpl, iplugger,
   hashes,    // <-- EAB Help for indexing the editor designers based on their associated file names from TEditor.
   SynEditHighlighter, SynHighlighterMulti,
   JvComponentBase, JvDockControlForm, JvDockTree, JvDockVIDStyle, JvDockVSNetStyle,
@@ -18,8 +18,19 @@ uses
   ComponentPalette;
 
 {$I ..\..\LangIDs.inc}    
-  
-type          
+type
+  TdevWxOptions = record     
+    majorVersion: ShortInt;
+    minorVersion: ShortInt;
+    releaseVersion: ShortInt;
+
+    unicodeSupport: Boolean;
+    monolithicLibrary: Boolean;
+    debugLibrary: Boolean;
+    staticLibrary: Boolean;
+  end;
+
+type
   TWXDsgn = class(TComponent, IPlug_In_BPL)
     actNewwxDialog: TAction;
     NewWxDialogItem: TMenuItem;
@@ -152,14 +163,44 @@ public
 
   XPTheme: boolean; // Use XP theme
 
-  private
+  {tabwxWidgets: TTabSheet;
+  grpwxVersion: TGroupBox;
+  lblwxMinor: TLabel;
+  lblwxMajor: TLabel;
+  lblwxRelease: TLabel;
+  spwxMajor: TSpinEdit;
+  spwxMinor: TSpinEdit;
+  spwxRelease: TSpinEdit;
+  grpwxType: TGroupBox;
+  chkwxUnicode: TCheckBox;
+  chkwxMonolithic: TCheckBox;
+  rdwxLibraryType: TRadioGroup;
+  chkwxDebug: TCheckBox;   }
 
+  tabwxWidgets: TTabSheet;  // For compiler options pane
+  grpwxVersion: TGroupBox;
+  grpwxType: TGroupBox;
+  rdwxLibraryType: TRadioGroup;
+  spwxRelease: TSpinEdit;
+  spwxMinor: TSpinEdit;
+  spwxMajor: TSpinEdit;
+  lblwxRelease: TLabel;
+  lblwxMajor: TLabel;
+  lblwxMinor: TLabel;
+  chkwxDebug: TCheckBox;
+  chkwxMonolithic: TCheckBox;
+  chkwxUnicode: TCheckBox;
+
+
+  private
+    fwxOptions: TdevWxOptions;
+    property wxOptions: TdevWxOptions read fwxOptions write fwxOptions;
     procedure CreateNewDialogOrFrameCode(dsgnType:TWxDesignerType; frm:TfrmCreateFormProp; insertProj:integer);
     procedure NewWxProjectCode(dsgnType:TWxDesignerType);
     procedure ParseAndSaveTemplate(template, destination: string; frm:TfrmCreateFormProp);  // EAB TODO: check
     function CreateCreateFormDlg(dsgnType:TWxDesignerType; insertProj:integer;projShow:boolean;filenamebase: string = ''): TfrmCreateFormProp;    // EAB TODO: check
 
-	
+
     function CreateFormFile(strFName, strCName, strFTitle: string; dlgSStyle:TWxDlgStyleSet;dsgnType:TWxDesignerType): Boolean;
     procedure GetIntialFormData(frm: TfrmCreateFormProp; var strFName, strCName, strFTitle: string; var dlgStyle: TWxDlgStyleSet; dsgnType:TWxDesignerType);
     function CreateSourceCodes(strCppFile,strHppFile:String;FCreateFormProp: TfrmCreateFormProp; var cppCode, hppCode: string; dsgnType:TWxDesignerType): Boolean;
@@ -266,6 +307,14 @@ public
     function EditorDisplaysText(FileName: String): Boolean;
 	  function GetTextHighlighterType(FileName: String): String;
     function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
+    function GetCompilerMacros: String;
+    function GetCompilerPreprocDefines: String;
+    function Retrieve_CompilerOptionsPane: TTabSheet;
+    procedure LoadCompilerSettings(name: string; value: string);
+    procedure LoadCompilerOptions;
+    procedure SaveCompilerOptions;
+    function GetCompilerOptions: TSettings;
+    procedure SetCompilerOptionstoDefaults;
   end;
 
 var
@@ -890,6 +939,168 @@ begin
 
     boolInspectorDataClear := true;
     DisablePropertyBuilding := false;
+
+
+    // Initializing compiler options pane
+        lblwxMinor := TLabel.Create(ownerForm);
+        with lblwxMinor do
+        begin
+          Left := 8;
+          Top := 46;
+          Width := 29;
+          Height := 13;
+          Caption := 'Minor:';
+        end;
+
+        lblwxMajor := TLabel.Create(ownerForm);
+        with lblwxMajor do
+        begin
+          Left := 8;
+          Top := 19;
+          Width := 29;
+          Height := 13;
+          Caption := 'Major:';
+        end;
+
+        lblwxRelease := TLabel.Create(ownerForm);
+        with lblwxRelease do
+        begin
+          Left := 8;
+          Top := 73;
+          Width := 42;
+          Height := 13;
+          Caption := 'Release:';
+        end;
+
+        spwxMajor := TSpinEdit.Create(ownerForm);
+        with spwxMajor do
+        begin
+          Left := 60;
+          Top := 16;
+          Width := 45;
+          Height := 22;
+          MaxValue := 0;
+          MinValue := 0;
+          TabOrder := 0;
+          Value := 2;
+        end;
+
+        spwxMinor := TSpinEdit.Create(ownerForm);
+        with spwxMinor do
+        begin
+          Left := 60;
+          Top := 43;
+          Width := 45;
+          Height := 22;
+          MaxValue := 0;
+          MinValue := 0;
+          TabOrder := 1;
+          Value := 8;
+        end;
+
+        spwxRelease := TSpinEdit.Create(ownerForm);
+        with spwxRelease do
+        begin
+          Left := 60;
+          Top := 70;
+          Width := 45;
+          Height := 22;
+          MaxValue := 0;
+          MinValue := 0;
+          TabOrder := 2;
+          Value := 1;
+        end;
+
+     grpwxVersion := TGroupBox.Create(ownerForm);
+      with grpwxVersion do
+      begin
+        Left := 8;
+        Top := 5;
+        Width := 403;
+        Height := 100;
+        Caption := 'Version';
+        TabOrder := 0;
+      end;
+      grpwxVersion.InsertControl(spwxRelease);
+      grpwxVersion.InsertControl(spwxMinor);
+      grpwxVersion.InsertControl(spwxMajor);
+      grpwxVersion.InsertControl(lblwxRelease);
+      grpwxVersion.InsertControl(lblwxMajor);
+      grpwxVersion.InsertControl(lblwxMinor);
+
+      chkwxUnicode := TCheckBox.Create(ownerForm);
+        with chkwxUnicode do
+        begin
+          Left := 8;
+          Top := 16;
+          Width := 130;
+          Height := 17;
+          Caption := 'Unicode Support';
+          TabOrder := 0;
+        end;
+
+        chkwxMonolithic := TCheckBox.Create(ownerForm);
+        with chkwxMonolithic do
+        begin
+          Left := 8;
+          Top := 36;
+          Width := 130;
+          Height := 17;
+          Caption := 'Monolithic Library';
+          TabOrder := 1;
+        end;
+
+        chkwxDebug := TCheckBox.Create(ownerForm);
+        with chkwxDebug do
+        begin
+          Left := 8;
+          Top := 56;
+          Width := 97;
+          Height := 17;
+          Caption := 'Debug Build';
+          TabOrder := 2;
+        end;
+
+      grpwxType := TGroupBox.Create(ownerForm);
+       with grpwxType do
+       begin
+        Left := 8;
+        Top := 112;
+        Width := 403;
+        Height := 80;
+        Caption := 'Features';
+        TabOrder := 1;
+      end;
+     grpwxType.InsertControl(chkwxDebug);
+     grpwxType.InsertControl(chkwxMonolithic);
+     grpwxType.InsertControl(chkwxUnicode);
+
+     rdwxLibraryType := TRadioGroup.Create(ownerForm);
+      with rdwxLibraryType do
+      begin
+        Left := 8;
+        Top := 200;
+        Width := 403;
+        Height := 55;
+        Caption := 'Library Type';
+        ItemIndex := 0;
+        TabOrder := 2;
+      end;
+
+    tabwxWidgets := TTabSheet.Create(self);
+    with tabwxWidgets do
+    begin
+      Caption := 'wxWidgets';
+      ImageIndex := 4;
+      Visible := true;
+    end;
+
+    tabwxWidgets.InsertControl(grpwxVersion);
+    tabwxWidgets.InsertControl(grpwxType);
+    tabwxWidgets.InsertControl(rdwxLibraryType);
+
+    //rdwxLibraryType.Items.Add('Static Import Library');
+    //rdwxLibraryType.Items.Add('Dynamic Library (DLL)');
 
 end;   // end Initialize
 
@@ -4268,6 +4479,144 @@ end;
 function TWXDsgn.GET_COMMON_CPP_INCLUDE_DIR: String;
 begin
     Result := COMMON_CPP_INCLUDE_DIR;
+end;
+
+function TWXDsgn.GetCompilerMacros: String;
+var
+  WxLibName: String;
+begin
+  WxLibName := Format('wxmsw%d%d', [WxOptions.majorVersion, WxOptions.minorVersion]);
+
+  //And then do the library features
+  if WxOptions.unicodeSupport then
+    WxLibName := WxLibName + 'u';
+  if WxOptions.debugLibrary then
+    WxLibName := WxLibName + 'd';
+
+    Result := 'WXLIBNAME = ' + WxLibName;
+end;
+
+function TWXDsgn.GetCompilerPreprocDefines: String;
+begin
+  //Add the WXUSINGDLL if we are using a DLL build 
+  if not WxOptions.staticLibrary then
+    Result := 'WXUSINGDLL';
+end;
+
+function TWXDsgn.Retrieve_CompilerOptionsPane: TTabSheet;
+begin
+   Result := tabwxWidgets;
+end;
+
+procedure TWXDsgn.LoadCompilerSettings(name: string; value: string);
+begin
+      // Loading Compiler settings:
+    if name = 'wxOpts.Major' then
+    begin
+      fwxOptions.majorVersion := StrToInt(name);
+    end
+    else if name = 'wxOpts.Minor' then
+    begin
+      fwxOptions.minorVersion := StrToInt(name);
+    end
+    else if name = 'wxOpts.Release' then
+    begin
+      fwxOptions.releaseVersion := StrToInt(name);
+    end
+    else if name = 'wxOpts.Unicode' then
+    begin
+      fwxOptions.unicodeSupport := StrToBool(name);
+    end
+    else if name = 'wxOpts.Monolithic' then
+    begin
+      fwxOptions.monolithicLibrary := StrToBool(name);
+    end
+    else if name = 'wxOpts.Debug' then
+    begin
+      fwxOptions.debugLibrary := StrToBool(name);
+    end
+    else if name = 'wxOpts.Static' then
+    begin
+      fwxOptions.staticLibrary := StrToBool(name);
+    end;
+end;
+
+procedure TWXDsgn.LoadCompilerOptions;
+begin
+    with wxOptions do
+    begin
+      spwxMajor.Value := majorVersion;
+      spwxMinor.Value := minorVersion;
+      spwxRelease.Value := releaseVersion;
+
+      chkwxUnicode.Checked := unicodeSupport;
+      chkwxMonolithic.Checked := monolithicLibrary;
+      chkwxDebug.Checked := debugLibrary;
+      if staticLibrary then
+        rdwxLibraryType.ItemIndex := 0
+      else
+        rdwxLibraryType.ItemIndex := 1;
+    end;
+end;
+
+procedure TWXDsgn.SaveCompilerOptions;
+begin
+  with wxOptions do
+  begin
+    majorVersion := spwxMajor.Value;
+    minorVersion := spwxMinor.Value;
+    releaseVersion := spwxRelease.Value;
+
+    unicodeSupport := chkwxUnicode.Checked;
+    monolithicLibrary := chkwxMonolithic.Checked;
+    debugLibrary := chkwxDebug.Checked;
+    staticLibrary := rdwxLibraryType.ItemIndex = 0;
+  end
+end;
+
+function TWXDsgn.GetCompilerOptions: TSettings;
+var
+    settings: TSettings;
+    setting: TSetting;
+begin
+    SetLength(settings, 7);
+    setting.name := 'wxOpts.Major';
+    setting.value := IntToStr(wxOptions.majorVersion);
+
+    setting.name := 'wxOpts.Minor';
+    setting.value := IntToStr(wxOptions.minorVersion);
+
+    setting.name := 'wxOpts.Release';
+    setting.value := IntToStr(wxOptions.ReleaseVersion);
+
+    setting.name := 'wxOpts.Unicode';
+    setting.value := BoolToStr(wxOptions.unicodeSupport);
+
+    setting.name := 'wxOpts.Monolithic';
+    setting.value := BoolToStr(wxOptions.monolithicLibrary);
+
+    setting.name := 'wxOpts.Debug';
+    setting.value := BoolToStr(wxOptions.debugLibrary);
+
+    setting.name := 'wxOpts.Static';
+    setting.value := BoolToStr(wxOptions.staticLibrary);
+    Result := settings;
+end;
+
+procedure TWXDsgn.SetCompilerOptionstoDefaults;
+begin
+  // wxWidgets options
+  with wxOptions do
+  begin
+    majorVersion := 2;
+    minorVersion := 8;
+    releaseVersion := 2;
+
+    unicodeSupport := False;
+    monolithicLibrary := True;
+    debugLibrary := False;
+    staticLibrary := True;
+  end;
 end;
 
 initialization

@@ -1207,6 +1207,10 @@ begin
       DeleteKey('OverrideOutputName');
       DeleteKey('HostApplication');
 
+      DeleteKey('VC2008_Compiler');
+      DeleteKey('VC2008_CppCompiler');
+      DeleteKey('VC2008_Linker');
+      DeleteKey('VC2008_PreprocDefines');
       DeleteKey('VC2005_Compiler');
       DeleteKey('VC2005_CppCompiler');
       DeleteKey('VC2005_Linker');
@@ -1231,6 +1235,7 @@ begin
       DeleteKey('WATCOM_CppCompiler');
       DeleteKey('WATCOM_Linker');
       DeleteKey('WATCOM_PreprocDefines');
+      DeleteKey('VC2008_CompilerSettings');
       DeleteKey('VC2005_CompilerSettings');
       DeleteKey('VC2003_CompilerSettings');
       DeleteKey('VC6_CompilerSettings');

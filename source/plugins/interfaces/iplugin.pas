@@ -4,8 +4,19 @@ interface
 
 uses
     Classes, Forms, ExtCtrls, Windows, Controls, ComCtrls;
+
+type    
+
+TSetting = record
+    name: String;
+    value: String;
+end;
+
+TSettings = array of TSetting;    
+
 const
 	IID_IPlug_In: TGUID = '{C9E8FCF9-BEBD-4A51-80C1-16AF5197BBB3}';
+
 type
 
   IPlug_In = interface(IInterface) ['{C9E8FCF9-BEBD-4A51-80C1-16AF5197BBB3}']
@@ -57,12 +68,19 @@ type
   function EditorDisplaysText(FileName: String): Boolean;
   function GetTextHighlighterType(FileName: String): String;
   function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
+  function GetCompilerMacros: String;
+  function GetCompilerPreprocDefines: String;
+  function GetCompilerOptions: TSettings;
+  procedure SetCompilerOptionstoDefaults;
+
+  procedure LoadCompilerSettings(name: string; value: string);
+  procedure LoadCompilerOptions;
+  procedure SaveCompilerOptions;
 
   procedure CutExecute;
   procedure CopyExecute;
   procedure PasteExecute;
 end;
-
 
 implementation
 

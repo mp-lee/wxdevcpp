@@ -72,6 +72,12 @@ resourcestring
   GCC_RC_INCLUDE_DIR  = 'include'+ pd + 'common;';
 
   //Vc++
+  //  EAB TODO: attempt to add VS 2008 support... better check if it works
+  VC2008_BIN_DIR = 'Bin'+pd+'VC2008;Bin;';
+  VC2008_LIB_DIR = 'Lib'+pd+'VC2008';
+  VC2008_C_INCLUDE_DIR = 'Include'+pd+'common;Include'+pd+'VC2008;';
+  VC2008_RC_INCLUDE_DIR  = 'include'+ pd + 'common;';
+
   VC2005_BIN_DIR = 'Bin'+pd+'VC2005;Bin;';
   VC2005_LIB_DIR = 'Lib'+pd+'VC2005';
   VC2005_C_INCLUDE_DIR = 'Include'+pd+'common;Include'+pd+'VC2005;';
@@ -106,7 +112,6 @@ resourcestring
   WATCOM_RC_INCLUDE_DIR  = 'include'+ pd + 'common;';
 
 
-  //COMMON_CPP_INCLUDE_DIR = ''; EAB TODO: see special cases with plugins
   GCC_CPP_INCLUDE_DIR  =
                         ';include'
                        //one of below directories will be deleted if don't exist, later
@@ -115,6 +120,9 @@ resourcestring
                        + ';include' + pd + 'c++' + pd + GCC_VERSION + pd + 'backward'
                        + ';lib' + pd + 'gcc' + pd + 'mingw32' + pd + GCC_VERSION + pd + 'include;'
 					   ;
+
+  VC2008_CPP_INCLUDE_DIR  =
+                        ';include'+pd+'VC2008;'+'include'+pd+'common;';
 
   VC2005_CPP_INCLUDE_DIR  =
                         ';include'+pd+'VC2005;'+'include'+pd+'common;';
@@ -219,6 +227,7 @@ resourcestring
   WEBUPDATE_SECTION = 'WEBUPDATE';
 
   GCC_DEFCOMPILERSET = 'Default GCC compiler';
+  VC2008_DEFCOMPILERSET = 'Default VC2008 compiler';
   VC2005_DEFCOMPILERSET = 'Default VC2005 compiler';
   VC2003_DEFCOMPILERSET = 'Default VC2003 compiler';
   VC6_DEFCOMPILERSET = 'Default VC6 compiler';
@@ -296,14 +305,17 @@ const
   function RC_INCLUDE_DIR(CompilerID:Integer):String;
 
   function GetRefinedPathList(StrPathValue,strVSInstallPath,strVCPPInstallPath,strFSDKInstallDir,strWinSDKPath:String):String;
-  function GetVC2003AndVC2005Path(versionString:String;PathType:integer):String;
+  function GetVC200XPath(versionString:String;PathType:integer):String;
   function GetVC6Path(PathType:integer):String;
+  function GetVC2008Include:String;      // EAB Comment: Is that OK to keep adding functions for each new compiler? Wouldn't it be better to have something more flexible like config files?
   function GetVC2005Include:String;
   function GetVC2003Include:String;
   function GetVC6Include:String;
+  function GetVC2008Bin:String;
   function GetVC2005Bin:String;
   function GetVC2003Bin:String;
   function GetVC6Bin:String;
+  function GetVC2008Lib:String;
   function GetVC2005Lib:String;
   function GetVC2003Lib:String;
   function GetVC6Lib:String;
@@ -319,6 +331,7 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_MAKE_PROGRAM;
 
+      ID_COMPILER_VC2008,
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -343,6 +356,7 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_CP_PROGRAM;
 
+      ID_COMPILER_VC2008,
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -366,6 +380,7 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_CPP_PROGRAM;
 
+      ID_COMPILER_VC2008,
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -389,6 +404,7 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_DBG_PROGRAM;
 
+      ID_COMPILER_VC2008,
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -411,6 +427,7 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_RES_PROGRAM;
 
+      ID_COMPILER_VC2008,
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -433,6 +450,7 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_DLL_PROGRAM;
 
+      ID_COMPILER_VC2008,
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -455,6 +473,9 @@ begin
   case CompilerID of
       ID_COMPILER_MINGW :
           Result := GCC_DEFCOMPILERSET;
+
+      ID_COMPILER_VC2008:
+          Result := VC2008_DEFCOMPILERSET;
 
       ID_COMPILER_VC2005:
           Result := VC2005_DEFCOMPILERSET;
@@ -482,12 +503,9 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_COMPILER_CMD_LINE;
 
-      ID_COMPILER_VC2005:
-          Result := VC_COMPILER_CMD_LINE;
-
-      ID_COMPILER_VC2003:
-          Result := VC_COMPILER_CMD_LINE;
-
+      ID_COMPILER_VC2008,    
+      ID_COMPILER_VC2005,
+      ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
           Result := VC_COMPILER_CMD_LINE;
 
@@ -508,12 +526,9 @@ begin
       ID_COMPILER_MINGW :
         Result := GCC_LINKER_CMD_LINE;
 
-      ID_COMPILER_VC2005:
-        Result := VC_LINKER_CMD_LINE;
-
-      ID_COMPILER_VC2003:
-        Result := VC_LINKER_CMD_LINE;
-
+      ID_COMPILER_VC2008,
+      ID_COMPILER_VC2005,
+      ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
         Result := VC_LINKER_CMD_LINE;
 
@@ -534,12 +549,9 @@ begin
       ID_COMPILER_MINGW :
         Result := GCC_MAKE_CMD_LINE;
 
-      ID_COMPILER_VC2005:
-        Result := VC_MAKE_CMD_LINE;
-
-      ID_COMPILER_VC2003:
-        Result := VC_MAKE_CMD_LINE;
-
+      ID_COMPILER_VC2008,  
+      ID_COMPILER_VC2005,
+      ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
         Result := VC_MAKE_CMD_LINE;
 
@@ -560,6 +572,7 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_PROF_PROGRAM;
 
+      ID_COMPILER_VC2008,
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -582,6 +595,9 @@ begin
   case CompilerID of
       ID_COMPILER_MINGW :
           Result := GCC_BIN_DIR;
+
+      ID_COMPILER_VC2008:
+          Result := VC2008_BIN_DIR + GetVC2008Bin;
 
       ID_COMPILER_VC2005:
           Result := VC2005_BIN_DIR + GetVC2005Bin;
@@ -608,6 +624,9 @@ begin
   case CompilerID of
       ID_COMPILER_MINGW :
           Result := GCC_LIB_DIR;
+
+      ID_COMPILER_VC2008:
+        Result := VC2008_LIB_DIR+ GetVC2008Lib;
 
       ID_COMPILER_VC2005:
         Result := VC2005_LIB_DIR+ GetVC2005Lib;
@@ -636,6 +655,9 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_C_INCLUDE_DIR;
 
+      ID_COMPILER_VC2008:
+        Result := COMMON_CPP_INCLUDE_DIR+ VC2008_C_INCLUDE_DIR + GetVC2008Include;
+
       ID_COMPILER_VC2005:
         Result := COMMON_CPP_INCLUDE_DIR+ VC2005_C_INCLUDE_DIR + GetVC2005Include;
 
@@ -662,6 +684,9 @@ begin
       ID_COMPILER_MINGW :
           Result := COMMON_CPP_INCLUDE_DIR + GCC_CPP_INCLUDE_DIR;
 
+      ID_COMPILER_VC2008:
+          Result := GetVC2008Include + VC2008_CPP_INCLUDE_DIR + COMMON_CPP_INCLUDE_DIR;
+
       ID_COMPILER_VC2005:
           Result := GetVC2005Include + VC2005_CPP_INCLUDE_DIR + COMMON_CPP_INCLUDE_DIR;
 
@@ -687,6 +712,9 @@ begin
   case CompilerID of
       ID_COMPILER_MINGW :
           Result := GCC_RC_INCLUDE_DIR;
+
+      ID_COMPILER_VC2008:
+          Result := GetVC2008Include + VC2008_RC_INCLUDE_DIR;
 
       ID_COMPILER_VC2005:
           Result := GetVC2005Include + VC2005_RC_INCLUDE_DIR;
@@ -816,8 +844,8 @@ begin
     reg2.Destroy;
 end;
 
-
-function GetVC2003AndVC2005Path(versionString:String;PathType:integer):String;
+ // EAB TODO: Support for VS2008 not checked; some reg entries may be incompatable
+function GetVC200XPath(versionString:String;PathType:integer):String;
 var
     strVSInstallDir,
     strVCPPInstallDir,
@@ -880,10 +908,12 @@ Begin
 
       if (strVCPPInstallDir ='') then
       begin
-        if versionString = '7.1' then
-          strVCPPInstallDir:='c:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\';
+        if versionString = '7.1' then     // EAB TODO: check %PROGRAMFILES% change from c:\Program Files
+          strVCPPInstallDir:='%PROGRAMFILES%\Microsoft Visual Studio .NET 2003\Vc7\';
         if versionString = '8.0' then
-          strVCPPInstallDir:='c:\Program Files\Microsoft Visual Studio\Vc8\';
+          strVCPPInstallDir:='%PROGRAMFILES%\Microsoft Visual Studio\Vc8\';
+        if versionString = '9.0' then
+          strVCPPInstallDir:='%PROGRAMFILES%\Microsoft Visual Studio 9.0\VC\';
       end;
 
       TempString := 'SOFTWARE\Microsoft\VisualStudio\SxS\FRAMEWORKSDK\';
@@ -892,9 +922,11 @@ Begin
           strFSDKInstallDir:=reg.ReadString(VersionString);
           if trim(strFSDKInstallDir) = '' then
           begin
-              strFSDKInstallDir:=reg.ReadString('8.0');
+              strFSDKInstallDir:=reg.ReadString('9.0');
               if trim(strFSDKInstallDir) = '' then
-                strFSDKInstallDir:=reg.ReadString('7.1');
+                  strFSDKInstallDir:=reg.ReadString('8.0');
+              if trim(strFSDKInstallDir) = '' then
+                  strFSDKInstallDir:=reg.ReadString('7.1');
            end;
       end;
       reg.CloseKey;
@@ -956,14 +988,19 @@ Begin
 
 end;
 
+function GetVC2008Include:String;
+begin
+    Result:=GetVC200XPath('9.0',0);
+end;
+
 function GetVC2005Include:String;
 begin
-    Result:=GetVC2003AndVC2005Path('8.0',0);
+    Result:=GetVC200XPath('8.0',0);
 end;
 
 function GetVC2003Include:String;
 begin
-    Result:=GetVC2003AndVC2005Path('7.1',0);
+    Result:=GetVC200XPath('7.1',0);
 end;
 
 function GetVC6Include:String;
@@ -971,14 +1008,19 @@ begin
   Result:=GetVC6Path(0);
 end;
 
+function GetVC2008Bin:String;
+begin
+    Result:=GetVC200XPath('9.0',1);
+end;
+
 function GetVC2005Bin:String;
 begin
-    Result:=GetVC2003AndVC2005Path('8.0',1);
+    Result:=GetVC200XPath('8.0',1);
 end;
 
 function GetVC2003Bin:String;
 begin
-    Result:=GetVC2003AndVC2005Path('7.1',1);
+    Result:=GetVC200XPath('7.1',1);
 end;
 
 function GetVC6Bin:String;
@@ -986,14 +1028,19 @@ begin
   Result:=GetVC6Path(1);
 end;
 
+function GetVC2008Lib:String;
+begin
+    Result:=GetVC200XPath('9.0',2);
+end;
+
 function GetVC2005Lib:String;
 begin
-    Result:=GetVC2003AndVC2005Path('8.0',2);
+    Result:=GetVC200XPath('8.0',2);
 end;
 
 function GetVC2003Lib:String;
 begin
-    Result:=GetVC2003AndVC2005Path('7.1',2);
+    Result:=GetVC200XPath('7.1',2);
 end;
 
 function GetVC6Lib:String;

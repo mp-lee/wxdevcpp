@@ -53,13 +53,14 @@ const
     's', 't', 'u', 'v', 'w', 'x', 'y', 'z');
     
   ID_COMPILER_MINGW = 0;
-  ID_COMPILER_VC2005 = 1;
-  ID_COMPILER_VC2003 = 2;
-  ID_COMPILER_VC6 = 3;
-  ID_COMPILER_DMARS = 4;
-  ID_COMPILER_BORLAND = 5;
-  ID_COMPILER_WATCOM = 6;
-  ID_COMPILER_VC = [ID_COMPILER_VC6, ID_COMPILER_VC2003, ID_COMPILER_VC2005];
+  ID_COMPILER_VC2008 = 1;
+  ID_COMPILER_VC2005 = 2;
+  ID_COMPILER_VC2003 = 3;
+  ID_COMPILER_VC6 = 4;
+  ID_COMPILER_DMARS = 5;
+  ID_COMPILER_BORLAND = 6;
+  ID_COMPILER_WATCOM = 7;
+  ID_COMPILER_VC = [ID_COMPILER_VC6, ID_COMPILER_VC2003, ID_COMPILER_VC2005, ID_COMPILER_VC2008];
   
 type
   // the comments are an example of the record
@@ -75,17 +76,6 @@ type
     optSection: string; // "Linker options"
     optExcludeFromTypes: TProjTypeSet; // [dptGUI] (don't show option if project is of type dptGUI)
     optChoices : TStringList; // replaces "Yes/No" standard choices (max 26 different choices)
-  end;
-
-  TdevWxOptions = record
-    majorVersion: ShortInt;
-    minorVersion: ShortInt;
-    releaseVersion: ShortInt;
-
-    unicodeSupport: Boolean;
-    monolithicLibrary: Boolean;
-    debugLibrary: Boolean;
-    staticLibrary: Boolean;
   end;
 
   // compiler-set configuration
@@ -115,8 +105,7 @@ type
     fCmdOptions: string;
     fLinkOptions: string;
     fMakeOptions: string;
-    fwxOptions: TdevWxOptions;
-    
+
     fCheckSyntaxFormat: string;
     fOutputFormat: string;
     fResourceIncludeFormat: string;
@@ -135,6 +124,9 @@ type
     procedure UpdateSets;
 
   public
+{$IFDEF PLUGIN_BUILD}
+    optComKey: String;
+{$ENDIF PLUGIN_BUILD}
   	destructor Destroy; override;
     procedure SettoDefaults; override;
     procedure SaveSettings; override;
@@ -186,7 +178,6 @@ type
     property CmdOpts: string read fCmdOptions write fCmdOptions; //Manual commands
     property LinkOpts: string read fLinkOptions write fLinkOptions; //Manual commands
     property MakeOpts: string read fMakeOptions write fMakeOptions;
-    property wxOptions: TdevWxOptions read fwxOptions write fwxOptions;
   end;
 
   // compiler options
@@ -230,7 +221,7 @@ type
     fcmdOpts: string;  // command-line adds for compiler
     flinkopts: string; // command-line adds for linker
     fMakeOpts: string;
-	fwxOpts: TdevWxOptions;    
+	//fwxOpts: TdevWxOptions;    
     fSaveLog: boolean; // Save Compiler Output
     fDelay: integer;   // delay in milliseconds -- for compiling
 
@@ -267,7 +258,7 @@ type
     property CmdOpts: string read fcmdOpts write fcmdOpts;
     property LinkOpts: string read flinkOpts write flinkOpts;
     property MakeOpts: string read fMakeOpts write fMakeOpts;
-	property WxOpts: TdevWxOptions read fWxOpts write fWxOpts;    
+	//property WxOpts: TdevWxOptions read fWxOpts write fWxOpts;
     property FastDep: Boolean read fFastDep write fFastDep;
 
     property CompilerType: integer read fCompilerType write fCompilerType;
@@ -822,6 +813,9 @@ implementation
 
 uses
   main,
+{$IFDEF PLUGIN_BUILD}
+  iplugin,
+{$ENDIF PLUGIN_BUILD}
 {$IFDEF WIN32}
   MultiLangSupport, SysUtils, Forms, Controls, version, utils, SynEditMiscClasses,
   datamod, FileAssocs, Math;
@@ -913,9 +907,11 @@ begin
 end;
 
 procedure InitializeOptions;
+var
+  i: Integer;
 begin
 
-  COMMON_CPP_INCLUDE_DIR := '';  // EAB TODO: Is this the right place for initializing this var?
+  // COMMON_CPP_INCLUDE_DIR := '';  // EAB TODO: Is this the right place for initializing this var?
 
   if not assigned(devDirs) then
     devDirs := TdevDirs.Create;
@@ -949,18 +945,19 @@ begin
   {$ENDIF PLUGIN_BUILD}
 
   // load the preferred compiler set
-  if devCompilerSet.Sets.Count=0 then begin
+  if devCompilerSet.Sets.Count=0 then begin      // EAB Comment: Why load all the compiler sets if not all are available?
     // init first-run
     devCompilerSet.Sets.Add(GCC_DEFCOMPILERSET);
+    devCompilerSet.Sets.Add(VC2008_DEFCOMPILERSET);
     devCompilerSet.Sets.Add(VC2005_DEFCOMPILERSET);
     devCompilerSet.Sets.Add(VC2003_DEFCOMPILERSET);
     devCompilerSet.Sets.Add(VC6_DEFCOMPILERSET);
     devCompilerSet.Sets.Add(DMARS_DEFCOMPILERSET);
 
     devCompilerSet.WriteSets;
-        
+
     devCompilerSet.CompilerType :=ID_COMPILER_MINGW;
-    devdirs.fCompilerType:=0;
+    devdirs.fCompilerType:=0;  // EAB Comment: Aren't these numbers supposed to be ID's? Like "ID_COMPILER_MINGW" instead of "0"?
     devdirs.SettoDefaults;
     devCompilerSet.LoadSetProgs(0);
     devCompilerSet.LoadSetDirs(0);
@@ -993,6 +990,13 @@ begin
     devCompilerSet.LoadSetProgs(4);
     devCompilerSet.LoadSetDirs(4);
     devCompilerSet.SaveSet(4);
+
+    devCompilerSet.CompilerType :=ID_COMPILER_VC2008;   // EAB TODO: Check this logic. Maybe, move above and change numbering
+    devdirs.fCompilerType:=ID_COMPILER_VC2008;
+    devdirs.SettoDefaults;
+    devCompilerSet.LoadSetProgs(5);
+    devCompilerSet.LoadSetDirs(5);
+    devCompilerSet.SaveSet(5);
         
     //Reset the compiler type back to GCC
     devdirs.fCompilerType:=1;
@@ -1314,7 +1318,7 @@ begin
     sl.Add('Compile native code  =');
     sl.Add('Compile for CLR=/clr');
     sl.Add('No assembly=/clr:noAssembly');
-    if (devCompilerSet.CompilerType = ID_COMPILER_VC2005) then
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC2005) or (devCompilerSet.CompilerType = ID_COMPILER_VC2008) then
     begin
       sl.Add('IL-only output file=/clr:pure');
       sl.Add('Verifiable IL-only output=/clr:safe');
@@ -1323,7 +1327,7 @@ begin
     end;
     AddOption('Common Language Runtime', false, true, true, false, 0, '', 'Code Generation', [], sl);
 
-    if (devCompilerSet.CompilerType = ID_COMPILER_VC2005) then
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC2005) or (devCompilerSet.CompilerType = ID_COMPILER_VC2008) then
     begin
       sl := TStringList.Create;
       sl.Add('Precise  =precise');
@@ -1381,7 +1385,7 @@ begin
       AddOption('Enable Extensions', false, true, true, false, 1, '/Ze', 'Language Options', [], nil);
     AddOption('Omit library name in object file', false, true, true, false, 0,  '/Zl', 'Language Options', [], nil);
     AddOption('Generate function prototypes', false, true, true, false, 0, '/Zg', 'Language Options', [], nil);
-    if (devCompilerSet.CompilerType = ID_COMPILER_VC2005) then
+    if (devCompilerSet.CompilerType = ID_COMPILER_VC2005) or (devCompilerSet.CompilerType = ID_COMPILER_VC2008) then
       AddOption('Enable OpenMP 2.0 Language Extensions', false, false, true, false, 0, '/openmp', 'Language Options', [], nil);
 
     if (devCompilerSet.CompilerType = ID_COMPILER_VC6) or (devCompilerSet.CompilerType = ID_COMPILER_VC2003) then
@@ -2545,7 +2549,7 @@ begin
   devCompiler.fcmdOpts              := fCmdOptions;
   devCompiler.flinkopts             := fLinkOptions;
   devCompiler.fMakeOpts             := fMakeOptions;
-  devCompiler.fwxOpts               := fwxOptions;  
+  //devCompiler.fwxOpts               := fwxOptions;      // EAB TODO: move this to the plugin
   devCompiler.compilerType          := compilerType;
   devCompiler.CheckSyntaxFormat     := CheckSyntaxFormat;
   devCompiler.OutputFormat          := OutputFormat;
@@ -2565,7 +2569,7 @@ begin
   // we have to set the devDirs too
   devDirs.Bins := BinDir;
   devDirs.C := CDir;
-  devDirs.Cpp := CppDir + ';' + ValidatePaths(CPP_INCLUDE_DIR(fCompilerType), tempstr);  // EAB TODO: Check if this is a good solution for plugins and COMMON_CPP_INCLUDE_DIR
+  devDirs.Cpp := CppDir; 
   devDirs.Lib := LibDir;
   devDirs.RC := RCDir;
 
@@ -2615,6 +2619,10 @@ var
   tempStr: String;
   maindir: String;
   makeSig, mingwmakeSig: String;
+{$IFDEF PLUGIN_BUILD}
+  i: Integer;
+  dummy: String;
+{$ENDIF}
 begin
   if Index < 0 then
     Exit;
@@ -2628,6 +2636,13 @@ begin
     fCDir := LoadSetting(key, 'C');
      if fCDir='' then fCDir:=devDirs.C;
     fCppDir := LoadSetting(key, 'Cpp');
+{$IFDEF PLUGIN_BUILD}
+    if  MainForm <> nil then
+    begin
+        for i := 0 to MainForm.pluginsCount - 1 do
+            fCppDir := fCppDir + ';' + ValidatePaths(MainForm.plugins[i].GET_COMMON_CPP_INCLUDE_DIR, dummy);    // EAB TODO: make it multiplugin functional.
+    end;
+{$ENDIF}
      if fCppDir='' then fCppDir:=devDirs.Cpp;
     fLibDir := LoadSetting(key, 'Lib');
      if fLibDir='' then fLibDir:=devDirs.Lib;
@@ -2683,7 +2698,7 @@ begin
          + 'Unless you know exactly what you''re doing, it is recommended '
          + 'that you click Yes';
 
-       if MessageDlg(msg, mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+       if MessageDlg(msg, mtConfirmation, [mbYes, mbNo], 0) = mrYes then    // EAB TODO:* These messages could appear sencuentially multiple times depending on the amount of templates being read for a project. We need to fix this. 
        begin
          fBinDir := goodBinDir;
          fCDir := goodCDir;
@@ -2848,21 +2863,20 @@ begin
     if LoadSetting(key, 'PchFileFormat') <> '' then
       fPchFileFormat         := LoadSetting(key, 'PchFileFormat');
 
-    if LoadSetting(key, 'wxOpts.Major') <> '' then
-      fwxOptions.majorVersion := StrToInt(LoadSetting(key, 'wxOpts.Major'));
-    if LoadSetting(key, 'wxOpts.Minor') <> '' then
-      fwxOptions.minorVersion := StrToInt(LoadSetting(key, 'wxOpts.Minor'));
-    if LoadSetting(key, 'wxOpts.Release') <> '' then
-      fwxOptions.releaseVersion := StrToInt(LoadSetting(key, 'wxOpts.Release'));
+{$IFDEF PLUGIN_BUILD}          // Loading Compiler settings:
+    optComKey := key;
 
-    if LoadSetting(key, 'wxOpts.Unicode') <> '' then
-      fwxOptions.unicodeSupport := StrToBool(LoadSetting(key, 'wxOpts.Unicode'));
-    if LoadSetting(key, 'wxOpts.Monolithic') <> '' then
-      fwxOptions.monolithicLibrary := StrToBool(LoadSetting(key, 'wxOpts.Monolithic'));
-    if LoadSetting(key, 'wxOpts.Debug') <> '' then
-      fwxOptions.debugLibrary := StrToBool(LoadSetting(key, 'wxOpts.Debug'));
-    if LoadSetting(key, 'wxOpts.Static') <> '' then
-      fwxOptions.staticLibrary := StrToBool(LoadSetting(key, 'wxOpts.Static'));      
+    {for i := 0 to MainForm.pluginsCount - 1 do
+    begin
+        pluginSettings := MainForm.plugins[i].GetCompilerOptions;
+        for j := 0 to Length(pluginSettings) do
+        begin
+            temp := LoadSetting(key, pluginSettings[j].name);
+            if temp <> '' then
+                MainForm.plugins[i].LoadCompilerSettings(pluginSettings[j].name, temp);
+        end;
+    end; }
+{$ENDIF PLUGIN_BUILD}
   end;
 end;
 
@@ -2898,6 +2912,10 @@ end;
 procedure TdevCompilerSet.SaveSetProgs(Index: integer);
 var
   key: string;
+{$IFDEF PLUGIN_BUILD}
+  i,j: Integer;
+  pluginSettings: TSettings;
+{$ENDIF PLUGIN_BUILD}
 begin
   if Index<0 then Exit;
   with devData do
@@ -2931,14 +2949,26 @@ begin
     SaveSetting(key, 'PchFileFormat', PchFileFormat);
     SaveSetting(key, 'SingleCompile', fSingleCompile);
     SaveSetting(key, 'PreprocDefines', fPreprocDefines);
-    
-    SaveSetting(key, 'wxOpts.Major', IntToStr(wxOptions.majorVersion));
+
+{$IFDEF PLUGIN_BUILD}
+    if MainForm <> nil then
+    begin
+      for i := 0 to MainForm.pluginsCount - 1 do
+      begin
+          pluginSettings := MainForm.plugins[i].GetCompilerOptions;
+          for j := 0 to Length(pluginSettings) do
+              SaveSetting(key, pluginSettings[j].name, pluginSettings[j].value);
+      end;
+    end;
+{$ENDIF PLUGIN_BUILD}
+    // EAB TODO: move to plugin
+    {SaveSetting(key, 'wxOpts.Major', IntToStr(wxOptions.majorVersion));
     SaveSetting(key, 'wxOpts.Minor', IntToStr(wxOptions.minorVersion));
     SaveSetting(key, 'wxOpts.Release', IntToStr(wxOptions.ReleaseVersion));
     SaveSetting(key, 'wxOpts.Unicode', BoolToStr(wxOptions.unicodeSupport));
     SaveSetting(key, 'wxOpts.Monolithic', BoolToStr(wxOptions.monolithicLibrary));
     SaveSetting(key, 'wxOpts.Debug', BoolToStr(wxOptions.debugLibrary));
-    SaveSetting(key, 'wxOpts.Static', BoolToStr(wxOptions.staticLibrary));    
+    SaveSetting(key, 'wxOpts.Static', BoolToStr(wxOptions.staticLibrary));   }
   end;
 end;
 
@@ -2958,6 +2988,9 @@ end;
 procedure TdevCompilerSet.SettoDefaults;
 var
   tempstr: String;
+{$IFDEF PLUGIN_BUILD}
+  i: Integer;
+{$ENDIF PLUGIN_BUILD}
 begin
 
   tempstr := '';
@@ -3030,12 +3063,12 @@ begin
   // dirs
   fBinDir  := devDirs.Bins;
   fCDir    := devDirs.C;
-  fCppDir  := devDirs.Cpp + ';' + ValidatePaths(CPP_INCLUDE_DIR(fCompilerType), tempstr);   // EAB TODO: Check if this is a good solution for plugins and COMMON_CPP_INCLUDE_DIR
+  fCppDir  := devDirs.Cpp; // + ';' + ValidatePaths(CPP_INCLUDE_DIR(fCompilerType), tempstr);   // EAB TODO: Check if this is a good solution for plugins and COMMON_CPP_INCLUDE_DIR
   fLibDir  := devDirs.Lib;
   fRCDir   := devDirs.RC;
 
-  // wxWidgets options
-  with wxOptions do
+  // wxWidgets options EAB moved to main.pas when initializing plugins
+  {with wxOptions do
   begin
     majorVersion := 2;
     minorVersion := 8;
@@ -3045,7 +3078,7 @@ begin
     monolithicLibrary := True;
     debugLibrary := False;
     staticLibrary := True;
-  end;  
+  end;}
 end;
 
 procedure TdevCompilerSet.UpdateSets;

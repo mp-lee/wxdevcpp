@@ -32,7 +32,7 @@ type
     C_SetBoolInspectorDataClear: procedure(b: Boolean); stdcall;
     C_SetDisablePropertyBuilding: procedure(b: Boolean); stdcall;
     C_IsCurrentPageDesigner: function: Boolean; stdcall;
-	  C_HasDesigner: function: Boolean; stdcall;
+    C_HasDesigner: function: Boolean; stdcall;
 
     C_SaveFileAndCloseEditor: function(s: PChar; b: Boolean): Boolean; stdcall;
     C_Init: procedure(strFileName: PChar); stdcall;
@@ -61,8 +61,17 @@ type
     C_ConvertLibsToCurrentVersion: function(strValue: PChar): PChar; stdcall;
     C_GetXMLExtension: function: PChar; stdcall;
 	C_EditorDisplaysText: function(FileName: PChar): Boolean; stdcall;
-	C_GetTextHighlighterType: function(FileName: PChar): PChar; stdcall;	
+	C_GetTextHighlighterType: function(FileName: PChar): PChar; stdcall;
 	C_GET_COMMON_CPP_INCLUDE_DIR: function: PChar; stdcall;  // EAB TODO: Generalize this.
+    C_GetCompilerMacros: function: PChar; stdcall;
+    C_GetCompilerPreprocDefines: function: PChar; stdcall;
+
+    C_LoadCompilerSettings: procedure(name: PChar; value: PChar); stdcall;
+    C_LoadCompilerOptions: procedure; stdcall;
+    C_SaveCompilerOptions: procedure; stdcall;
+    C_GetCompilerOptions: function: PChar; stdcall;
+    C_SetCompilerOptionstoDefaults: procedure; stdcall;
+
   public
     procedure Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
     procedure CutExecute;
@@ -75,7 +84,7 @@ type
     function IsCurrentPageDesigner: Boolean;
     function IsDelphiPlugin: Boolean;
     function GetChild: HWND;
-	  function HasDesigner(editorName: String): Boolean;
+    function HasDesigner(editorName: String): Boolean;
 	
     function SaveFileAndCloseEditor(s: String; b: Boolean): Boolean;
     procedure Init(strFileName: String);
@@ -103,9 +112,17 @@ type
     function GetPluginName: String;
     function ConvertLibsToCurrentVersion(strValue: String): String;
     function GetXMLExtension: String;
-	  function EditorDisplaysText(FileName: String): Boolean;
-	  function GetTextHighlighterType(FileName: String): String;
-	  function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
+    function EditorDisplaysText(FileName: String): Boolean;
+    function GetTextHighlighterType(FileName: String): String;
+    function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
+    function GetCompilerMacros: String;
+    function GetCompilerPreprocDefines: String;
+
+    procedure LoadCompilerSettings(name: string; value: string);
+    procedure LoadCompilerOptions;
+    procedure SaveCompilerOptions;
+    function GetCompilerOptions: TSettings;
+    procedure SetCompilerOptionstoDefaults;
   end;
 
 implementation
@@ -124,7 +141,7 @@ begin
     @C_SetBoolInspectorDataClear := GetProcAddress(module, 'SetBoolInspectorDataClear');
     @C_SetDisablePropertyBuilding := GetProcAddress(module, 'SetDisablePropertyBuilding');
     @C_IsCurrentPageDesigner := GetProcAddress(module, 'IsCurrentPageDesigner');
-	  @C_HasDesigner := GetProcAddress(module, 'IsDesignerNil');
+    @C_HasDesigner := GetProcAddress(module, 'IsDesignerNil');
 
     @C_SaveFileAndCloseEditor := GetProcAddress(module, 'SaveFileAndCloseEditor');
     @C_Init := GetProcAddress(module, 'Init');
@@ -154,6 +171,14 @@ begin
 	@C_EditorDisplaysText := GetProcAddress(module, 'EditorDisplaysText');
 	@C_GetTextHighlighterType := GetProcAddress(module, 'GetTextHighlighterType');
 	@C_GET_COMMON_CPP_INCLUDE_DIR := GetProcAddress(module, 'GET_COMMON_CPP_INCLUDE_DIR');
+    @C_GetCompilerMacros := GetProcAddress(module, 'GetCompilerMacros');
+    @C_GetCompilerPreprocDefines := GetProcAddress(module, 'GetCompilerPreprocDefines');
+
+    @C_LoadCompilerSettings := GetProcAddress(module, 'LoadCompilerSettings');
+    @C_LoadCompilerOptions := GetProcAddress(module, 'LoadCompilerOptions');
+    @C_SaveCompilerOptions := GetProcAddress(module, 'SaveCompilerOptions');
+    @C_GetCompilerOptions := GetProcAddress(module, 'GetCompilerOptions');
+    @C_SetCompilerOptionstoDefaults := GetProcAddress(module, 'SetCompilerOptionstoDefaults');
 
     tool := TToolBar.Create(nil);
     tool.Left:= toolbar_x;
@@ -465,6 +490,55 @@ begin
     temp := C_GET_COMMON_CPP_INCLUDE_DIR;
     res := temp;
     Result := res;
+end;
+
+function TPlug_In_DLL.GetCompilerMacros: String;
+var
+    temp: PChar;
+    res: String;
+begin
+    temp := C_GetCompilerMacros;
+    res := temp;
+    Result := res;
+end;
+
+function TPlug_In_DLL.GetCompilerPreprocDefines: String;
+var
+    temp: PChar;
+    res: String;
+begin
+    temp := C_GetCompilerPreprocDefines;
+    res := temp;
+    Result := res;
+end;
+
+procedure TPlug_In_DLL.LoadCompilerSettings(name: String; value: String);
+begin
+    C_LoadCompilerSettings(PChar(name), PChar(value));
+end;
+
+procedure TPlug_In_DLL.LoadCompilerOptions;
+begin
+    C_LoadCompilerOptions;
+end;
+
+procedure TPlug_In_DLL.SaveCompilerOptions;
+begin
+    C_SaveCompilerOptions;
+end;
+
+function TPlug_In_DLL.GetCompilerOptions: TSettings;
+var
+    settings: TSettings;
+begin
+    settings := nil;
+    //C_GetCompilerOptions; // EAB TODO: Add parsing logic to allocate name,value pairs returned from the dll C_ function
+    Result := settings;
+end;
+
+procedure TPlug_In_DLL.SetCompilerOptionstoDefaults;
+begin
+    C_SetCompilerOptionstoDefaults;
 end;
 
 end.
