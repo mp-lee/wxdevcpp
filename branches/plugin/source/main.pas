@@ -4195,9 +4195,23 @@ begin
 end;
 
 procedure TMainForm.actCompOptionsExecute(Sender: TObject);
+{$IFDEF PLUGIN_BUILD}
+var
+  i: Integer;
+  tabs: TTabSheet;
+{$ENDIF PLUGIN_BUILD}
 begin
   with TCompForm.Create(Self) do
   try
+{$IFDEF PLUGIN_BUILD}
+    for i := 0 to packagesCount - 1 do
+    begin
+      tabs := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_CompilerOptionsPane;
+      if tabs <> nil then
+        tabs.PageControl := MainPages;
+    end;
+    MainPages.ActivePage := tabCompiler;
+{$ENDIF PLUGIN_BUILD}
     ShowModal;
     CheckForDLLProfiling;
   finally
@@ -8646,6 +8660,7 @@ var
   panel2: TForm;
   lbDockClient2: TJvDockClient;
   lbDockClient3: TJvDockClient;
+  pluginSettings: TSettings;
 begin
 
   packagesCount := 0;
@@ -8759,6 +8774,31 @@ begin
       end;
   end;     
   {$ENDIF}
+
+  // Add plugin directories for compiler: (Functions on version.pas, like CPP_INCLUDE_DIR() should do this..? )
+  //for i := 0 to MainForm.pluginsCount - 1 do
+  //begin
+    //COMMON_CPP_INCLUDE_DIR := COMMON_CPP_INCLUDE_DIR + ';' + MainForm.plugins[i].GET_COMMON_CPP_INCLUDE_DIR;
+    //devCompilerSet.CppDir := 'OOOO';// devCompilerSet.CppDir + ';' + MainForm.plugins[i].GET_COMMON_CPP_INCLUDE_DIR;
+    //devDirs.Cpp := devDirs.Cpp + ';' + MainForm.plugins[i].GET_COMMON_CPP_INCLUDE_DIR;
+    //devCompilerSet.AssignToCompiler;
+ // end;
+  //devCompilerSet.CppDir;
+  //devDirs.SettoDefaults;
+
+  for i := 0 to pluginsCount - 1 do
+    plugins[i].SetCompilerOptionstoDefaults;
+
+    for i := 0 to pluginsCount - 1 do
+    begin
+        pluginSettings := plugins[i].GetCompilerOptions;
+        for j := 0 to Length(pluginSettings) - 1 do
+        begin
+            tempName := devData.LoadSetting(devCompilerSet.optComKey, pluginSettings[j].name);
+            if tempName <> '' then
+                plugins[i].LoadCompilerSettings(pluginSettings[j].name, tempName);
+        end;
+    end;
 
   // Inserting plugin controls to the IDE
   for i := 0 to pluginsCount - 1 do
@@ -9045,9 +9085,10 @@ begin
           for j := 0 to items.Count -1 do
           begin
             tabs := items[j];
-            Self.MessageControl.InsertControl(tabs);
+            tabs.PageControl := MessageControl;
           end;
-      end; 
+      end;
+
   end;    
 end;
 

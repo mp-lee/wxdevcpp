@@ -218,7 +218,7 @@ const
   cAppendStr = '%s %s';  
 
 var
-  ObjResFile, Objects, LinkObjects, Comp_ProgCpp, Comp_Prog, WxLibName, tfile: string;
+  ObjResFile, Objects, LinkObjects, Comp_ProgCpp, Comp_Prog, tfile: string;
   i: integer;
 begin
   Objects := '';
@@ -287,14 +287,14 @@ begin
   else
     Comp_Prog := CP_PROGRAM(devCompiler.CompilerType);
 
-  //Compile the wxWidgets library name
-  WxLibName := Format('wxmsw%d%d', [devCompiler.WxOpts.majorVersion, devCompiler.WxOpts.minorVersion]);
+  //Compile the wxWidgets library name     EAB TODO:* move this to the plugin
+  {WxLibName := Format('wxmsw%d%d', [devCompiler.WxOpts.majorVersion, devCompiler.WxOpts.minorVersion]);
 
   //And then do the library features
   if devCompiler.WxOpts.unicodeSupport then
     WxLibName := WxLibName + 'u';
   if devCompiler.WxOpts.debugLibrary then
-    WxLibName := WxLibName + 'd';
+    WxLibName := WxLibName + 'd';  }
 
   GetCompileParams;
   GetLibrariesParams;
@@ -322,6 +322,7 @@ begin
     ID_COMPILER_VC6     : writeln(F, '# Compiler Type: Visual C++ 6');
     ID_COMPILER_VC2003  : writeln(F, '# Compiler Type: Visual C++ .NET 2003');
     ID_COMPILER_VC2005  : writeln(F, '# Compiler Type: Visual C++ 2005');
+    ID_COMPILER_VC2008  : writeln(F, '# Compiler Type: Visual C++ 2008');    
     ID_COMPILER_DMARS   : writeln(F, '# Compiler Type: Digital Mars');
     ID_COMPILER_BORLAND : writeln(F, '# Compiler Type: Borland C++ 5.5');
     ID_COMPILER_WATCOM  : writeln(F, '# Compiler Type: OpenWatCom');
@@ -361,18 +362,23 @@ begin
   writeln(F, 'RCINCS    =' + StringReplace(fRcIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'BIN       = ' + GenMakePath2(ExtractRelativePath(Makefile, fProject.Executable)));
   writeln(F, 'DEFINES   = ' + PreprocDefines);
-  writeln(F, 'WXLIBNAME = ' + WxLibName);
+  //writeln(F, 'WXLIBNAME = ' + WxLibName);
   writeln(F, 'CXXFLAGS  = $(CXXINCS) $(DEFINES) ' + fCppCompileParams);
   writeln(F, 'CFLAGS    = $(INCS) $(DEFINES) ' + fCompileParams);
   writeln(F, 'GPROF     = ' + devCompilerSet.gprofName);
   writeln(F, 'RM        = ' + RmExe);
+
+{$IFDEF PLUGIN_BUILD}
+    for i := 0 to MainForm.pluginsCount - 1 do
+        writeln(F, MainForm.plugins[i].GetCompilerMacros);
+{$ENDIF}
 
   if devCompiler.CompilerType in ID_COMPILER_VC then
     if (assigned(fProject) and (fProject.CurrentProfile.typ = dptStat)) then
       writeln(F, 'LINK      = ' + devCompiler.dllwrapName)
     else
     begin
-      if devCompiler.CompilerType = ID_COMPILER_VC2005 then
+      if (devCompiler.CompilerType = ID_COMPILER_VC2005) or (devCompiler.CompilerType = ID_COMPILER_VC2008) then
         writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo /manifest')
       else
         writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo');
@@ -725,7 +731,7 @@ begin
     else
       writeln(F, #9 + '$(LINK) $(LINKOBJ) ' + format(devCompiler.LinkerFormat, [ExtractRelativePath(Makefile,fProject.Executable)]) + ', ,$(LIBS),,' + fResObjects);
 
-    if devCompiler.compilerType = ID_COMPILER_VC2005 then
+    if (devCompiler.compilerType = ID_COMPILER_VC2005) or ( devCompiler.CompilerType = ID_COMPILER_VC2008) then
     begin
       writeln(F, #9 + '$(GPROF) /nologo /manifest "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest" /outputresource:"' + ExtractRelativePath(Makefile,fProject.Executable) + '"');
       writeln(F, #9 + '@$(RM) "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest"');
@@ -793,7 +799,7 @@ begin
     else
       writeln(F, #9 + '$(LINK) ' + format(devcompiler.DllFormat, [GenMakePath(ChangeFileExt(tfile, '.lib')), binary]) + ' $(LINKOBJ) $(LIBS)');
 
-    if devCompiler.compilerType = ID_COMPILER_VC2005 then
+    if (devCompiler.compilerType = ID_COMPILER_VC2005) or (devCompiler.CompilerType = ID_COMPILER_VC2008) then
     begin
       writeln(F, #9 + '$(GPROF) /nologo /manifest "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest" /outputresource:"' + ExtractRelativePath(Makefile,fProject.Executable) + ';#2"');
       writeln(F, #9 + '@rm "' + ExtractRelativePath(Makefile,fProject.Executable) + '.manifest"');
@@ -1066,9 +1072,10 @@ begin
     values.Destroy;
   end;
 
-  //Add the WXUSINGDLL if we are using a DLL build
-  if not devCompiler.WxOpts.staticLibrary then
-    Result := Result + ' ' + Format(devCompiler.PreprocDefines, ['WXUSINGDLL']);
+{$IFDEF PLUGIN_BUILD}       //EAB TODO: Make this more general (not easy to do :P )
+    for i := 0 to MainForm.pluginsCount - 1 do
+        Result := Result + ' ' + Format(devCompiler.PreprocDefines, [MainForm.plugins[i].GetCompilerPreprocDefines]);
+{$ENDIF}
   Result := Trim(Result);
 end;
 
@@ -2326,7 +2333,7 @@ begin
       begin
         //Check for the manifest tool
         srch := devCompiler.gprofName;
-        if (devCompiler.CompilerType = ID_COMPILER_VC2005) and (Pos(UpperCase(srch), UpperCase(Trim(Line))) = 1) then
+        if ((devCompiler.CompilerType = ID_COMPILER_VC2005) or (devCompiler.CompilerType = ID_COMPILER_VC2008)) and (Pos(UpperCase(srch), UpperCase(Trim(Line))) = 1) then
         begin
           act := 'Embedding manifest';
           fil := Copy(Line, Pos(UpperCase('/outputresource:'), UpperCase(Line)) + 17, Length(Line));

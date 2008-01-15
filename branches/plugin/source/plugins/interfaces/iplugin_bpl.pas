@@ -31,6 +31,8 @@ type
     procedure AssignPlugger(plug: IPlug);
     procedure Initialize(owner: TForm; Config: String);
 	procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+
+    function Retrieve_CompilerOptionsPane: TTabSheet;
   end;
 
 
