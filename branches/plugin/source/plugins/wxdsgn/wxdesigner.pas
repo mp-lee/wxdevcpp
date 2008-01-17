@@ -163,20 +163,6 @@ public
 
   XPTheme: boolean; // Use XP theme
 
-  {tabwxWidgets: TTabSheet;
-  grpwxVersion: TGroupBox;
-  lblwxMinor: TLabel;
-  lblwxMajor: TLabel;
-  lblwxRelease: TLabel;
-  spwxMajor: TSpinEdit;
-  spwxMinor: TSpinEdit;
-  spwxRelease: TSpinEdit;
-  grpwxType: TGroupBox;
-  chkwxUnicode: TCheckBox;
-  chkwxMonolithic: TCheckBox;
-  rdwxLibraryType: TRadioGroup;
-  chkwxDebug: TCheckBox;   }
-
   tabwxWidgets: TTabSheet;  // For compiler options pane
   grpwxVersion: TGroupBox;
   grpwxType: TGroupBox;
@@ -190,7 +176,8 @@ public
   chkwxDebug: TCheckBox;
   chkwxMonolithic: TCheckBox;
   chkwxUnicode: TCheckBox;
-
+  staticLib: TRadioButton;
+  dynamicLib: TRadioButton;
 
   private
     fwxOptions: TdevWxOptions;
@@ -367,7 +354,7 @@ begin
     Caption := 'Property Inspector';
     BorderStyle := bsSizeToolWin;
     Color := clBtnFace;
-    Width:=300;
+    Width := 300;
 
     DockSite := True;
     DragKind := dkDock;
@@ -1075,17 +1062,41 @@ begin
      grpwxType.InsertControl(chkwxMonolithic);
      grpwxType.InsertControl(chkwxUnicode);
 
-     rdwxLibraryType := TRadioGroup.Create(ownerForm);
+     rdwxLibraryType := TRadioGroup.Create(self);
       with rdwxLibraryType do
       begin
         Left := 8;
         Top := 200;
         Width := 403;
-        Height := 55;
+        Height := 65;
         Caption := 'Library Type';
         ItemIndex := 0;
         TabOrder := 2;
       end;
+
+    staticLib := TRadioButton.Create(self);
+    with staticLib do
+      begin
+        Left := 10;
+        Top := 15;
+        Width := 150;
+        Height := 20;
+        Caption := 'Static Import Library';
+      end;
+    staticLib.Caption := 'Static Import Library';
+
+    dynamicLib := TRadioButton.Create(self);
+    with dynamicLib do
+      begin
+        Left := 10;
+        Top := 35;
+        Width := 150;
+        Height := 20;
+        Caption := 'Dynamic Library (DLL)';
+      end;
+
+    rdwxLibraryType.InsertControl(staticLib);
+    rdwxLibraryType.InsertControl(dynamicLib);
 
     tabwxWidgets := TTabSheet.Create(self);
     with tabwxWidgets do
@@ -1098,9 +1109,6 @@ begin
     tabwxWidgets.InsertControl(grpwxVersion);
     tabwxWidgets.InsertControl(grpwxType);
     tabwxWidgets.InsertControl(rdwxLibraryType);
-
-    //rdwxLibraryType.Items.Add('Static Import Library');
-    //rdwxLibraryType.Items.Add('Dynamic Library (DLL)');
 
 end;   // end Initialize
 
@@ -4553,9 +4561,9 @@ begin
       chkwxMonolithic.Checked := monolithicLibrary;
       chkwxDebug.Checked := debugLibrary;
       if staticLibrary then
-        rdwxLibraryType.ItemIndex := 0
+        staticLib.Checked := true
       else
-        rdwxLibraryType.ItemIndex := 1;
+        dynamicLib.Checked := true
     end;
 end;
 
@@ -4570,7 +4578,7 @@ begin
     unicodeSupport := chkwxUnicode.Checked;
     monolithicLibrary := chkwxMonolithic.Checked;
     debugLibrary := chkwxDebug.Checked;
-    staticLibrary := rdwxLibraryType.ItemIndex = 0;
+    staticLibrary := staticLib.Checked;
   end
 end;
 
