@@ -53,11 +53,11 @@ const
     's', 't', 'u', 'v', 'w', 'x', 'y', 'z');
     
   ID_COMPILER_MINGW = 0;
-  ID_COMPILER_VC2008 = 1;
-  ID_COMPILER_VC2005 = 2;
-  ID_COMPILER_VC2003 = 3;
-  ID_COMPILER_VC6 = 4;
-  ID_COMPILER_DMARS = 5;
+  ID_COMPILER_VC2005 = 1;
+  ID_COMPILER_VC2003 = 2;
+  ID_COMPILER_VC6 = 3;
+  ID_COMPILER_DMARS = 4;
+  ID_COMPILER_VC2008 = 5;
   ID_COMPILER_BORLAND = 6;
   ID_COMPILER_WATCOM = 7;
   ID_COMPILER_VC = [ID_COMPILER_VC6, ID_COMPILER_VC2003, ID_COMPILER_VC2005, ID_COMPILER_VC2008];
@@ -948,11 +948,11 @@ begin
   if devCompilerSet.Sets.Count=0 then begin      // EAB Comment: Why load all the compiler sets if not all are available?
     // init first-run
     devCompilerSet.Sets.Add(GCC_DEFCOMPILERSET);
-    devCompilerSet.Sets.Add(VC2008_DEFCOMPILERSET);
     devCompilerSet.Sets.Add(VC2005_DEFCOMPILERSET);
     devCompilerSet.Sets.Add(VC2003_DEFCOMPILERSET);
     devCompilerSet.Sets.Add(VC6_DEFCOMPILERSET);
     devCompilerSet.Sets.Add(DMARS_DEFCOMPILERSET);
+    devCompilerSet.Sets.Add(VC2008_DEFCOMPILERSET);
 
     devCompilerSet.WriteSets;
 
@@ -2572,6 +2572,7 @@ begin
   devDirs.Cpp := CppDir; 
   devDirs.Lib := LibDir;
   devDirs.RC := RCDir;
+  devDirs.compilerType := compilerType;
 
   if devCompiler.CompilerType = ID_COMPILER_MINGW then
   begin

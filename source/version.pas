@@ -356,7 +356,9 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_CP_PROGRAM;
 
-      ID_COMPILER_VC2008,
+      ID_COMPILER_VC2008:
+          Result := '"%PROGRAMFILES%/Microsoft Visual Studio 9.0/VC/' + VC_CP_PROGRAM + '"';
+
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -380,7 +382,9 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_CPP_PROGRAM;
 
-      ID_COMPILER_VC2008,
+      ID_COMPILER_VC2008:
+          Result := '"%PROGRAMFILES%/Microsoft Visual Studio 9.0/VC/' + VC_CPP_PROGRAM + '"';
+
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -427,7 +431,9 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_RES_PROGRAM;
 
-      ID_COMPILER_VC2008,
+      ID_COMPILER_VC2008:
+          Result := '"%PROGRAMFILES%/Microsoft SDKs/Windows/v6.0A/bin/' + VC_RES_PROGRAM + '"';
+
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -626,7 +632,7 @@ begin
           Result := GCC_LIB_DIR;
 
       ID_COMPILER_VC2008:
-        Result := VC2008_LIB_DIR+ GetVC2008Lib;
+        Result := VC2008_LIB_DIR + GetVC2008Lib;
 
       ID_COMPILER_VC2005:
         Result := VC2005_LIB_DIR+ GetVC2005Lib;
@@ -656,7 +662,7 @@ begin
           Result := GCC_C_INCLUDE_DIR;
 
       ID_COMPILER_VC2008:
-        Result := COMMON_CPP_INCLUDE_DIR+ VC2008_C_INCLUDE_DIR + GetVC2008Include;
+        Result := COMMON_CPP_INCLUDE_DIR + VC2008_C_INCLUDE_DIR + GetVC2008Include;
 
       ID_COMPILER_VC2005:
         Result := COMMON_CPP_INCLUDE_DIR+ VC2005_C_INCLUDE_DIR + GetVC2005Include;
@@ -908,7 +914,7 @@ Begin
 
       if (strVCPPInstallDir ='') then
       begin
-        if versionString = '7.1' then     // EAB TODO: check %PROGRAMFILES% change from c:\Program Files
+        if versionString = '7.1' then
           strVCPPInstallDir:='%PROGRAMFILES%\Microsoft Visual Studio .NET 2003\Vc7\';
         if versionString = '8.0' then
           strVCPPInstallDir:='%PROGRAMFILES%\Microsoft Visual Studio\Vc8\';
@@ -939,7 +945,12 @@ Begin
 
       strWinSDKDir := GetWinSDKDir;
       if (strWinSDKDir ='') then
-        strWinSDKDir:='WinSDK_INVALID_FOLDER';
+      begin
+          {if versionString = '9.0' then
+            strWinSDKDir:='%PROGRAMFILES%\Microsoft SDKs\'
+          else  }
+            strWinSDKDir:='WinSDK_INVALID_FOLDER'
+      end;
 
       TempString := Format('SOFTWARE\Microsoft\VisualStudio\%s\VC\VC_OBJECTS_PLATFORM_INFO\Win32\Directories\',[VersionString]);
       if (reg.OpenKey(TempString,false)) then
