@@ -4208,7 +4208,10 @@ begin
     begin
       tabs := (plugins[delphi_plugins[i]] AS IPlug_In_BPL).Retrieve_CompilerOptionsPane;
       if tabs <> nil then
+      begin
         tabs.PageControl := MainPages;
+        MainPages.ActivePage := tabs;
+      end;
     end;
     MainPages.ActivePage := tabCompiler;
 {$ENDIF PLUGIN_BUILD}
