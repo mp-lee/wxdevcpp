@@ -222,6 +222,7 @@ var
   i: integer;
 begin
   Objects := '';
+  devDirs.SettoDefaults;  // EAB TODO: check if this works.
 
   for i := 0 to Pred(fProject.Units.Count) do
   begin
@@ -346,7 +347,7 @@ begin
 
   if(devCompiler.CompilerType = ID_COMPILER_DMARS) then
   begin
-    writeln(F, 'LINKOBJ   = ' + ExtractLibParams(LinkObjects));
+    writeln(F, 'LINKOBJ   = ' + ExtractLibParams(LinkObjects));      // EAB Comment: WTF is it with the '/' '\' replacements? Why Choose'em on version.pas in the first place? 
     fResObjects := StringReplace(ExtractLibFiles(LinkObjects), '/', '\', [rfReplaceAll]);
   end
   else

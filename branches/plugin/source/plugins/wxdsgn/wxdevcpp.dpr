@@ -30,6 +30,11 @@ program devcpp;
 
 uses
   FastMM4,
+  madExcept,
+  madLinkDisAsm,
+  madListHardware,
+  madListProcesses,
+  madListModules,
   FastCode,
   LanguagesDEPFix,
   Windows,

@@ -294,7 +294,8 @@ object CompForm: TCompForm
             'Visual C++ 2005'
             'Visual C++ .NET 2003'
             'Visual C++ 6.0'
-            'Digital Mars C++')
+            'Digital Mars C++'
+            'Visual C++ 2008')
         end
         object cbFastDep: TCheckBox
           Left = 8
