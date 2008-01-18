@@ -325,6 +325,26 @@ var
 implementation
 uses devcfg;
 
+function GetProgramFilesDir: String;
+var
+    TempString:String;
+    reg:TRegistry;
+Begin
+    reg:=TRegistry.Create;
+    reg.RootKey:=HKEY_LOCAL_MACHINE;
+    try
+      TempString := '\Software\Microsoft\Windows\CurrentVersion';
+      if (reg.OpenKey(TempString,false) = false) then
+        Result := 'C:\Program Files'
+      else
+      begin
+        Result := reg.ReadString('ProgramFilesDir');
+        reg.CloseKey;
+      end;
+    finally
+    end;
+end;
+
 function MAKE_PROGRAM(CompilerID:Integer):String;
 begin
   case CompilerID of
@@ -357,7 +377,7 @@ begin
           Result := GCC_CP_PROGRAM;
 
       ID_COMPILER_VC2008:
-          Result := '"%PROGRAMFILES%/Microsoft Visual Studio 9.0/VC/' + VC_CP_PROGRAM + '"';
+          Result := '"' + StringReplace(GetProgramFilesDir, '\', '/', [rfReplaceAll]) + '/Microsoft Visual Studio 9.0/VC/Bin/' + VC_CP_PROGRAM + '"';
 
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
@@ -383,7 +403,7 @@ begin
           Result := GCC_CPP_PROGRAM;
 
       ID_COMPILER_VC2008:
-          Result := '"%PROGRAMFILES%/Microsoft Visual Studio 9.0/VC/' + VC_CPP_PROGRAM + '"';
+          Result := '"' + StringReplace(GetProgramFilesDir, '\', '/', [rfReplaceAll]) + '/Microsoft Visual Studio 9.0/VC/Bin/' + VC_CPP_PROGRAM + '"';
 
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
@@ -432,7 +452,7 @@ begin
           Result := GCC_RES_PROGRAM;
 
       ID_COMPILER_VC2008:
-          Result := '"%PROGRAMFILES%/Microsoft SDKs/Windows/v6.0A/bin/' + VC_RES_PROGRAM + '"';
+          Result := '"' + StringReplace(GetProgramFilesDir, '\', '/', [rfReplaceAll]) + '/Microsoft SDKs/Windows/v6.0A/Bin/' + VC_RES_PROGRAM + '"';
 
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
@@ -456,7 +476,9 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_DLL_PROGRAM;
 
-      ID_COMPILER_VC2008,
+      ID_COMPILER_VC2008:
+        Result := '"' + StringReplace(GetProgramFilesDir, '\', '/', [rfReplaceAll]) + '/Microsoft Visual Studio 9.0/VC/Bin/' + VC_DLL_PROGRAM + '"';
+
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -915,11 +937,11 @@ Begin
       if (strVCPPInstallDir ='') then
       begin
         if versionString = '7.1' then
-          strVCPPInstallDir:='%PROGRAMFILES%\Microsoft Visual Studio .NET 2003\Vc7\';
+          strVCPPInstallDir:= GetProgramFilesDir + '\Microsoft Visual Studio .NET 2003\Vc7\';
         if versionString = '8.0' then
-          strVCPPInstallDir:='%PROGRAMFILES%\Microsoft Visual Studio\Vc8\';
+          strVCPPInstallDir:= GetProgramFilesDir + '\Microsoft Visual Studio\Vc8\';
         if versionString = '9.0' then
-          strVCPPInstallDir:='%PROGRAMFILES%\Microsoft Visual Studio 9.0\VC\';
+          strVCPPInstallDir:= GetProgramFilesDir + '\Microsoft Visual Studio 9.0\VC\';
       end;
 
       TempString := 'SOFTWARE\Microsoft\VisualStudio\SxS\FRAMEWORKSDK\';
@@ -946,9 +968,9 @@ Begin
       strWinSDKDir := GetWinSDKDir;
       if (strWinSDKDir ='') then
       begin
-          {if versionString = '9.0' then
-            strWinSDKDir:='%PROGRAMFILES%\Microsoft SDKs\'
-          else  }
+          if versionString = '9.0' then
+            strWinSDKDir:= StringReplace(GetProgramFilesDir, '\', '/', [rfReplaceAll]) + '/Microsoft SDKs/'
+          else
             strWinSDKDir:='WinSDK_INVALID_FOLDER'
       end;
 
@@ -972,7 +994,9 @@ Begin
 
             if Trim(strInclude) = '' then
               strInclude:='$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(VCInstallDir)PlatformSDK\include\prerelease;$(VCInstallDir)PlatformSDK\include;$(FrameworkSDKDir)include;';
-            strInclude:=strInclude+';$(WinSDKDir)include;';
+            if versionString = '9.0' then
+              strInclude:= strInclude + ';' + StringReplace(GetProgramFilesDir, '\', '/', [rfReplaceAll]) + '/Microsoft SDKs/Windows/v6.0A/Include;';
+            strInclude := strInclude + ';$(WinSDKDir)include;';
             Result:=GetRefinedPathList(strInclude,strVSInstallDir,strVCPPInstallDir,strFSDKInstallDir,strWinSDKDir);
           end;
         1:

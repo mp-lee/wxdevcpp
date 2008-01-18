@@ -911,8 +911,6 @@ var
   i: Integer;
 begin
 
-  // COMMON_CPP_INCLUDE_DIR := '';  // EAB TODO: Is this the right place for initializing this var?
-
   if not assigned(devDirs) then
     devDirs := TdevDirs.Create;
 
@@ -2549,7 +2547,6 @@ begin
   devCompiler.fcmdOpts              := fCmdOptions;
   devCompiler.flinkopts             := fLinkOptions;
   devCompiler.fMakeOpts             := fMakeOptions;
-  //devCompiler.fwxOpts               := fwxOptions;      // EAB TODO: move this to the plugin
   devCompiler.compilerType          := compilerType;
   devCompiler.CheckSyntaxFormat     := CheckSyntaxFormat;
   devCompiler.OutputFormat          := OutputFormat;
@@ -2866,17 +2863,6 @@ begin
 
 {$IFDEF PLUGIN_BUILD}          // Loading Compiler settings:
     optComKey := key;
-
-    {for i := 0 to MainForm.pluginsCount - 1 do
-    begin
-        pluginSettings := MainForm.plugins[i].GetCompilerOptions;
-        for j := 0 to Length(pluginSettings) do
-        begin
-            temp := LoadSetting(key, pluginSettings[j].name);
-            if temp <> '' then
-                MainForm.plugins[i].LoadCompilerSettings(pluginSettings[j].name, temp);
-        end;
-    end; }
 {$ENDIF PLUGIN_BUILD}
   end;
 end;
@@ -2962,14 +2948,6 @@ begin
       end;
     end;
 {$ENDIF PLUGIN_BUILD}
-    // EAB TODO: move to plugin
-    {SaveSetting(key, 'wxOpts.Major', IntToStr(wxOptions.majorVersion));
-    SaveSetting(key, 'wxOpts.Minor', IntToStr(wxOptions.minorVersion));
-    SaveSetting(key, 'wxOpts.Release', IntToStr(wxOptions.ReleaseVersion));
-    SaveSetting(key, 'wxOpts.Unicode', BoolToStr(wxOptions.unicodeSupport));
-    SaveSetting(key, 'wxOpts.Monolithic', BoolToStr(wxOptions.monolithicLibrary));
-    SaveSetting(key, 'wxOpts.Debug', BoolToStr(wxOptions.debugLibrary));
-    SaveSetting(key, 'wxOpts.Static', BoolToStr(wxOptions.staticLibrary));   }
   end;
 end;
 
@@ -3068,18 +3046,6 @@ begin
   fLibDir  := devDirs.Lib;
   fRCDir   := devDirs.RC;
 
-  // wxWidgets options EAB moved to main.pas when initializing plugins
-  {with wxOptions do
-  begin
-    majorVersion := 2;
-    minorVersion := 8;
-    releaseVersion := 2;
-
-    unicodeSupport := False;
-    monolithicLibrary := True;
-    debugLibrary := False;
-    staticLibrary := True;
-  end;}
 end;
 
 procedure TdevCompilerSet.UpdateSets;

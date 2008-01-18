@@ -222,7 +222,7 @@ var
   i: integer;
 begin
   Objects := '';
-  devDirs.SettoDefaults;  // EAB TODO: check if this works.
+  //devDirs.SettoDefaults;  // EAB TODO: check if this works.
 
   for i := 0 to Pred(fProject.Units.Count) do
   begin
@@ -274,7 +274,7 @@ begin
 
   if devCompiler.gppName <> '' then
     if devCompiler.compilerType in ID_COMPILER_VC then
-      Comp_ProgCpp := devCompiler.gppName + ' /nologo'
+      Comp_ProgCpp := '"' + devCompiler.gppName + '" /nologo'
     else
       Comp_ProgCpp := devCompiler.gppName
   else
@@ -282,20 +282,11 @@ begin
 
   if devCompiler.gccName <> '' then
     if devCompiler.compilerType in ID_COMPILER_VC then
-      Comp_Prog := devCompiler.gccName + ' /nologo'
+      Comp_Prog := '"' + devCompiler.gccName + '" /nologo'
     else
       Comp_Prog := devCompiler.gccName
   else
     Comp_Prog := CP_PROGRAM(devCompiler.CompilerType);
-
-  //Compile the wxWidgets library name     EAB TODO:* move this to the plugin
-  {WxLibName := Format('wxmsw%d%d', [devCompiler.WxOpts.majorVersion, devCompiler.WxOpts.minorVersion]);
-
-  //And then do the library features
-  if devCompiler.WxOpts.unicodeSupport then
-    WxLibName := WxLibName + 'u';
-  if devCompiler.WxOpts.debugLibrary then
-    WxLibName := WxLibName + 'd';  }
 
   GetCompileParams;
   GetLibrariesParams;
@@ -340,14 +331,14 @@ begin
   writeln(F, 'CPP       = ' + Comp_ProgCpp);
   writeln(F, 'CC        = ' + Comp_Prog);
   if (devCompiler.windresName <> '') then
-    writeln(F, 'WINDRES   = ' + devCompiler.windresName)
+    writeln(F, 'WINDRES   = "' + devCompiler.windresName + '"')
   else
     writeln(F, 'WINDRES   = ' + RES_PROGRAM(devCompiler.CompilerType));
   writeln(F, 'OBJ       =' + Objects);
 
   if(devCompiler.CompilerType = ID_COMPILER_DMARS) then
   begin
-    writeln(F, 'LINKOBJ   = ' + ExtractLibParams(LinkObjects));      // EAB Comment: WTF is it with the '/' '\' replacements? Why Choose'em on version.pas in the first place? 
+    writeln(F, 'LINKOBJ   = ' + ExtractLibParams(LinkObjects));       
     fResObjects := StringReplace(ExtractLibFiles(LinkObjects), '/', '\', [rfReplaceAll]);
   end
   else
@@ -363,7 +354,6 @@ begin
   writeln(F, 'RCINCS    =' + StringReplace(fRcIncludesParams, '\', '/', [rfReplaceAll]));
   writeln(F, 'BIN       = ' + GenMakePath2(ExtractRelativePath(Makefile, fProject.Executable)));
   writeln(F, 'DEFINES   = ' + PreprocDefines);
-  //writeln(F, 'WXLIBNAME = ' + WxLibName);
   writeln(F, 'CXXFLAGS  = $(CXXINCS) $(DEFINES) ' + fCppCompileParams);
   writeln(F, 'CFLAGS    = $(INCS) $(DEFINES) ' + fCompileParams);
   writeln(F, 'GPROF     = ' + devCompilerSet.gprofName);
@@ -380,9 +370,9 @@ begin
     else
     begin
       if (devCompiler.CompilerType = ID_COMPILER_VC2005) or (devCompiler.CompilerType = ID_COMPILER_VC2008) then
-        writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo /manifest')
+        writeln(F, 'LINK      = "' + devCompiler.dllwrapName + '" /nologo /manifest')
       else
-        writeln(F, 'LINK      = ' + devCompiler.dllwrapName + ' /nologo');
+        writeln(F, 'LINK      = "' + devCompiler.dllwrapName + '" /nologo');
     end
   else if devCompiler.CompilerType = ID_COMPILER_MINGW then
     if (assigned(fProject) and (fProject.CurrentProfile.typ = dptStat)) then
@@ -1059,6 +1049,9 @@ function TCompiler.PreprocDefines: string;
 var
   i: integer;
   values: TStringList;
+{$IFDEF PLUGIN_BUILD}
+  temp: String;
+{$ENDIF}
 begin
   Result := '';
   if assigned(fProject) then
@@ -1074,8 +1067,12 @@ begin
   end;
 
 {$IFDEF PLUGIN_BUILD}       //EAB TODO: Make this more general (not easy to do :P )
-    for i := 0 to MainForm.pluginsCount - 1 do
-        Result := Result + ' ' + Format(devCompiler.PreprocDefines, [MainForm.plugins[i].GetCompilerPreprocDefines]);
+   for i := 0 to MainForm.pluginsCount - 1 do
+   begin
+      temp := MainForm.plugins[i].GetCompilerPreprocDefines;
+      if temp <> '' then
+          Result := Result + ' ' + Format(devCompiler.PreprocDefines, [temp]);
+   end;
 {$ENDIF}
   Result := Trim(Result);
 end;
