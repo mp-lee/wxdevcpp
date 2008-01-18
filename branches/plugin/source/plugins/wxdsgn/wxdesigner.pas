@@ -4508,7 +4508,9 @@ function TWXDsgn.GetCompilerPreprocDefines: String;
 begin
   //Add the WXUSINGDLL if we are using a DLL build 
   if not WxOptions.staticLibrary then
-    Result := 'WXUSINGDLL';
+    Result := 'WXUSINGDLL'
+  else
+    Result := ''
 end;
 
 function TWXDsgn.Retrieve_CompilerOptionsPane: TTabSheet;
