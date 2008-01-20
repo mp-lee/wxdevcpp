@@ -262,7 +262,7 @@ begin
   begin
     if MainForm.plugins[i].isForm(ExtractFileName(File_name)) then
     begin
-      MainForm.plugins[i].Init(ExtractFileName(File_name));
+      MainForm.plugins[i].InitEditor(ExtractFileName(File_name));
       pluginCatched := true;
     end;
   end;
