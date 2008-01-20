@@ -19,8 +19,8 @@ type
   private
     parent: HWND;
     child: HWND;
-    owner: TControlBar;
-    wowner: TWinControl;
+    controlBar: TControlBar;
+    owner: TWinControl;
     tool: TToolBar;
     button: TToolButton;
     plugin_name: String;
@@ -35,7 +35,7 @@ type
     C_HasDesigner: function: Boolean; stdcall;
 
     C_SaveFileAndCloseEditor: function(s: PChar; b: Boolean): Boolean; stdcall;
-    C_Init: procedure(strFileName: PChar); stdcall;
+    C_InitEditor: procedure(strFileName: PChar); stdcall;
     C_OpenFile: procedure(s: PChar); stdcall;
     C_OpenUnit: procedure(s: PChar); stdcall;
     C_IsForm: function(s: PChar): Boolean; stdcall;
@@ -73,7 +73,7 @@ type
     C_SetCompilerOptionstoDefaults: procedure; stdcall;
 
   public
-    procedure Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
+    procedure Initialize(name: String; module: HModule; _parent: HWND; _controlBar: TControlBar; _owner: TForm; Config: String; toolbar_x: Integer; toolbar_y: Integer);
     procedure CutExecute;
     procedure CopyExecute;
     procedure PasteExecute;
@@ -87,7 +87,7 @@ type
     function HasDesigner(editorName: String): Boolean;
 	
     function SaveFileAndCloseEditor(s: String; b: Boolean): Boolean;
-    procedure Init(strFileName: String);
+    procedure InitEditor(strFileName: String);
     procedure OpenFile(s: String);
     procedure OpenUnit(s: String);
     function IsForm(s: String): Boolean;
@@ -127,11 +127,11 @@ type
 
 implementation
 
-procedure TPlug_In_DLL.Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
+procedure TPlug_In_DLL.Initialize(name: String; module: HModule; _parent: HWND; _controlBar: TControlBar; _owner: TForm; Config: String; toolbar_x: Integer; toolbar_y: Integer);
 begin
     parent := _parent;
     owner := _owner;
-    wowner := _wowner;
+    controlBar := _controlBar;
     plugin_name := name;
     @C_CutExecute := GetProcAddress(module, 'CutExecute');
     @C_CopyExecute := GetProcAddress(module, 'CopyExecute');
@@ -144,7 +144,7 @@ begin
     @C_HasDesigner := GetProcAddress(module, 'IsDesignerNil');
 
     @C_SaveFileAndCloseEditor := GetProcAddress(module, 'SaveFileAndCloseEditor');
-    @C_Init := GetProcAddress(module, 'Init');
+    @C_InitEditor := GetProcAddress(module, 'InitEditor');
     @C_OpenFile := GetProcAddress(module, 'OpenFile');
     @C_OpenUnit := GetProcAddress(module, 'OpenUnit');
     @C_IsForm := GetProcAddress(module, 'IsForm');
@@ -254,9 +254,9 @@ begin
     Result := C_SaveFileAndCloseEditor(PChar(s), b);
 end;
 
-procedure TPlug_In_DLL.Init(strFileName: String);
+procedure TPlug_In_DLL.InitEditor(strFileName: String);
 begin
-    C_Init(PChar(strFileName));
+    C_InitEditor(PChar(strFileName));
 end;
 
 procedure TPlug_In_DLL.OpenFile(s: String);

@@ -22,7 +22,7 @@ type
   IPlug_In = interface(IInterface) ['{C9E8FCF9-BEBD-4A51-80C1-16AF5197BBB3}']
   
 	//Startup and shutdown
-  procedure Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
+  procedure Initialize(name: String; module: HModule; _parent: HWND; _controlBar: TControlBar; _owner: TForm; Config: String; toolbar_x: Integer; toolbar_y: Integer);
   procedure Destroy;
 
   //Properties
@@ -40,7 +40,7 @@ type
 
 
   function SaveFileAndCloseEditor(s: String; b: Boolean): Boolean;
-  procedure Init(strFileName: String);
+  procedure InitEditor(strFileName: String);
   procedure OpenFile(s: String);
   procedure OpenUnit(s: String);
   function IsForm(s: String): Boolean;

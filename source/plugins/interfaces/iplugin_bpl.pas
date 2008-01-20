@@ -25,13 +25,9 @@ type
 	function Retrieve_Tabbed_LeftDock_Panels: TList;
     function GetFilters: TStringList;
     function GetSrcFilters: TStringList;
-	//procedure OnDockableFormClosed(Sender: TObject);
-
     procedure GenerateSource(sourceFileName: String; text: TSynEdit);
     procedure AssignPlugger(plug: IPlug);
-    procedure Initialize(owner: TForm; Config: String);
 	procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-
     function Retrieve_CompilerOptionsPane: TTabSheet;
   end;
 

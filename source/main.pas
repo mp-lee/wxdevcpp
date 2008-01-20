@@ -8658,7 +8658,7 @@ var
   pluginModule: HModule;
   pluginName: String;
   tempName: String;
-  c_interface: TPlug_In_DLL;
+  c_interface: IPlug_In_DLL;
   panel1: TForm;
   panel2: TForm;
   lbDockClient2: TJvDockClient;
@@ -8703,7 +8703,6 @@ begin
                 SetLength(delphi_plugins, 1);
                 delphi_plugins[packagesCount] := 0;
                 {$ENDIF}
-                plugin.Initialize(Self, devDirs.Config);
                 plugin.AssignPlugger(IPlug(Self));
                 SetLength(plugins, pluginsCount + 1);
                 plugins[pluginsCount] := plugin;
@@ -8727,7 +8726,7 @@ begin
                     temp_top := current_max_toolbar_top;
                 end;
 
-                plugin.Create(pluginName, pluginModule, Self.Handle, ControlBar1, Self, temp_left, temp_top);
+                plugin.Initialize(pluginName, pluginModule, Self.Handle, ControlBar1, Self, devDirs.Config, temp_left, temp_top);
             end;
           end;
       end
@@ -8750,7 +8749,8 @@ begin
             c_plugins[librariesCount] := pluginsCount;
             SetLength(plugin_modules, pluginsCount + 1);
             plugin_modules[pluginsCount] := pluginModule;
-            c_interface := TPlug_In_DLL.Create(Self);
+
+            c_interface := TPlug_In_DLL.Create(Self) AS IPlug_In_DLL;
             SetLength(plugins, pluginsCount + 1);
             plugins[pluginsCount] := c_interface;
             Inc(pluginsCount);
@@ -8772,22 +8772,11 @@ begin
                 temp_top := current_max_toolbar_top;
             end;
 
-            c_interface.Create(pluginName, pluginModule, Self.Handle, ControlBar1, Self, temp_left, temp_top);
+            c_interface.Initialize(pluginName, pluginModule, Self.Handle, ControlBar1, Self, devDirs.Config, temp_left, temp_top);
           end;
       end;
   end;     
   {$ENDIF}
-
-  // Add plugin directories for compiler: (Functions on version.pas, like CPP_INCLUDE_DIR() should do this..? )
-  //for i := 0 to MainForm.pluginsCount - 1 do
-  //begin
-    //COMMON_CPP_INCLUDE_DIR := COMMON_CPP_INCLUDE_DIR + ';' + MainForm.plugins[i].GET_COMMON_CPP_INCLUDE_DIR;
-    //devCompilerSet.CppDir := 'OOOO';// devCompilerSet.CppDir + ';' + MainForm.plugins[i].GET_COMMON_CPP_INCLUDE_DIR;
-    //devDirs.Cpp := devDirs.Cpp + ';' + MainForm.plugins[i].GET_COMMON_CPP_INCLUDE_DIR;
-    //devCompilerSet.AssignToCompiler;
- // end;
-  //devCompilerSet.CppDir;
-  //devDirs.SettoDefaults;
 
   for i := 0 to pluginsCount - 1 do
     plugins[i].SetCompilerOptionstoDefaults;

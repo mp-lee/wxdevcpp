@@ -231,9 +231,8 @@ public
     procedure CutExecute;
     procedure CopyExecute;
     procedure PasteExecute;
-    procedure Initialize(owner: TForm; Config: String);
-    procedure Init(strFileName: String);
-    procedure Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
+    procedure InitEditor(strFileName: String);
+    procedure Initialize(name: String; module: HModule; _parent: HWND; _controlBar: TControlBar; _owner: TForm; Config: String; toolbar_x: Integer; toolbar_y: Integer);
     procedure AssignPlugger(plug: IPlug);
     procedure DisableDesignerControls;
     procedure OpenFile(s: String);
@@ -257,20 +256,20 @@ public
 
     procedure UpdateDesignerData(FileName: String);    
     procedure Reload(FileName: String);
-	  function  ReloadForm(FileName: String): Boolean;
+    function  ReloadForm(FileName: String): Boolean;
     procedure ReloadFromFile(FileName: String; fileToReloadFrom: String);
     procedure TerminateEditor(FileName: String);
     procedure Destroy;
-	  procedure OnDockableFormClosed(Sender: TObject; var Action: TCloseAction);
+    procedure OnDockableFormClosed(Sender: TObject; var Action: TCloseAction);
     function IsSource(FileName: String): Boolean;
     function GetDefaultText(FileName: String): String;
     function MainPageChanged(askIfShouldGetFocus: Boolean; FileName: String): Boolean;
-	  function IsCurrentEditorInPlugin(FileName: String; curFilename: String): Boolean;
+    function IsCurrentEditorInPlugin(FileName: String; curFilename: String): Boolean;
     function HasDesigner(editorName: String): Boolean;
 
     procedure OnToolbarEvent(WM_COMMAND: Word);  
     function Retrieve_Form_Items: TList;
-	  function Retrieve_Tabbed_LeftDock_Panels: TList;
+    function Retrieve_Tabbed_LeftDock_Panels: TList;
     function Retrieve_File_New_Menus: TList;
     function Retrieve_File_Import_Menus: TList;
     function Retrieve_File_Export_Menus: TList;
@@ -292,7 +291,7 @@ public
     function ConvertLibsToCurrentVersion(strValue: String): String;
     procedure CreateNewXPMs(strFileName:String);
     function EditorDisplaysText(FileName: String): Boolean;
-	  function GetTextHighlighterType(FileName: String): String;
+    function GetTextHighlighterType(FileName: String): String;
     function GET_COMMON_CPP_INCLUDE_DIR: String;  // EAB TODO: Generalize this.
     function GetCompilerMacros: String;
     function GetCompilerPreprocDefines: String;
@@ -335,12 +334,14 @@ const
   INT_SWITCH= 12;
   INT_CPP_COMMENT= 13;
 
-procedure TWXDsgn.Initialize(owner: TForm; Config: String);
+procedure TWXDsgn.Initialize(name: String; module: HModule; _parent: HWND; _controlBar: TControlBar; _owner: TForm; Config: String; toolbar_x: Integer; toolbar_y: Integer);
 var
   I: Integer;
   ini :TiniFile;
 begin
-   ownerForm := owner;
+   plugin_name := name;
+   XPTheme := False;
+   ownerForm := _owner;
    wx_designer := Self;
    editors := TObjectHash.Create;
 
@@ -500,8 +501,8 @@ begin
     DesignerMenuSep1 := TMenuItem.Create(Self);
     DesignerMenuCopyWidgetName := TMenuItem.Create(Self);
     DesignerMenuChangeCreationOrder := TMenuItem.Create(Self);
-	  DesignerMenuSelectParent := TMenuItem.Create(Self);
-	  DesignerMenuLocked := TMenuItem.Create(Self);
+    DesignerMenuSelectParent := TMenuItem.Create(Self);
+	DesignerMenuLocked := TMenuItem.Create(Self);
     DesignerMenuViewIDs:= TMenuItem.Create(Self);
     DesignerMenuSep2:= TMenuItem.Create(Self);
     DesignerMenuAlign := TMenuItem.Create(Self);
@@ -514,7 +515,7 @@ begin
     DesignerMenuAlignToLeft := TMenuItem.Create(DesignerMenuAlignHorizontal);
     DesignerMenuAlignToMiddleHorizontal := TMenuItem.Create(DesignerMenuAlignHorizontal);
     DesignerMenuAlignToRight := TMenuItem.Create(DesignerMenuAlignHorizontal);
-	  DesignerMenuSep3 := TMenuItem.Create(DesignerPopup);
+    DesignerMenuSep3 := TMenuItem.Create(DesignerPopup);
     DesignerMenuDesignerOptions:= TMenuItem.Create(Self);
     ToolsMenuDesignerOptions := TMenuItem.Create(Self);
   
@@ -1650,7 +1651,7 @@ begin
   CreateNewDialogOrFrameCode(dsgnType, frm, 1);
 end;
 
-procedure TWXDsgn.Init(strFileName: String);
+procedure TWXDsgn.InitEditor(strFileName: String);
 var
   editor: TWXEditor;
   tabSheet: TTabSheet;
@@ -1663,17 +1664,6 @@ begin
     editor := TWXEditor.Create;
     editors[editorName] := editor;
     editor.Init(tabSheet, text, DesignerPopup, True, editorName);
-	  {SetDesignerActiveState(false);          // EAB TODO: Check if disabling this is OK
-    AssignDesignerControl(editorName);
-    EnableDesignerControls;
-    ActivateDesigner(editorName);
-    SetDesignerActiveState(true); }
-end;
-
-procedure TWXDsgn.Create(name: String; module: HModule; _parent: HWND; _owner: TControlBar; _wowner: TWinControl; toolbar_x: Integer; toolbar_y: Integer);
-begin
-    plugin_name := name;
-    XPTheme := False;
 end;
 
 function TWXDsgn.CreateFormFile(strFName, strCName, strFTitle: string; dlgSStyle:TWxDlgStyleSet; dsgnType:TWxDesignerType): Boolean;

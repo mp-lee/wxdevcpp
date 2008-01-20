@@ -27,11 +27,9 @@ uses
   FastMM4,
   FastCode,
   LanguagesDEPFix,
-{$IFNDEF OLD_MADSHI}  
   madListHardware,
   madListProcesses,
   madListModules,
-{$ENDIF}
   madExcept,
   madLinkDisAsm,
   inifiles,
@@ -106,7 +104,11 @@ uses
   ModifyVarFrm in 'ModifyVarFrm.pas' {ModifyVarForm},
   FilesReloadFrm in 'FilesReloadFrm.pas' {FilesReloadFrm},
   PackmanExitCodesU in '..\..\packman\PackmanExitCodesU.pas',
-  ImageTheme in 'ImageTheme.pas';
+  ImageTheme in 'ImageTheme.pas',
+  iplugin_dll in 'plugins\interfaces\iplugin_dll.pas',
+  iplugger in 'plugins\interfaces\iplugger.pas',
+  iplugin in 'plugins\interfaces\iplugin.pas',
+  iplugin_bpl in 'plugins\interfaces\iplugin_bpl.pas';
 
 {$R 'winxp.res'}
 {$R 'icons.res' 'icons.rc'}
