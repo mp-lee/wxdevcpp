@@ -169,7 +169,7 @@ object MainForm: TMainForm
         TabOrder = 1
         DesignSize = (
           391
-          98)
+          97)
         object LogOutput: TMemo
           Left = 7
           Top = 16
@@ -191,7 +191,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 616
-        Height = 98
+        Height = 97
         ActivePage = tabDebugOutput
         Align = alClient
         TabIndex = 4
@@ -293,7 +293,7 @@ object MainForm: TMainForm
             Left = 0
             Top = 0
             Width = 608
-            Height = 70
+            Height = 69
             Align = alClient
             Images = dmMain.MenuImages_NewLook
             Indent = 19
@@ -413,7 +413,7 @@ object MainForm: TMainForm
         Left = 0
         Top = 0
         Width = 620
-        Height = 61
+        Height = 60
         Align = alClient
         Checkboxes = True
         Columns = <
@@ -448,7 +448,7 @@ object MainForm: TMainForm
       end
       object TodoSettings: TPanel
         Left = 0
-        Top = 61
+        Top = 60
         Width = 620
         Height = 41
         Align = alBottom
