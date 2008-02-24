@@ -239,12 +239,9 @@ var
   i:Integer;
 begin
   for i:= Count -1 downto 0 do
-  begin
-    ///TODO: Guru: check for a memory leak
-    //if self[i] <> nil then
-    //  self[i].Destroy;
-    Remove(i);
-  end;
+  Remove(i);
+  // Self[i].Destroy;  EAB Comment: This change merged from JOEL's 1007 revision breaks new project creation. Reverted.
+  //fList.Clear;
 end;
 
 function TProjectProfileList.GetCount: integer;
