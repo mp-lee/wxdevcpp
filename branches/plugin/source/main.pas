@@ -8708,7 +8708,6 @@ begin
                 plugins[pluginsCount] := plugin;
                 Inc(pluginsCount);
                 Inc(packagesCount);
-               {$IFNDEF PLUGIN_TESTING}
 
                 // Check for saved toolbar coordinates:
                 idx := devPluginToolbarsX.AssignedToolbarsX(pluginName);
@@ -8727,6 +8726,7 @@ begin
                 end;
 
                 plugin.Initialize(pluginName, pluginModule, Self.Handle, ControlBar1, Self, devDirs.Config, temp_left, temp_top);
+                {$IFNDEF PLUGIN_TESTING}
             end;
           end;
       end
