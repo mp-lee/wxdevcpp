@@ -408,6 +408,7 @@ begin
   cmenu.EVT_Menu := cbOnMenu.Text;
   cmenu.EVT_UPDATE_UI := cbOnUpdateUI.Text;
   FName := wx_designer.main.GetActiveEditorName;
+
   GenerateXPMDirectly(cmenu.WX_BITMAP.Bitmap, cmenu.wx_IDName, FMenuName,FName);
 end;
 
