@@ -667,7 +667,8 @@ begin
   if MessageDlg(Lang[ID_MSG_NODEBUGSYMBOLS], mtConfirmation, [mbYes, mbNo], 0) = mrYes then
   begin
     CloseDebugger(nil);
-    if devCompiler.CompilerType = ID_COMPILER_MINGW then
+    if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or
+        (devCompiler.CompilerType = ID_COMPILER_LINUX) ) then
     begin
       if devCompiler.FindOption('-g3', opt, idx) then
       begin
