@@ -146,7 +146,7 @@ resourcestring
   WATCOM_CPP_INCLUDE_DIR  =
                         ';include'+pd+'watcom;'+'include'+pd+'common;';
 
-  LINUX_INCLUDE_DIR = '';
+  LINUX_CPP_INCLUDE_DIR = '';
 
   LANGUAGE_DIR         = 'Lang' + pd;
   ICON_DIR             = 'Icons' + pd;
@@ -224,13 +224,13 @@ resourcestring
   WATCOM_LINKER_CMD_LINE = '';
   WATCOM_MAKE_CMD_LINE = '';
 
-  LINUX_MAKE_PROGRAM = 'make';
+  LINUX_MAKE_PROGRAM = '/usr/bin/make';
   LINUX_CP_PROGRAM = 'gcc';
   LINUX_CPP_PROGRAM = 'gcc';
   LINUX_DBG_PROGRAM = 'gdb';
-  LINUX_RES_PROGRAM = 'windres.exe';
+  LINUX_RES_PROGRAM = '';
   LINUX_DLL_PROGRAM = 'gcc';
-  LINUX_PROF_PROGRAM = 'gprof.exe';
+  LINUX_PROF_PROGRAM = 'gprof';
   LINUX_COMPILER_CMD_LINE = '';
   LINUX_LINKER_CMD_LINE = '';
   LINUX_MAKE_CMD_LINE = '';
@@ -253,6 +253,7 @@ resourcestring
   DMARS_DEFCOMPILERSET = 'Default DigitalMars compiler';
   BORLAND_DEFCOMPILERSET = 'Default Borland compiler';
   WATCOM_DEFCOMPILERSET = 'Default Watcom compiler';
+  LINUX_DEFCOMPILERSET = 'Default Linux gcc compiler';
 
   //Filters
   FLT_BASE = 'All known Files||';
@@ -385,6 +386,9 @@ begin
       ID_COMPILER_WATCOM:
         Result := WATCOM_MAKE_PROGRAM;
 
+      ID_COMPILER_LINUX:
+        Result := LINUX_MAKE_PROGRAM;
+
   end;
 
 end;
@@ -413,6 +417,9 @@ begin
       ID_COMPILER_WATCOM:
         Result := WATCOM_CP_PROGRAM;
 
+      ID_COMPILER_LINUX:
+        Result := LINUX_CP_PROGRAM;
+
   end;
 end;
 
@@ -439,6 +446,10 @@ begin
 
       ID_COMPILER_WATCOM:
         Result := WATCOM_CPP_PROGRAM;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_CPP_PROGRAM;
+
   end;
 end;
 
@@ -468,6 +479,10 @@ begin
 
       ID_COMPILER_WATCOM:
         Result := WATCOM_DBG_PROGRAM;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_DBG_PROGRAM;
+
   end;
 end;
 
@@ -491,6 +506,9 @@ begin
 
       ID_COMPILER_WATCOM:
         Result := WATCOM_RES_PROGRAM;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_RES_PROGRAM;
   end;
 end;
 
@@ -515,6 +533,8 @@ begin
       ID_COMPILER_WATCOM:
         Result := WATCOM_DLL_PROGRAM;
 
+      ID_COMPILER_LINUX:
+        Result := LINUX_DLL_PROGRAM;
   end;
 end;
 
@@ -544,6 +564,9 @@ begin
 
       ID_COMPILER_WATCOM:
         Result := WATCOM_DEFCOMPILERSET;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_DEFCOMPILERSET;
   end;
 end;
 
@@ -553,7 +576,7 @@ begin
       ID_COMPILER_MINGW :
           Result := GCC_COMPILER_CMD_LINE;
 
-      ID_COMPILER_VC2008,    
+      ID_COMPILER_VC2008,
       ID_COMPILER_VC2005,
       ID_COMPILER_VC2003,
       ID_COMPILER_VC6:
@@ -567,6 +590,9 @@ begin
 
       ID_COMPILER_DMARS:
         Result := DMARS_COMPILER_CMD_LINE;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_COMPILER_CMD_LINE;
   end;
 end;
 
@@ -590,6 +616,9 @@ begin
 
       ID_COMPILER_DMARS:
         Result := DMARS_LINKER_CMD_LINE;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_LINKER_CMD_LINE;
   end;
 end;
 
@@ -613,6 +642,9 @@ begin
 
       ID_COMPILER_DMARS:
         Result := DMARS_MAKE_CMD_LINE;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_MAKE_CMD_LINE;
   end;
 end;
 
@@ -637,6 +669,8 @@ begin
       ID_COMPILER_WATCOM:
         Result := WATCOM_PROF_PROGRAM;
 
+      ID_COMPILER_LINUX:
+        Result := LINUX_PROF_PROGRAM;
   end;
 end;
 
@@ -666,6 +700,9 @@ begin
 
       ID_COMPILER_WATCOM:
         Result := WATCOM_BIN_DIR;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_BIN_DIR;
   end;
 end;
 
@@ -696,6 +733,8 @@ begin
       ID_COMPILER_WATCOM:
         Result := WATCOM_LIB_DIR;
 
+      ID_COMPILER_LINUX:
+        Result := LINUX_LIB_DIR;
   end;
 end;
 
@@ -725,6 +764,9 @@ begin
 
       ID_COMPILER_WATCOM:
         Result := WATCOM_C_INCLUDE_DIR;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_C_INCLUDE_DIR;
   end;
 end;
 
@@ -754,6 +796,9 @@ begin
 
       ID_COMPILER_WATCOM:
         Result := COMMON_CPP_INCLUDE_DIR+ WATCOM_CPP_INCLUDE_DIR ;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_CPP_INCLUDE_DIR;
   end;
 end;
 
@@ -783,6 +828,9 @@ begin
 
       ID_COMPILER_WATCOM:
         Result := WATCOM_RC_INCLUDE_DIR;
+
+      ID_COMPILER_LINUX:
+        Result := LINUX_RC_INCLUDE_DIR;
   end;
 end;
 

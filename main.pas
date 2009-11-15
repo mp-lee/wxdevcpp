@@ -4848,7 +4848,8 @@ procedure TMainForm.InitializeDebugger;
     fDebugger.OnLocals := OnLocals;
   end;
 begin
-  if devCompiler.CompilerType = ID_COMPILER_MINGW then
+  if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or
+        (devCompiler.CompilerType = ID_COMPILER_LINUX) ) then
   begin
     if not (fDebugger is TGDBDebugger) then
     begin
@@ -6481,7 +6482,8 @@ var
 begin
   //todo: disable profiling for non gcc compilers
   // see if profiling is enabled
-  if (assigned(fProject) and (fProject.CurrentProfile.compilerType <> ID_COMPILER_MINGW)) then
+  if (assigned(fProject) and ( (fProject.CurrentProfile.compilerType <> ID_COMPILER_MINGW) or
+        (fProject.CurrentProfile.compilerType <> ID_COMPILER_LINUX) ) ) then
   begin
     ShowMessage('Profiling is Disabled for Non-MingW compilers.') ;
     exit;

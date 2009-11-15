@@ -1482,7 +1482,7 @@ begin
     NewProfile.ProfileName:= finifile.ReadProfile(i,'ProfileName','');
     NewProfile.typ:= finifile.ReadProfile(i,'Type',0);
     NewProfile.CompilerType := finifile.ReadProfile(i, 'CompilerType', ID_COMPILER_MINGW);
-    NewProfile.CompilerSet := finifile.ReadProfile(i, 'CompilerSet', 0);
+    NewProfile.CompilerSet := finifile.ReadProfile(i, 'CompilerSet', ID_COMPILER_MINGW);
     NewProfile.Compiler:= finifile.ReadProfile(i,'Compiler','');
     NewProfile.CppCompiler:= finifile.ReadProfile(i,'CppCompiler','');
     NewProfile.Linker:= finifile.ReadProfile(i,'Linker','');
@@ -1514,6 +1514,7 @@ begin
          ID_COMPILER_DMARS:   CompilerType := 'MingW';
          ID_COMPILER_BORLAND: CompilerType := 'MingW';
          ID_COMPILER_WATCOM:  CompilerType := 'MingW';
+         ID_COMPILER_LINUX :  CompilerType := 'Linux gcc';
        end;
  
        case AutoSelectMissingCompiler of

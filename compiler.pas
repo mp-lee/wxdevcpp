@@ -248,7 +248,7 @@ begin
           LinkObjects := Format(cAppendStr, [LinkObjects, '"' + GenMakePath(ChangeFileExt(tfile, OBJ_EXT), false, false, true) + '"']);
       end;
     end
-    else if (devCompiler.CompilerType = ID_COMPILER_MINGW) and (I = fProject.PchHead) then
+    else if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or (devCompiler.CompilerType = ID_COMPILER_LINUX) ) and (I = fProject.PchHead) then
       Objects := Format(cAppendStr, [Objects, GenMakePath(ChangeFileExt(ExtractRelativePath(fProject.FileName, fProject.Units[i].FileName), PCH_EXT), true, false, true)]);
   end;
 
@@ -317,6 +317,7 @@ begin
     ID_COMPILER_DMARS   : writeln(F, '# Compiler Type: Digital Mars');
     ID_COMPILER_BORLAND : writeln(F, '# Compiler Type: Borland C++ 5.5');
     ID_COMPILER_WATCOM  : writeln(F, '# Compiler Type: OpenWatCom');
+    ID_COMPILER_LINUX  : writeln(F, '# Compiler Type: Linux gcc');
   end;
   writeln(F, Format('# Makefile created by %s %s on %s',
                     [DEVCPP, DEVCPP_VERSION, FormatDateTime('dd/mm/yy hh:nn', Now)]));
@@ -374,7 +375,8 @@ begin
       else
         writeln(F, 'LINK      = "' + devCompiler.dllwrapName + '" /nologo');
     end
-  else if devCompiler.CompilerType = ID_COMPILER_MINGW then
+  else if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or
+      (devCompiler.CompilerType = ID_COMPILER_LINUX) ) then
     if (assigned(fProject) and (fProject.CurrentProfile.typ = dptStat)) then
       writeln(F, 'LINK      = ar')
     else if fProject.Profiles.useGPP then
@@ -520,7 +522,8 @@ begin
   PCHObj := '';
 
   try
-    if devCompiler.CompilerType = ID_COMPILER_MINGW then
+    if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or
+      (devCompiler.CompilerType = ID_COMPILER_LINUX) ) then
     begin
       if fProject.PchHead <> -1 then
       begin
@@ -630,7 +633,8 @@ begin
             writeln(F, #9 + '$(CC) ' + format(devCompiler.CheckSyntaxFormat, [GenMakePath(tfile)]) + tmp + ' $(CFLAGS)');
       end;
     end
-    else if (devCompiler.CompilerType = ID_COMPILER_MINGW) and (I = fProject.PchHead) and (PchHead <> '') then
+    else if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or
+      (devCompiler.CompilerType = ID_COMPILER_LINUX) ) and (I = fProject.PchHead) and (PchHead <> '') then
     begin
       if not DoCheckSyntax then
       begin
@@ -695,7 +699,7 @@ begin
     writeln(F, ofile + ': ' + GenMakePath2(tfile) + ' ' + ResFiles);
     if devCompiler.CompilerType = ID_COMPILER_MINGW then
       writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [GenMakePath(ChangeFileExt(tfile, RES_EXT)) + ' $(RCINCS) ' + GenMakePath(GetShortName(tfile))]))
-    else
+    else if (devCompiler.CompilerType <> ID_COMPILER_LINUX)  then
       writeln(F, #9 + '$(WINDRES) ' + format(devCompiler.ResourceFormat, [GenMakePath(ChangeFileExt(tfile, RES_EXT)) + ' $(RCINCS) ' + GenMakePath(tfile)]))
   end;
 end;
@@ -743,10 +747,11 @@ begin
   writeln(F, '$(BIN): $(OBJ)');
   if not DoCheckSyntax then
   begin
-    if devCompiler.CompilerType <> ID_COMPILER_MINGW then
-      writeln(F, #9 + '$(LINK) ' + format(devCompiler.LibFormat, ['$(BIN)']) + ' $(LINKOBJ) $(LIBS)')
+    if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or
+      (devCompiler.CompilerType = ID_COMPILER_LINUX) ) then
+      writeln(F, #9 + '$(LINK) ' + format(devCompiler.LibFormat, ['$(BIN)']) + ' $(LINKOBJ)')
     else
-      writeln(F, #9 + '$(LINK) ' + format(devCompiler.LibFormat, ['$(BIN)']) + ' $(LINKOBJ)');
+       writeln(F, #9 + '$(LINK) ' + format(devCompiler.LibFormat, ['$(BIN)']) + ' $(LINKOBJ) $(LIBS)')
   end;
   WriteMakeObjFilesRules(F);
   Flush(F);
@@ -770,7 +775,8 @@ begin
     tfile := ExtractRelativePath(Makefile, tfile);
 
   //If we are MingW then change the library name to start with lib
-  if devCompiler.CompilerType = ID_COMPILER_MINGW then
+  if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or
+      (devCompiler.CompilerType = ID_COMPILER_LINUX) ) then
   begin
     Forward := GetLastPos('/', tfile);
     Backward := GetLastPos('\', tfile);
@@ -785,7 +791,8 @@ begin
   if not DoCheckSyntax then
   begin
     binary := GenMakePath(ExtractRelativePath(Makefile, fProject.Executable));
-    if devCompiler.CompilerType = ID_COMPILER_MINGW then
+    if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or
+      (devCompiler.CompilerType = ID_COMPILER_LINUX) ) then
       writeln(F, #9 + '$(LINK) -shared $(STATICLIB) $(LINKOBJ) $(LIBS) ' + format(devcompiler.DllFormat, [GenMakePath(ChangeFileExt(tfile, LIB_EXT)), binary]))
     else
       writeln(F, #9 + '$(LINK) ' + format(devcompiler.DllFormat, [GenMakePath(ChangeFileExt(tfile, '.lib')), binary]) + ' $(LINKOBJ) $(LIBS)');
@@ -1419,7 +1426,7 @@ var
   cpos: integer;
 begin
   RegEx := TRegExpr.Create;
-  
+   
   try
     if (devCompiler.compilerType in ID_COMPILER_VC) then
     begin
@@ -1453,7 +1460,7 @@ begin
       if RegEx.Exec(Line) then
         Inc(fWarnCount);
     end
-    else if (devCompiler.CompilerType = ID_COMPILER_MINGW) or (devCompiler.compilerType = ID_COMPILER_DMARS) then
+    else //if (devCompiler.CompilerType = ID_COMPILER_MINGW) or (devCompiler.compilerType = ID_COMPILER_DMARS) then
     begin
       LowerLine := LowerCase(Line);
 
@@ -1649,7 +1656,8 @@ begin
     IMod := CalcMod(pred(LOutput.Count));
 
     // Concatenate errors which are on multiple lines
-    if devCompiler.compilerType = ID_COMPILER_MINGW then
+    if ( (devCompiler.CompilerType = ID_COMPILER_MINGW) or
+      (devCompiler.CompilerType = ID_COMPILER_LINUX) ) then
       for curLine := 0 to pred(LOutput.Count) do begin
         if (curLine > 0) and AnsiStartsStr('   ', LOutput[curLine]) then begin
           O_Msg := LOutput[curLine];
@@ -1774,22 +1782,22 @@ begin
       LowerLine := LowerCase(Line);
       { Is this a compiler message? }
       if (Pos(':', Line) <= 0) or
-        (CompareText(Copy(LowerLine, 1, 7), gpp) = 0) or
-        (CompareText(Copy(LowerLine, 1, 7), gcc) = 0) or
-        (CompareText(Copy(LowerLine, 1, 12), 'dllwrap.exe ') = 0) or
-        (Pos('make.exe: nothing to be done for ', LowerLine) > 0) or
+        (CompareText(Copy(LowerLine, 1, Length(gpp)), gpp) = 0) or
+        (CompareText(Copy(LowerLine, 1, Length(gcc)), gcc) = 0) or
+        (CompareText(Copy(LowerLine, 1, Length(devCompiler.dllwrapName) + 1), devCompiler.dllwrapName + ' ') = 0) or
+        (Pos(devCompiler.makeName + ': nothing to be done for ', LowerLine) > 0) or
         (Pos('has modification time in the future', LowerLine) > 0) or
-        (Pos('dllwrap.exe:', LowerLine) > 0) or
-        (Pos('is up to date.', LowerLine) > 0) 
+        (Pos(devCompiler.dllwrapName + ':', LowerLine) > 0) or
+        (Pos('is up to date.', LowerLine) > 0)
      then
         Continue;
 
       { Make errors }
-      if (Pos('make.exe: ***', LowerCase(Line)) > 0) and
+      if (Pos(devCompiler.makeName + ': ***', LowerCase(Line)) > 0) and
         (Pos('Clock skew detected. Your build may be incomplete',
         LowerCase(Line)) <= 0) then
       begin
-        cpos := Length('make.exe: ***');
+        cpos := Length(devCompiler.makeName + ': ***');
         O_Msg := '[Build Error] ' + Copy(Line, cpos + 1, Length(Line) - cpos);
 
         if Assigned(fProject) then
@@ -1808,10 +1816,10 @@ begin
 
 
       { windres errors }
-      if Pos('windres.exe: ', LowerCase(Line)) > 0 then
+      if Pos(devCompiler.windresName + ': ', LowerCase(Line)) > 0 then
       begin
         { Delete 'windres.exe :' }
-        Delete(Line, 1, 13);
+        Delete(Line, 1, Length(devCompiler.windresName) + 2);
 
         cpos := GetLastPos('warning: ', Line);
         if cpos > 0 then
@@ -2002,7 +2010,7 @@ begin
       end;
 
       { windres.exe ... }//normal command, *not* an error
-      cpos := GetLastPos('windres.exe ', Line);
+      cpos := GetLastPos(devCompiler.windresName + ' ', Line);
       if cpos > 0 then
       begin
         Line := '';
