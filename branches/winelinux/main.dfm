@@ -2852,7 +2852,6 @@ object MainForm: TMainForm
       end
       object StopExecution1: TMenuItem
         Action = actStopExecute
-        ShortCut = 49265
       end
       object Restart1: TMenuItem
         Action = actRestartDebug
@@ -4015,7 +4014,7 @@ object MainForm: TMainForm
       Category = 'Debug'
       Caption = 'Stop Execution'
       ImageIndex = 55
-      ShortCut = 32881
+      ShortCut = 32887
       OnExecute = actStopExecuteExecute
       OnUpdate = actUpdateDebuggerRunning
     end
@@ -4366,6 +4365,7 @@ object MainForm: TMainForm
       Category = 'Debug'
       Caption = 'Pause Execution'
       ImageIndex = 58
+      ShortCut = 16503
       OnExecute = actPauseDebugExecute
       OnUpdate = actPauseDebugUpdate
     end

@@ -235,6 +235,43 @@ resourcestring
   LINUX_LINKER_CMD_LINE = '';
   LINUX_MAKE_CMD_LINE = '';
 
+  // GDB commands and Displays
+  GDB_FILE             = 'file';
+  GDB_EXECFILE         = 'exec-file';
+  GDB_RUN              = 'run';
+  GDB_BREAK            = 'break';
+  GDB_CONTINUE         = 'continue';
+  GDB_NEXT             = 'next';
+  GDB_STEP             = 'step';
+  GDB_DISPLAY          = 'display';
+  GDB_UNDISPLAY        = 'undisplay';
+  GDB_PRINT            = 'print';
+  GDB_SETVAR           = 'set var';
+  GDB_DELETE           = 'delete';
+  GDB_PROMPT           = '(gdb) ';
+  GDB_BACKTRACE        = 'bt';
+  GDB_DISASSEMBLE      = 'disas';
+  GDB_SETFLAVOR        = 'set disassembly-flavor';
+  GDB_INTEL            = 'intel';
+  GDB_ATT              = 'att';
+  GDB_REG              = 'displ/x';
+  GDB_EAX              = '$eax';
+  GDB_EBX              = '$ebx';
+  GDB_ECX              = '$ecx';
+  GDB_EDX              = '$edx';
+  GDB_ESI              = '$esi';
+  GDB_EDI              = '$edi';
+  GDB_EBP              = '$ebp';
+  GDB_ESP              = '$esp';
+  GDB_EIP              = '$eip';
+  GDB_CS               = '$cs';
+  GDB_DS               = '$ds';
+  GDB_SS               = '$ss';
+  GDB_ES               = '$es';
+  GDB_SETARGS          = 'set args';
+  GDB_ATTACH           = 'attach';
+  GDB_SET              = 'set'; 
+
   // option sections
   OPT_DIRS = 'Directories';
   OPT_EDITOR = 'Editor';

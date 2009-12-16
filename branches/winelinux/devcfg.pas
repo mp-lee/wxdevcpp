@@ -40,7 +40,7 @@ interface
 
 uses
 {$IFDEF WIN32}
-Dialogs, Windows, Classes, Graphics, SynEdit, CFGData, CFGTypes, IniFiles, prjtypes;  //, DbugIntf; EAB removed Gexperts debug stuff. 
+Dialogs, Windows, Classes, Graphics, SynEdit, CFGData, CFGTypes, IniFiles, prjtypes;  //, DbugIntf; EAB removed Gexperts debug stuff.
 {$ENDIF}
 {$IFDEF LINUX}
   QDialogs, Classes, QGraphics, QSynEdit, CFGData, CFGTypes, IniFiles, prjtypes;
@@ -678,6 +678,7 @@ type
     // Debug variable browser
     fWatchHint: boolean; // watch variable under mouse
     fWatchError: boolean; // report watch errors
+
   public
     constructor Create(aOwner: TComponent); override;
     destructor Destroy; override;
@@ -808,7 +809,7 @@ var
   {$IFDEF PLUGIN_BUILD}
   devPluginToolbarsX: TdevPluginToolbarsX = nil;
   devPluginToolbarsY: TdevPluginToolbarsY = nil;
-  {$ENDIF PLUGIN_BUILD}  
+  {$ENDIF PLUGIN_BUILD}
 
   // Permanent alternate config file (need to be global vars)
   ConfigMode: (CFG_NORMAL, CFG_PARAM, CFG_USER) = CFG_NORMAL;
@@ -2336,6 +2337,14 @@ begin
   fRCDir  := '';
 {$ENDIF}
 
+if (fCompilerType = ID_COMPILER_LINUX) then
+begin
+   fCppDir := '';
+   fCDir := '';
+   fRCDir := '';
+   fBinDir := '/usr/local/sbin;/usr/local/bin;/usr/sbin;/usr/bin;/sbin;/bin';
+end;
+
   fExec := ExtractFilePath(Application.ExeName);
   if(fConfig = '') then    // EAB: workaround because of weird calls from InitializeOptionsAfterPlugins that can't be removed for now, or compiler folders get screwed.
     fConfig := fExec;
@@ -2841,34 +2850,35 @@ begin
      //check for valid paths
      msg := '';
      goodBinDir := ValidatePaths(fBinDir, tempStr);
-     if tempStr <> '' then
+     if ((tempStr <> '')) then
      begin
        msg := msg + 'Following Bin directories don''t exist:' + #13#10;
        msg := msg + StringReplace(tempStr, ';', #13#10, [rfReplaceAll]);
        msg := msg + #13#10 + #13#10;
      end;
      goodCDir := ValidatePaths(fCDir, tempStr);
-     if tempStr <> '' then
+     if ((tempStr <> '')) then
      begin
        msg := msg + 'Following C Include directories don''t exist:' + #13#10;
        msg := msg + StringReplace(tempStr, ';', #13#10, [rfReplaceAll]);
        msg := msg + #13#10 + #13#10;
      end;
      goodCppDir := ValidatePaths(fCppDir, tempStr);
-     if tempStr <> '' then
+     if ((tempStr <> '')) then
      begin
        msg := msg + 'Following C++ Include directories don''t exist:' + #13#10;
        msg := msg + StringReplace(tempStr, ';', #13#10, [rfReplaceAll]);
        msg := msg + #13#10 + #13#10;
      end;
      goodLibDir := ValidatePaths(fLibDir, tempStr);
-     if tempStr <> '' then
+     if ((tempStr <> '')) then
      begin
        msg := msg + 'Following Libs directories don''t exist:' + #13#10;
        msg := msg + StringReplace(tempStr, ';', #13#10, [rfReplaceAll]);
        msg := msg + #13#10 + #13#10;
      end;
      {$IFDEF PLUGIN_BUILD}
+
      goodRCDir := ValidatePaths(fRCDir, tempStr);
      if tempStr <> '' then
      begin
@@ -2877,7 +2887,12 @@ begin
        msg := msg + #13#10 + #13#10;
      end;
      {$ENDIF}
-     msg := '';   // Remove the annoying dialog GAR 9 NOV 2009
+
+     // GAR 16 Nov 2009
+     // Wine hack
+     // Remove check for paths
+     msg := '';
+
      if msg <> '' then
      begin
        msg := msg + 'Would you like Dev-C++ to remove them for you '
@@ -2888,7 +2903,7 @@ begin
          + 'Unless you know exactly what you''re doing, it is recommended '
          + 'that you click Yes';
 
-       if MessageDlg(msg, mtConfirmation, [mbYes, mbNo], 0) = mrYes then    // EAB TODO:* These messages could appear sencuentially multiple times depending on the amount of templates being read for a project. We need to fix this. 
+       if MessageDlg(msg, mtConfirmation, [mbYes, mbNo], 0) = mrYes then    // EAB TODO:* These messages could appear sencuentially multiple times depending on the amount of templates being read for a project. We need to fix this.
        begin
          fBinDir := goodBinDir;
          fCDir := goodCDir;

@@ -6,7 +6,7 @@ uses
   Classes, iniFiles, ActnList, Menus, ExtCtrls, ComCtrls, Controls, Types, Messages,
   StdCtrls, Forms, SysUtils, Windows, Dialogs, Graphics, Spin,
   JclStrings, JvExControls, JvComponent, TypInfo, JclRTTI, JvStringHolder,
-  ELDsgnr, JvInspector, dmCreateNewProp, DbugIntf,
+  ELDsgnr, JvInspector, dmCreateNewProp,
   wxSizerpanel, Designerfrm, ELPropInsp, {$IFNDEF COMPILER_7_UP}ThemeMgr, {$ENDIF}
   CompFileIO, SynEdit, StrUtils,
   DesignerOptions, JvExStdCtrls, JvEdit, iplugin, iplugin_bpl, iplugger,
