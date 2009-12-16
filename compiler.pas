@@ -1653,6 +1653,7 @@ begin
     gpp := CPP_PROGRAM(devCompiler.CompilerType);
   try
     LOutput.Text := fdevRun.Output;
+
     IMod := CalcMod(pred(LOutput.Count));
 
     // Concatenate errors which are on multiple lines
